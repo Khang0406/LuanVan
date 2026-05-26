@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <h3 class="fw-bold mb-3">
+        <i class="fas fa-edit"></i> Chỉnh sửa file
+    </h3>
+
+    <p class="text-muted">Đường dẫn: <code>{{ path }}</code></p>
+
+    <form method="POST"
+          action="{{ url_for('file_edit', server_id=server_id, path=path) }}">
+
+        <textarea name="content"
+                  class="form-control"
+                  rows="22"
+                  style="font-family: monospace;">{{ content }}</textarea>
+
+        <button class="btn btn-primary mt-3">
+            💾 Lưu thay đổi
+        </button>
+
+        <a href="{{ url_for('file_manager', server_id=server_id, path=path.rsplit('/',1)[0] or '/') }}"
+           class="btn btn-outline-secondary mt-3">
+            ⬅ Quay lại
+        </a>
+
+    </form>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,27 @@
+<h3>Terminal – {{ server.name }}</h3>
+
+<div>
+    <form id="cmdForm">
+        <input type="text" name="command" id="command" class="form-control" placeholder="Nhập lệnh..." required>
+        <button class="btn btn-primary mt-2">Chạy</button>
+    </form>
+
+    <pre id="output" class="bg-dark text-light p-3 rounded"></pre>
+</div>
+
+<script>
+document.getElementById("cmdForm").onsubmit = async (e) => {
+    e.preventDefault()
+
+    let cmd = document.getElementById("command").value
+
+    let res = await fetch("{{ url_for('run_server_command', server_id=server.id) }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "command=" + encodeURIComponent(cmd)
+    })
+
+    let data = await res.json()
+    document.getElementById("output").innerText = data.output
+}
+</script>

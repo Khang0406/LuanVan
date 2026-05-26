@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <h3 class="fw-bold text-danger mb-3">🖥️ Web Terminal</h3>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <label><b>Nhập lệnh:</b></label>
+            <input id="cmd" type="text" class="form-control" placeholder="vd: ls -la">
+
+            <button class="btn btn-danger mt-3" onclick="runCmd()">Chạy lệnh</button>
+
+            <pre id="output" class="bg-dark text-light p-3 mt-3" style="height:300px; overflow-y:scroll;"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+function runCmd() {
+    const cmd = document.getElementById("cmd").value;
+
+    fetch("/admin/terminal/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cmd })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("output").textContent = data.output;
+    });
+}
+</script>
+
+{% endblock %}

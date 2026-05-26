@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+
+    <h3 class="fw-bold text-primary mb-3">⚙ Quản lý Dịch vụ (Local)</h3>
+
+    <table class="table table-bordered table-striped shadow-sm">
+        <thead class="table-secondary">
+            <tr>
+                <th>Dịch vụ</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for service, status in status.items() %}
+            <tr>
+                <td>{{ service }}</td>
+
+                <td>
+                    {% if status == "active" %}
+                        <span class="badge bg-success">Đang chạy</span>
+                    {% elif status == "inactive" %}
+                        <span class="badge bg-secondary">Đã dừng</span>
+                    {% else %}
+                        <span class="badge bg-danger">{{ status }}</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    <form method="POST" action="/services_local/action" class="d-flex gap-2">
+                        <input type="hidden" name="service" value="{{ service }}">
+
+                        <button name="action" value="start" class="btn btn-sm btn-success">Start</button>
+                        <button name="action" value="stop" class="btn btn-sm btn-danger">Stop</button>
+                        <button name="action" value="restart" class="btn btn-sm btn-warning text-white">Restart</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="fw-bold mb-4 text-center text-dark">Danh sách tiến trình Linux</h2>
+
+<form method="POST" class="mb-3">
+  <input type="text" name="ip" placeholder="IP Server" required>
+  <input type="text" name="user" placeholder="User" required>
+  <input type="password" name="password" placeholder="Password" required>
+  <button type="submit">Xem danh sách</button>
+</form>
+
+{% if processes %}
+<table border="1" cellpadding="8" cellspacing="0">
+  <thead>
+    <tr>
+      <th>PID</th>
+      <th>User</th>
+      <th>Lệnh</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in processes %}
+    <tr>
+      <td>{{ p.pid }}</td>
+      <td>{{ p.user }}</td>
+      <td>{{ p.cmd }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

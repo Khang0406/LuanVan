@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="fw-bold mb-4 text-center text-dark"> Thêm máy chủ</h3>
+
+<form method="POST" action="{{ url_for('add_server') }}" class="shadow p-4 bg-white rounded">
+
+    <div class="mb-3">
+        <label class="form-label">Tên máy chủ</label>
+        <input type="text" name="name" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Địa chỉ IP</label>
+        <input type="text" name="ip" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">SSH Username</label>
+        <input type="text" name="username" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">SSH Password</label>
+        <input type="password" name="password" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Hệ điều hành</label>
+        <select name="os" class="form-select">
+            <option>Linux</option>
+            <option>Ubuntu</option>
+            <option>Debian</option>
+            <option>CentOS</option>
+            <option>Windows</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Mô tả</label>
+        <textarea name="description" class="form-control"></textarea>
+    </div>
+
+    <button class="btn btn-primary">Lưu máy chủ</button>
+</form>
+
+{% endblock %}

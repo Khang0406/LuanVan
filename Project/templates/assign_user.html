@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header text-dark text-center">
+                    <h4 class="mb-0">Gán người dùng cho Tài nguyên</h4>
+                    <p class="mb-0">Phân quyền truy cập Máy chủ hoặc Website cụ thể cho người dùng.</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('assign_user_post') }}">
+                        
+                        <div class="mb-3">
+                            <label for="resource_type" class="form-label fw-bold">Chọn loại Tài nguyên:</label>
+                            <select class="form-select" id="resource_type" name="resource_type" required 
+                                onchange="toggleResourceFields()">
+                                <option value="server" selected>Máy chủ</option>
+                                <option value="website">Website</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3" id="server_field">
+                            <label for="server_id" class="form-label fw-bold">Chọn Máy chủ:</label>
+                            <select class="form-select" id="server_id" name="server_id">
+                                <option value="" disabled selected>-- Chọn Máy chủ --</option>
+                                {% for server in servers %}
+                                <option value="{{ server.id }}">{{ server.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="website_field" style="display: none;">
+                            <label for="website_id" class="form-label fw-bold">Chọn Website:</label>
+                            <select class="form-select" id="website_id" name="website_id">
+                                <option value="" disabled selected>-- Chọn Website --</option>
+                                {% for web in websites %}
+                                <option value="{{ web.id }}">{{ web.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="user_id" class="form-label fw-bold">Chọn Người dùng:</label>
+                            <select class="form-select" id="user_id" name="user_id" required>
+                                <option value="" disabled selected>-- Chọn Người dùng --</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Bạn có thể chọn người dùng từ danh sách.</div>
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-secondary btn-lg text-dark"><i class="fas fa-save me-2"></i> Lưu Phân Công</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleResourceFields() {
+        const type = document.getElementById('resource_type').value;
+        const serverField = document.getElementById('server_field');
+        const websiteField = document.getElementById('website_field');
+
+        if (type === 'server') {
+            serverField.style.display = 'block';
+            websiteField.style.display = 'none';
+        } else if (type === 'website') {
+            serverField.style.display = 'none';
+            websiteField.style.display = 'block';
+        }
+    }
+
+    // Khởi tạo trạng thái ban đầu
+    document.addEventListener('DOMContentLoaded', toggleResourceFields);
+</script>
+
+{% endblock %}

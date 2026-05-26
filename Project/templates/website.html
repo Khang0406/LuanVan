@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="fw-bold mb-4 text-primary">Quản lý Website</h2>
+    
+    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addWebsiteModal">
+        <i class="fas fa-plus me-1"></i> Thêm Website
+    </button>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">Danh sách Websites</div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên Website</th>
+                        <th>URL</th>
+                        <th>Server</th>
+                        <th>Dịch vụ Linux</th>
+                        <th>Mô tả</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for web in websites %}
+                    <tr>
+                        <td>{{ web.id }}</td>
+                        <td>{{ web.name }}</td>
+                        <td><a href="{{ web.url }}" target="_blank">{{ web.url }}</a></td>
+                        <td>{{ web.server_name | default('Không xác định') }}</td>
+                        <td><span class="badge bg-secondary">{{ web.service_name }}</span></td>
+                        <td>{{ web.description }}</td>
+                        <td>
+                            <a href="{{ url_for('delete_website', web_id=web.id) }}" 
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Bạn có chắc chắn muốn xóa website {{ web.name }}?')"
+                               title="Xóa Website">
+                               <i class="fas fa-trash"></i>
+                            </a>
+                            </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Chưa có website nào được thêm.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addWebsiteModal" tabindex="-1" aria-labelledby="addWebsiteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_website') }}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="addWebsiteModalLabel">Thêm Website Mới</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Tên Website:</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="url" class="form-label">URL:</label>
+                        <input type="url" class="form-control" id="url" name="url" placeholder="ví dụ: http://example.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="server_id" class="form-label">Chạy trên Máy chủ:</label>
+                        <select class="form-select" id="server_id" name="server_id" required>
+                            <option value="" disabled selected>-- Chọn Máy chủ --</option>
+                            {% for server in servers %}
+                            <option value="{{ server.id }}">{{ server.name }} ({{ server.ip }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="service_name" class="form-label">Dịch vụ Linux liên quan (systemctl):</label>
+                        <input type="text" class="form-control" id="service_name" name="service_name" placeholder="ví dụ: nginx, apache2, gunicorn-web" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Mô tả:</label>
+                        <textarea class="form-control" id="description" name="description"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Lưu Website</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

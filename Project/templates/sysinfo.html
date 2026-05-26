@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="fw-bold mb-4 text-center text-dark"> CPU / RAM theo máy chủ</h3>
+
+<div class="mb-4">
+    <label class="form-label"><b>Chọn máy chủ:</b></label>
+    <select id="serverSelect" class="form-select" onchange="loadInfo()">
+        <option value="">-- chọn máy chủ --</option>
+        {% for s in servers %}
+            <option value="{{ s.id }}">{{ s.name }} ({{ s.ip }})</option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- Khu vực kết quả -->
+<div id="infoArea"></div>
+
+<script>
+async function loadInfo() {
+    let id = document.getElementById("serverSelect").value;
+    let area = document.getElementById("infoArea");
+
+    if (!id) {
+        area.innerHTML = "";
+        return;
+    }
+
+    area.innerHTML = "<div class='text-center mt-4'><div class='spinner-border'></div></div>";
+
+    let res = await fetch(`/api/sysinfo/${id}`);
+    let data = await res.json();
+
+    if (data.error) {
+        area.innerHTML = `<div class="alert alert-danger">Lỗi: ${data.error}</div>`;
+        return;
+    }
+
+    area.innerHTML = `
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <div class="card shadow-sm p-3">
+                    <h5><b>CPU Usage</b></h5>
+                    <p class="text-danger fs-4">${data.cpu}%</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm p-3">
+                    <h5><b>RAM Usage</b></h5>
+                    <p class="text-primary fs-4">${data.ram}%</p>
+                    <small>Tổng: ${data.ram_total} – Đã dùng: ${data.ram_used}</small>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm p-3">
+                    <h5><b>Disk Usage</b></h5>
+                    <p class="text-success fs-4">${data.disk}%</p>
+                    <small>Tổng: ${data.disk_total} – Đã dùng: ${data.disk_used}</small>
+                </div>
+            </div>
+
+        </div>
+    `;
+}
+</script>
+
+{% endblock %}

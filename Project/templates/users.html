@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="fw-bold mb-4 text-center text-dark">Quản lý người dùng</h2>
+
+<!-- Form thêm người dùng -->
+<form method="post" action="{{ url_for('add_user') }}" class="mb-3">
+  <div>
+    <input type="text" name="username" placeholder="Tên đăng nhập" required>
+    <input type="password" name="password" placeholder="Mật khẩu" required>
+    <select name="role">
+      <option value="user">User</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button type="submit" class="btn btn-outline-secondary">Thêm</button>
+  </div>
+</form>
+
+<!-- Bảng danh sách người dùng -->
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Tên đăng nhập</th>
+      <th>Vai trò</th>
+      <th>Trạng thái</th>
+      <th>Thao tác</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.id }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.role }}</td>
+      <td>
+        {% if u.is_locked %}
+          <span class="text-danger fw-bold">Đã khóa</span>
+        {% else %}
+          <span class="text-success fw-bold">Hoạt động</span>
+        {% endif %}
+      </td>
+      <td>
+        <!-- Form chỉnh sửa -->
+        <form method="post" action="{{ url_for('edit_user', user_id=u.id) }}" style="display:inline-block;">
+          <input type="text" name="username" value="{{ u.username }}" required>
+          <select name="role">
+            <option value="user" {% if u.role=='user' %}selected{% endif %}>User</option>
+            <option value="admin" {% if u.role=='admin' %}selected{% endif %}>Admin</option>
+          </select>
+          <button type="submit" class="btn btn-sm btn-warning">Sửa</button>
+        </form>
+
+       <!-- Nút xóa -->
+{% if u.username.lower() != 'admin' %}
+  <a href="{{ url_for('delete_user', user_id=u.id) }}" 
+     class="btn btn-sm btn-danger" 
+     onclick="return confirm('Bạn có chắc muốn xóa người dùng này không?');">
+    Xóa
+  </a>
+{% else %}
+  <button class="btn btn-sm btn-danger" disabled title="Không thể xóa tài khoản admin">
+    Xóa (không khả dụng)
+  </button>
+{% endif %}
+
+<!-- Nút khóa/mở khóa -->
+{% if u.username.lower() != 'admin' %}
+  {% if u.is_locked %}
+    <a href="{{ url_for('toggle_lock', user_id=u.id) }}" 
+       class="btn btn-sm btn-success">
+      Mở khóa
+    </a>
+  {% else %}
+    <a href="{{ url_for('toggle_lock', user_id=u.id) }}" 
+       class="btn btn-sm btn-secondary"
+       onclick="return confirm('Bạn có chắc muốn khóa người dùng này không?');">
+      Khóa
+    </a>
+  {% endif %}
+{% else %}
+  <button class="btn btn-sm btn-secondary" disabled title="Không thể khóa tài khoản admin">
+    Khóa (không khả dụng)
+  </button>
+{% endif %}
+
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Nút quay lại Dashboard -->
+<div class="mb-3">
+  <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+    Quay lại Trang chủ
+  </a>
+</div>
+{% endblock %}

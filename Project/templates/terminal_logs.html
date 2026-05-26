@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- ================== OUTPUT THEO SERVER ================== -->
+    <h3 class="fw-bold text-success mb-3">🖥 Kết quả lệnh theo từng máy chủ</h3>
+
+    {% if outputs %}
+        {% for item in outputs %}
+        <div class="card mb-3 shadow-sm">
+            
+            <!-- Header -->
+            <div class="card-header 
+                {% if '❌' in item.output %}bg-danger{% else %}bg-success{% endif %} 
+                text-white fw-bold">
+                Server: {{ item.server }}
+            </div>
+
+            <!-- Body -->
+            <div class="card-body">
+                <pre class="bg-black text-success p-3 rounded" style="white-space: pre-wrap;">
+{{ item.output }}
+                </pre>
+            </div>
+
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-secondary">
+            Chưa có kết quả nào.
+        </div>
+    {% endif %}
+
+
+    <!-- ================== LOG ================== -->
+    <h3 class="fw-bold text-primary mt-5 mb-3">📜 Nhật ký Terminal</h3>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th>User</th>
+                    <th>Lệnh</th>
+                    <th>Kết quả</th>
+                    <th>Thời gian</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for row in logs %}
+                <tr>
+                    <td class="text-center">{{ row[0] }}</td>
+                    <td><code>{{ row[1] }}</code></td>
+                    <td>
+                        <pre class="bg-light p-2 rounded" style="white-space: pre-wrap;">
+{{ row[2] }}
+                        </pre>
+                    </td>
+                    <td class="text-center">{{ row[3] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %} 
+{% block content %}
+
+<div class="row">
+    <div class="col-12">
+        <h2 class="fw-bold mb-4 text-center text-dark">
+            Điều khiển dịch vụ từ xa
+        </h2>
+    </div>
+</div>
+
+<form method="post" class="mt-3">
+
+    <!-- CHỌN SERVER -->
+    <div class="mb-4">
+        <label class="fw-bold">Chọn máy chủ:</label>
+
+        <div class="mb-2">
+            <input type="checkbox" onclick="toggleAll(this)"> 
+            <strong>Chọn tất cả</strong>
+        </div>
+
+        <div class="border p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+
+            {% if servers and servers|length > 0 %}
+
+                {% for server in servers %}
+                    <div class="form-check">
+                        <input class="form-check-input server-checkbox" 
+                               type="checkbox" 
+                               name="server_ids" 
+                               value="{{ server.id }}">
+
+                        <label class="form-check-label">
+                            <!-- FIX: fallback tên -->
+                            {{ server.name or server.server_name or "No Name" }}
+                            ({{ server.ip or "No IP" }})
+                        </label>
+                    </div>
+                {% endfor %}
+
+            {% else %}
+                <div class="text-danger">
+                    ❌ Không có máy chủ nào trong database
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- NHẬP DỊCH VỤ -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="fw-bold">Tên dịch vụ</label>
+            <input type="text" name="service" class="form-control" placeholder="nginx, ssh..." required>
+        </div>
+
+        <div class="col-md-6">
+            <label class="fw-bold">Thao tác</label>
+            <select name="action" class="form-select">
+                <option value="start">Start</option>
+                <option value="stop">Stop</option>
+                <option value="restart">Restart</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="mb-3 text-center">
+        <button type="submit" class="btn btn-primary">
+            🚀 Thực thi trên các máy đã chọn
+        </button>
+    </div>
+</form>
+
+<!-- HIỂN THỊ KẾT QUẢ -->
+{% if results and results|length > 0 %}
+<hr>
+<h4>📊 Kết quả thực thi</h4>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Server</th>
+                <th>Trạng thái</th>
+                <th>Kết quả</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in results %}
+            <tr>
+                <td><strong>{{ r.server }}</strong></td>
+
+                <td>
+                    {% if r.status == "success" %}
+                        <span class="badge bg-success">Success</span>
+                    {% else %}
+                        <span class="badge bg-danger">Error</span>
+                    {% endif %}
+                </td>
+
+                <td style="white-space: pre-wrap;">
+                    {{ r.output }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- JS -->
+<script>
+function toggleAll(source) {
+    let checkboxes = document.querySelectorAll('.server-checkbox');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+}
+</script>
+
+{% endblock %}

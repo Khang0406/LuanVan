@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="fw-bold mb-4 text-center text-dark">Giám sát Máy chủ: {{ server.name }}</h2>
+    <p class="text-center text-muted">Địa chỉ IP: {{ server.ip }} | Hệ điều hành: {{ server.os }}</p>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header text-dark fw-bold">Tổng quan Tài nguyên</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Sử dụng CPU:
+                            <span class="badge bg-primary rounded-pill">{{ "{:.2f}".format(info.cpu) if info.cpu != "Lỗi" and info.cpu != "N/A" else info.cpu }}%</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Sử dụng RAM:
+                            <span class="badge bg-primary rounded-pill">{{ "{:.2f}".format(info.ram) if info.ram != "Lỗi" and info.ram != "N/A" else info.ram }}%</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Tổng số tiến trình:
+                            <span class="badge bg-primary rounded-pill">{{ info.process_count | default('N/A') }}</span>
+                        </li>
+                    </ul>
+                    <small class="text-muted mt-3 d-block">
+                        *Lưu ý: Dữ liệu này được lấy trực tiếp từ máy chủ từ xa qua SSH.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header text-dark fw-bold">Thao tác Nhanh</div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('user_remote_action') }}">
+                        <input type="hidden" name="server_id" value="{{ server.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="service_name" class="form-label fw-bold">Tên Dịch vụ Linux:</label>
+                            <input type="text" class="form-control" id="service_name" name="service_name" placeholder="ví dụ: nginx, apache2, sshd" required>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" name="action" value="start" class="btn btn-success me-2 w-100">
+                                <i class="fas fa-play me-1"></i> Khởi động
+                            </button>
+                            <button type="submit" name="action" value="restart" class="btn btn-warning me-2 w-100">
+                                <i class="fas fa-sync-alt me-1"></i> Khởi động lại
+                            </button>
+                            <button type="submit" name="action" value="stop" class="btn btn-danger w-100">
+                                <i class="fas fa-stop me-1"></i> Dừng
+                            </button>
+                        </div>
+                    </form>
+                    <small class="text-muted mt-3 d-block">
+                        *Chức năng này yêu cầu tài khoản SSH của máy chủ phải có quyền **sudo** để thực thi các lệnh điều khiển dịch vụ.
+                    </small>
+                </div>
+            </div>
+        </div>
+        </div>
+
+    <a href="{{ url_for('my_resources') }}" class="btn btn-outline-secondary mt-3">
+        <i class="fas fa-arrow-left me-1"></i> Quay lại Danh sách Tài nguyên
+    </a>
+</div>
+{% endblock %}

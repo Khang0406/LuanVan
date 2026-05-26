@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    body {
+        background-color: #f4f7f6;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 90vh;
+    }
+
+    .auth-box {
+        background-color: #fff;
+        padding: 40px 50px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        width: 400px;
+        text-align: center;
+    }
+
+    .auth-box h3 {
+        color: #343a40;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .auth-box p {
+        color: #6c757d;
+        font-size: 15px;
+        margin-bottom: 30px;
+    }
+
+    .auth-btn {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-login {
+        background-color: #6c757d;
+        color: #fff;
+        border: none;
+    }
+    .btn-login:hover {
+        background-color: #5a6268;
+        color: #fff;
+    }
+
+    .btn-register {
+        background-color: #fff;
+        border: 2px solid #6c757d;
+        color: #343a40;
+    }
+    .btn-register:hover {
+        background-color: #6c757d;
+        color: #fff;
+    }
+
+    .footer-text {
+        margin-top: 18px;
+        color: #6c757d;
+        font-size: 14px;
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-box">
+        <h3>CICTAdmin</h3>
+        <p>Hệ thống quản lý và điều khiển máy chủ</p>
+
+        <a href="{{ url_for('login') }}" class="auth-btn btn-login">Đăng nhập</a>
+        <a href="{{ url_for('register') }}" class="auth-btn btn-register">Đăng ký</a>
+
+        <div class="footer-text">
+            © 2025 CICTAdmin. All rights reserved.
+        </div>
+    </div>
+</div>
+{% endblock %}

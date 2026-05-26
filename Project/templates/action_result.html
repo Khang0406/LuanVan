@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="alert alert-info text-center">
+  <h4>{{ message }}</h4>
+</div>
+<a href="{{ url_for('services') }}" class="btn btn-outline-danger px-3">Quay lại danh sách dịch vụ</a>
+{% endblock %}

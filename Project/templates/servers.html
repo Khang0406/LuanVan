@@ -1,0 +1,168 @@
+ {% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h3 class="fw-bold mb-4 text-center text-dark">Danh sách máy chủ</h3>
+
+    <form method="POST" action="{{ url_for('add_server') }}" 
+      class="bg-light p-4 rounded-4 shadow-sm mb-4" 
+      onsubmit="return disableSubmitButton()">
+        <div class="row g-3">
+            <div class="col-md-3"><input type="text" name="name" class="form-control" placeholder="Tên máy chủ" required></div>
+            <div class="col-md-2"><input type="text" name="ip" class="form-control" placeholder="Địa chỉ IP" required></div>
+            <div class="col-md-2"><input type="text" name="username" class="form-control" placeholder="User SSH" required></div>
+            <div class="col-md-2"><input type="password" name="password" class="form-control" placeholder="Mật khẩu SSH" required></div>
+            <div class="col-md-1"><input type="text" name="os" class="form-control" placeholder="OS" required></div>
+            <div class="col-md-2"><input type="text" name="description" class="form-control" placeholder="Mô tả"></div>
+        </div>
+        <button type="submit" class="btn btn-outline-secondary mt-3" id="addServerSubmitBtn">+ Thêm máy chủ</button>
+    </form>
+
+    <table class="table table-hover align-middle shadow-sm bg-white">
+        <thead class="table-dark text-center">
+            <tr>
+                <th>Tên máy chủ</th>
+                <th>IP</th>
+                <th>User SSH</th> 
+                <th>Hệ điều hành</th>
+                <th>Mô tả</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in servers %}
+        <tr class="text-center">
+            <td>{{ s.name }}</td>
+            <td>{{ s.ip }}</td>
+            <td>{{ s.username }}</td> 
+            <td>{{ s.os }}</td>
+            <td>{{ s.description }}</td>
+            <td class="text-center">
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+
+                <!-- POWER CONTROL -->
+                <a href="{{ url_for('power_control', server_id=s.id, action='shutdown') }}"
+                class="btn btn-sm btn-danger"
+                onclick="return confirm('Tắt máy chủ {{ s.name }}?')">
+                    ⛔ Tắt
+                </a>
+
+                <a href="{{ url_for('power_control', server_id=s.id, action='reboot') }}"
+                class="btn btn-sm btn-warning"
+                onclick="return confirm('Khởi động lại {{ s.name }}?')">
+                    🔄 Reboot
+                </a>
+
+                <!-- MONITOR -->
+                <button class="btn btn-sm btn-info" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#systemInfoModal" 
+                        onclick="loadMonitorDetail({{ s.id }})">
+                    📊 Giám sát
+                </button>
+
+                <!-- DELETE -->
+                <form method="POST" action="{{ url_for('delete_server', server_id=s.id) }}" 
+                    onsubmit="return confirm('Bạn chắc chắn muốn xóa máy chủ {{ s.name }} không?')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Xóa</button>
+                </form>
+
+            </div>
+        </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+                <i class="fas fa-exclamation-triangle me-2"></i> Chưa có máy chủ nào được thêm.
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary mt-3">⬅ Quay lại Trang chủ</a>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="systemInfoModal" tabindex="-1" aria-labelledby="systemInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="systemInfoModalLabel">
+                    <i class="fas fa-server"></i> Thông tin máy chủ <span id="server-name-modal"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="loading-spinner" class="text-center">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Đang kết nối SSH và lấy dữ liệu...</p>
+                </div>
+
+                <div id="monitor-details" class="row g-3" style="display:none;">
+                    <div class="col-md-6"><div class="info-box bg-light-blue"><i class="fas fa-desktop"></i> Hệ điều hành: <span data-field="os"></span></div></div>
+                    <div class="col-md-6"><div class="info-box bg-light-green"><i class="fas fa-microchip"></i> Kiến trúc: <span data-field="architecture"></span></div></div>
+                    <div class="col-md-6"><div class="info-box bg-light-purple"><i class="fas fa-memory"></i> RAM: <span data-field="ram_info"></span></div></div>
+                    <div class="col-md-6"><div class="info-box bg-light-yellow"><i class="fas fa-hdd"></i> Ổ đĩa: <span data-field="disk_info"></span></div></div>
+                    <div class="col-md-6"><div class="info-box bg-light-red"><i class="fas fa-cpu"></i> CPU Model: <span data-field="cpu_model"></span><br> CPU %: <span data-field="cpu_percent"></span>%</div></div>
+                    <div class="col-md-6"><div class="info-box bg-light-pink"><i class="fas fa-list-ul"></i> Tiến trình: <span data-field="process_count"></span></div></div>
+                </div>
+
+                <div id="error-message" class="alert alert-danger" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .info-box { padding:15px; border-radius:8px; font-weight:500; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+    .bg-light-blue { background:#e0f7fa; color:#007bb7; }
+    .bg-light-green { background:#e8f5e9; color:#388e3c; }
+    .bg-light-purple { background:#f3e5f5; color:#7b1fa2; }
+    .bg-light-yellow { background:#fffde7; color:#fbc02d; }
+    .bg-light-red { background:#fbecec; color:#d32f2f; }
+    .bg-light-pink { background:#fce4ec; color:#c2185b; }
+</style>
+
+<script>
+function loadMonitorDetail(serverId) {
+    document.getElementById("loading-spinner").style.display = "block";
+    document.getElementById("monitor-details").style.display = "none";
+    document.getElementById("error-message").style.display = "none";
+
+    fetch(`/api/monitor_detail/${serverId}`)
+        .then(res => res.json())
+        .then(data => {
+
+            if (data.error) {
+                document.getElementById("loading-spinner").style.display = "none";
+                document.getElementById("error-message").innerHTML = "Lỗi: " + data.error;
+                document.getElementById("error-message").style.display = "block";
+                return;
+            }
+
+            document.querySelector('[data-field="os"]').innerText = data.os;
+            document.querySelector('[data-field="architecture"]').innerText = data.architecture;
+            document.querySelector('[data-field="ram_info"]').innerText =
+                data.ram.total + " / còn " + data.ram.available;
+            document.querySelector('[data-field="disk_info"]').innerText =
+                data.disk.total + " / dùng " + data.disk.used;
+            document.querySelector('[data-field="cpu_model"]').innerText = data.cpu_model;
+            document.querySelector('[data-field="cpu_percent"]').innerText = data.cpu;
+            document.querySelector('[data-field="process_count"]').innerText = data.process_count;
+
+            document.getElementById("server-name-modal").innerText = " #" + serverId;
+
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("monitor-details").style.display = "flex";
+        })
+        .catch(err => {
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("error-message").innerHTML = "Lỗi kết nối: " + err;
+            document.getElementById("error-message").style.display = "block";
+        });
+}
+</script>
+
+
+{% endblock %}

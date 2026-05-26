@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="fw-bold mb-4 text-center text-dark">Quản lý tiến trình</h2>
+
+<form method="POST">
+
+<!-- CHỌN SERVER -->
+<div class="mb-4">
+    <label class="fw-bold">Chọn máy chủ:</label>
+
+    <div class="mb-2">
+        <input type="checkbox" onclick="toggleAll(this)"> 
+        <strong>Chọn tất cả</strong>
+    </div>
+
+    <div class="border p-3 rounded" style="max-height:200px;overflow-y:auto;">
+        {% for server in servers %}
+        <div class="form-check">
+            <input class="form-check-input server-checkbox"
+                   type="checkbox"
+                   name="server_ids"
+                   value="{{ server.id }}">
+            <label class="form-check-label">
+                {{ server.name or server.server_name }} ({{ server.ip }})
+            </label>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<hr>
+
+<!-- ACTION -->
+<div class="row mb-3">
+    <div class="col-md-4">
+        <label class="fw-bold">Hành động</label>
+        <select name="action" class="form-select">
+            <option value="list">📊 Xem tiến trình</option>
+            <option value="kill">❌ Dừng tiến trình</option>
+            <option value="run">▶️ Chạy lệnh</option>
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label class="fw-bold">PID (click từ bảng)</label>
+        <input type="text" name="pid" class="form-control" id="pidInput">
+    </div>
+
+    <div class="col-md-4">
+        <label class="fw-bold">Command (run)</label>
+        <input type="text" name="command" class="form-control">
+    </div>
+</div>
+
+<div class="text-center mb-3">
+    <button class="btn btn-primary">🚀 Thực thi</button>
+</div>
+
+</form>
+
+<!-- RESULT -->
+{% if results %}
+<hr>
+<h4>📊 Kết quả</h4>
+
+<table class="table table-bordered table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>Server</th>
+            <th>Trạng thái</th>
+            <th>Kết quả</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in results %}
+        <tr>
+            <td><strong>{{ r.server }}</strong></td>
+
+            <td>
+                {% if r.status == "success" %}
+                    <span class="badge bg-success">Success</span>
+                {% else %}
+                    <span class="badge bg-danger">Error</span>
+                {% endif %}
+            </td>
+
+            <td>
+                <pre style="max-height:300px;overflow:auto;cursor:pointer;"
+                     onclick="autoFillPID(this)">
+{{ r.output }}
+                </pre>
+                <small class="text-muted"></small>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<!-- JS -->
+<script>
+function toggleAll(source){
+    let cbs = document.querySelectorAll('.server-checkbox');
+    cbs.forEach(cb => cb.checked = source.checked);
+}
+
+// 🔥 Auto lấy PID khi click output
+function autoFillPID(el){
+    let text = el.innerText;
+    let match = text.match(/\b\d+\b/); // lấy số đầu tiên
+    if(match){
+        document.getElementById("pidInput").value = match[0];
+    }
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <h3 class="mb-3">📡 Giám sát máy chủ: {{ server.name }}</h3>
+
+    <div id="loadingBox" class="text-center mt-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Đang kết nối SSH và lấy dữ liệu...</p>
+    </div>
+
+    <div id="monitorBox" class="mt-4" style="display:none;">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                Thông tin hệ thống
+            </div>
+            <div class="card-body">
+                <p><strong>🖥 Tên máy:</strong> <span id="sv_name"></span></p>
+                <p><strong>🌐 IP:</strong> <span id="sv_ip"></span></p>
+                <p><strong>💽 Hệ điều hành:</strong> <span id="sv_os"></span></p>
+                <p><strong>📐 Kiến trúc:</strong> <span id="sv_arch"></span></p>
+                <p><strong>🔧 CPU:</strong> <span id="sv_cpu"></span></p>
+                <p><strong>🚀 Thời gian hoạt động:</strong> <span id="sv_uptime"></span></p>
+
+                <hr>
+
+                <p><strong>⚙ RAM:</strong>
+                    Tổng: <span id="ram_total"></span>,
+                    Còn trống: <span id="ram_avail"></span>
+                </p>
+
+                <p><strong>💾 Ổ đĩa:</strong>
+                    Tổng: <span id="disk_total"></span>,
+                    Dùng: <span id="disk_used"></span>
+                </p>
+
+                <p><strong>🔢 Số tiến trình:</strong> <span id="sv_process"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="errorBox" class="alert alert-danger mt-4" style="display:none;"></div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let serverId = {{ server.id }};
+    fetch(`/api/monitor_detail/${serverId}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("loadingBox").style.display = "none";
+
+            if (data.error) {
+                document.getElementById("errorBox").innerHTML = "Lỗi: " + data.error;
+                document.getElementById("errorBox").style.display = "block";
+                return;
+            }
+
+            document.getElementById("monitorBox").style.display = "block";
+
+            document.getElementById("sv_name").innerText = data.name;
+            document.getElementById("sv_ip").innerText = data.ip;
+            document.getElementById("sv_os").innerText = data.os;
+            document.getElementById("sv_arch").innerText = data.architecture;
+            document.getElementById("sv_cpu").innerText = data.cpu;
+            document.getElementById("sv_uptime").innerText = data.uptime;
+
+            document.getElementById("ram_total").innerText = data.ram.total;
+            document.getElementById("ram_avail").innerText = data.ram.available;
+
+            document.getElementById("disk_total").innerText = data.disk.total;
+            document.getElementById("disk_used").innerText = data.disk.used;
+
+            document.getElementById("sv_process").innerText = data.process_count;
+        })
+        .catch(err => {
+            document.getElementById("loadingBox").style.display = "none";
+            document.getElementById("errorBox").innerHTML = "Lỗi: " + err;
+            document.getElementById("errorBox").style.display = "block";
+        });
+});
+</script>
+
+{% endblock %}

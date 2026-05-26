@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <h3 class="fw-bold mb-3">
+        <i class="fas fa-eye"></i> Xem nội dung file
+    </h3>
+
+    <p class="text-muted">Đường dẫn: <code>{{ path }}</code></p>
+
+    <div class="card shadow-sm">
+        <div class="card-body" style="white-space: pre-wrap; font-family: monospace;">
+            {{ content }}
+        </div>
+    </div>
+
+    <a href="{{ url_for('file_manager', server_id=server_id, path=path.rsplit('/',1)[0] or '/') }}"
+       class="btn btn-secondary mt-3">
+        ⬅ Quay lại
+    </a>
+
+</div>
+
+{% endblock %}

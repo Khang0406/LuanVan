@@ -33,6 +33,11 @@ dist/
 .next/
 .vite/
 
+venv/
+Project/venv/
+__pycache__/
+*.pyc
+
 .env
 *.env
 *.log
@@ -53,3 +58,4 @@ Thumbs.db
 *.mov
 *.avi
 *.mkv
+

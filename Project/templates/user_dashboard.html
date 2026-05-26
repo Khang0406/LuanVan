@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang Người Dùng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #ffe6e6; }
+        .card { border-radius: 12px; }
+        .item-card { transition: 0.2s; }
+        .item-card:hover { transform: scale(1.03); }
+        .title { font-weight: 700; font-size: 28px; }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+
+    <h2 class="text-center title mb-4">Tài nguyên được phân công</h2>
+
+    <!-- Nếu user được phân công máy chủ -->
+    <h4 class="mt-4">🖥️ Máy chủ của bạn</h4>
+    {% if servers %}
+        <div class="row">
+            {% for sv in servers %}
+            <div class="col-md-4 mb-3">
+                <div class="card p-3 shadow-sm item-card">
+                    <h5 class="fw-bold">{{ sv.name }}</h5>
+                    <p>IP: {{ sv.ip }}</p>
+                    <a href="/server/{{ sv.id }}" class="btn btn-primary w-100">Quản lý máy chủ</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">Không có máy chủ nào được phân công.</p>
+    {% endif %}
+
+    <!-- Website được phân công -->
+    <h4 class="mt-5">🌐 Website của bạn</h4>
+    {% if websites %}
+        <div class="row">
+            {% for web in websites %}
+            <div class="col-md-4 mb-3">
+                <div class="card p-3 shadow-sm item-card">
+                    <h5 class="fw-bold">{{ web.domain }}</h5>
+                    <p>Thuộc máy chủ: {{ web.server_name }}</p>
+                    <a href="/website/{{ web.id }}" class="btn btn-success w-100">Quản lý website</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">Không có website nào được phân công.</p>
+    {% endif %}
+
+</div>
+</body>
+</html>

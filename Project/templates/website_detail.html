@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chi tiết Website</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="container py-5">
+
+    <h2 class="fw-bold">🌐 Website: {{ web.domain }}</h2>
+    <p>Chạy trên máy chủ: <b>{{ web.server_name }}</b></p>
+    <hr>
+
+    <h4>Điều khiển website</h4>
+
+    <button class="btn btn-success me-2" onclick="control('start')">Khởi động</button>
+    <button class="btn btn-danger me-2" onclick="control('stop')">Dừng</button>
+    <button class="btn btn-warning" onclick="control('restart')">Khởi động lại</button>
+
+    <hr>
+
+    <h4>📄 Log hoạt động</h4>
+    <pre id="log-box" style="background:#f3f3f3; padding:15px; border-radius:8px; height:300px; overflow:auto;">
+        Đang tải log...
+    </pre>
+
+</div>
+
+<script>
+function control(action) {
+    fetch("/api/website/control", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ web_id: {{ web.id }}, action: action })
+    }).then(r => r.json()).then(res => {
+        alert("Thực hiện thành công: " + action);
+    });
+}
+
+function loadLog() {
+    fetch("/api/website/log/{{ web.id }}")
+        .then(r => r.text())
+        .then(t => document.getElementById("log-box").innerText = t);
+}
+
+setInterval(loadLog, 3000);
+loadLog();
+</script>
+
+</body>
+</html>

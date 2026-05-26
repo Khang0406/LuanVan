@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid p-4">
+
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-dark mt-2">CICTADMIN - Trung Tâm Quản Trị Hệ Thống</h2>
+        <p class="text-muted fs-5">
+            Giao diện giám sát và điều khiển hệ thống.<br>
+            Quản lý máy chủ, dịch vụ, tài khoản và tiến trình trên nhiều nền tảng.
+        </p>
+    </div>
+
+    <div class="card shadow-sm p-5 mb-4 bg-white border-0">
+        <h3 class="fw-bold text-dark mb-4 pb-2">TỔNG QUAN HỆ THỐNG QUẢN TRỊ</h3>
+        
+        <p class="fs-5 text-muted">
+            Chào mừng bạn đến với <strong>CICTADMIN</strong> – Một công cụ quản trị web được xây dựng bằng Flask/Python,
+            giúp tập trung hóa việc quản lý và giám sát tài nguyên công nghệ thông tin.
+        </p>
+
+        <hr class="my-4">
+
+        <h4 class="fw-bold text-dark mb-3">CHỨC NĂNG CHÍNH CỦA CICTADMIN:</h4>
+        
+        <div class="row g-4">
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold text-dark">
+                            <i class="fas fa-server me-2"></i> Quản lý Tài nguyên
+                        </h5>
+                        <ul class="list-unstyled small text-muted">
+                            <li>Thêm, sửa, xóa, và giám sát <strong>Máy chủ</strong>.</li>
+                            <li>Theo dõi <strong>CPU, RAM, Ổ đĩa</strong> của các máy chủ được gán.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold text-dark">
+                            <i class="fas fa-terminal me-2"></i> Điều khiển Từ xa
+                        </h5>
+                        <ul class="list-unstyled small text-muted">
+                            <li>Khởi động, dừng, khởi động lại <strong>Dịch vụ Linux</strong> qua SSH.</li>
+                            <li>Quản lý và điều khiển các <strong>Tiến trình</strong> đang chạy.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold text-dark">
+                            <i class="fas fa-users-cog me-2"></i> Quản lý Người dùng
+                        </h5>
+                        <ul class="list-unstyled small text-muted">
+                            <li>Thêm, xóa, <strong>phân quyền</strong> (admin/user) tài khoản.</li>
+                            <li><strong>Gán</strong> máy chủ và website cho từng người dùng.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold text-dark">
+                            <i class="fas fa-shield-alt me-2"></i> Kiểm soát Bảo mật
+                        </h5>
+                        <ul class="list-unstyled small text-muted">
+                            <li>Theo dõi <strong>Nhật ký</strong> hành động và đăng nhập.</li>
+                            <li>Quản lý <strong>Danh sách chặn</strong> (Blocklist).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

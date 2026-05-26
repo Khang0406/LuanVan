@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="fw-bold mb-5 text-center text-dark">Tài nguyên được gán cho bạn</h2>
+    
+    <div class="card shadow-lg mb-5">
+        <div class="card-header text-dark fw-bold fs-5">
+            <i class="fas fa-server me-2"></i> Máy chủ được phân quyền
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên máy chủ</th>
+                        <th>Địa chỉ IP</th>
+                        <th>Hệ điều hành</th>
+                        <th>Mô tả</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for server in assigned_servers %}
+                    <tr>
+                        <td class="fw-bold">{{ server.name }}</td>
+                        <td>{{ server.ip }}</td>
+                        <td>{{ server.os }}</td>
+                        <td>{{ server.description }}</td>
+                        <td>
+                            <a href="{{ url_for('user_server_detail', server_id=server.id) }}" class="btn btn-sm btn-info text-white">
+                                <i class="fas fa-chart-line me-1"></i> Giám sát
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-3">Bạn chưa được gán quyền truy cập máy chủ nào.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-lg mb-5">
+        <div class="card-header text-dark fw-bold fs-5">
+            <i class="fas fa-globe me-2"></i> Website được phân quyền
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên Website</th>
+                        <th>URL</th>
+                        <th>Chạy trên Server</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for web in assigned_websites %}
+                    <tr>
+                        <td class="fw-bold">{{ web.name }}</td>
+                        <td><a href="http://{{ web.url }}" target="_blank">{{ web.url }}</a></td>
+                        <td>{{ web.server_name }}</td>
+                        <td>
+                            <a href="{{ url_for('user_website_detail', web_id=web.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-info-circle me-1"></i> Xem chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-3">Bạn chưa được gán quyền truy cập website nào.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

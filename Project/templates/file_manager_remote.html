@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+
+    <h3 class="fw-bold mb-3 text-dark">
+        <i class="fas fa-folder-open"></i> File Manager – {{ server["name"] }} ({{ server["ip"] }})
+    </h3>
+
+    <!-- ===== Action Buttons ===== -->
+    <div class="d-flex gap-2 mb-3">
+        <!-- Upload -->
+        <form action="{{ url_for('file_manager_upload_remote', server_id=server_id) }}"
+              method="POST" enctype="multipart/form-data" class="d-flex gap-2">
+
+            <input type="hidden" name="path" value="{{ path }}">
+            <input type="file" name="file" class="form-control" required>
+
+            <button class="btn btn-primary">
+                <i class="fas fa-upload"></i> Upload
+            </button>
+        </form>
+
+        <!-- New File -->
+        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#newFileModal">
+            <i class="fas fa-file"></i> New File
+        </button>
+
+        <!-- New Folder -->
+        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#newFolderModal">
+            <i class="fas fa-folder-plus"></i> New Folder
+        </button>
+    </div>
+
+
+    <!-- ===== Breadcrumb ===== -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+
+            {% set parts = path.strip('/').split('/') if path != '/' else [] %}
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('file_manager', server_id=server_id, path='/') }}">/</a>
+            </li>
+
+            {% set current = '' %}
+            {% for p in parts %}
+                {% set current = current + '/' + p %}
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('file_manager', server_id=server_id, path=current) }}">{{ p }}</a>
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+
+
+    <!-- ===== File Table ===== -->
+    <table class="table table-hover shadow-sm">
+        <thead class="table-light">
+            <tr>
+                <th>Tên</th>
+                <th style="width: 260px;">Hành động</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        {% if path != "/" %}
+        <tr>
+            <td>
+                <a href="{{ url_for('file_manager', server_id=server_id,
+                     path=path.rsplit('/', 1)[0] or '/') }}">
+                    ⬅ Trở về
+                </a>
+            </td>
+            <td></td>
+        </tr>
+        {% endif %}
+
+        {% for item in items %}
+        <tr>
+            <td>
+                {% set full = path.rstrip('/') ~ '/' ~ item.name %}
+
+                {% if item.is_dir %}
+                    <i class="fas fa-folder text-warning"></i>
+                    <a href="{{ url_for('file_manager', server_id=server_id, path=full) }}">
+                        {{ item.name }}
+                    </a>
+                {% else %}
+                    <i class="fas fa-file text-secondary"></i> {{ item.name }}
+                {% endif %}
+            </td>
+
+            <td>
+
+                {% set full_path = path.rstrip('/') ~ '/' ~ item.name %}
+
+                {% if not item.is_dir %}
+
+                    <!-- View -->
+                    <a class="btn btn-sm btn-info"
+                       href="{{ url_for('file_view', server_id=server_id, path=full_path) }}">
+                        <i class="fas fa-eye"></i>
+                    </a>
+
+                    <!-- Edit -->
+                    <a class="btn btn-sm btn-warning"
+                       href="{{ url_for('file_edit', server_id=server_id, path=full_path) }}">
+                        <i class="fas fa-edit"></i>
+                    </a>
+
+                {% endif %}
+
+                <!-- Info -->
+                <a class="btn btn-sm btn-secondary"
+                   href="{{ url_for('file_info', server_id=server_id, path=full_path) }}">
+                    <i class="fas fa-info-circle"></i>
+                </a>
+
+                <!-- Rename -->
+                <button class="btn btn-sm btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#renameModal"
+                        onclick="renameTarget('{{ full_path }}', '{{ item.name }}')">
+                    <i class="fas fa-i-cursor"></i>
+                </button>
+
+                <!-- Delete -->
+                <a class="btn btn-sm btn-danger"
+                   href="{{ url_for('file_delete', server_id=server_id, path=full_path) }}"
+                   onclick="return confirm('Xóa {{ item.name }}?');">
+                    <i class="fas fa-trash"></i>
+                </a>
+
+            </td>
+        </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+
+    <a href="{{ url_for('servers') }}" class="btn btn-outline-secondary mt-3">
+        ⬅ Quay lại danh sách server
+    </a>
+</div>
+
+
+<!-- ========================================================= -->
+<!-- === NEW FILE MODAL ====================================== -->
+<!-- ========================================================= -->
+
+<div class="modal fade" id="newFileModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form action="{{ url_for('file_create', server_id=server_id) }}" method="POST">
+        <input type="hidden" name="path" value="{{ path }}">
+
+        <div class="modal-header">
+          <h5 class="modal-title">Tạo file mới</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="text" name="filename" class="form-control" placeholder="Tên file..." required>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary">Tạo</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ========================================================= -->
+<!-- === NEW FOLDER MODAL ==================================== -->
+<!-- ========================================================= -->
+
+<div class="modal fade" id="newFolderModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form action="{{ url_for('folder_create', server_id=server_id) }}" method="POST">
+        <input type="hidden" name="path" value="{{ path }}">
+
+        <div class="modal-header">
+          <h5 class="modal-title">Tạo thư mục mới</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="text" name="foldername" class="form-control" placeholder="Tên thư mục..." required>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary">Tạo</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ========================================================= -->
+<!-- === RENAME MODAL ======================================== -->
+<!-- ========================================================= -->
+
+<script>
+function renameTarget(fullPath, name) {
+    document.getElementById("rename_path").value = fullPath;
+    document.getElementById("rename_name").value = name;
+}
+</script>
+
+<div class="modal fade" id="renameModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form action="{{ url_for('file_rename', server_id=server_id) }}" method="POST">
+
+        <div class="modal-header">
+          <h5 class="modal-title">Đổi tên</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <input type="hidden" id="rename_path" name="old_path">
+
+        <div class="modal-body">
+          <input type="text" id="rename_name" name="new_name" class="form-control" required>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary">Đổi tên</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+<style>
+    .breadcrumb {
+        background: #f8f9fa;
+        padding: 10px 15px;
+        border-radius: 8px;
+    }
+    table tbody tr td {
+        vertical-align: middle;
+    }
+    i.fas {
+        margin-right: 6px;
+    }
+</style>
+
+{% endblock %}

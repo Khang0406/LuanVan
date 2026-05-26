@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="fw-bold mb-4 text-dark text-success">Chi tiết Website: {{ website.name }}</h2>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-success">
+                <div class="card-header text-dark fw-bold">Thông tin Cơ bản</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <span class="fw-bold">URL:</span> 
+                            <a href="{{ website.url }}" target="_blank">{{ website.url }}</a>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-bold">Chạy trên Server ID:</span> 
+                            {{ website.server_id }} (Sử dụng ID này để điều khiển)
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-bold">Dịch vụ Linux:</span> 
+                            <span class="badge bg-primary">{{ website.service_name }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-bold">Mô tả:</span> 
+                            {{ website.description | default('Không có mô tả') }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header text-dark fw-bold">Thao tác Nhanh (Điều khiển Dịch vụ Web)</div>
+                <div class="card-body">
+                    <p class="text-muted">Điều khiển dịch vụ **{{ website.service_name }}** trên Server ID {{ website.server_id }}.</p>
+                    
+                    <form method="POST" action="{{ url_for('user_remote_action') }}">
+                        <input type="hidden" name="server_id" value="{{ website.server_id }}">
+                        <input type="hidden" name="service_name" value="{{ website.service_name }}">
+                        
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" name="action" value="start" class="btn btn-success me-2 w-100">
+                                <i class="fas fa-play me-1"></i> Khởi động
+                            </button>
+                            <button type="submit" name="action" value="restart" class="btn btn-warning me-2 w-100">
+                                <i class="fas fa-sync-alt me-1"></i> Khởi động lại
+                            </button>
+                            <button type="submit" name="action" value="stop" class="btn btn-danger w-100">
+                                <i class="fas fa-stop me-1"></i> Dừng
+                            </button>
+                        </div>
+                    </form>
+                    <small class="text-muted mt-3 d-block">
+                        *Chức năng này sử dụng cùng cơ chế SSH với điều khiển máy chủ. Đảm bảo dịch vụ web đang chạy trên Server ID {{ website.server_id }} và tài khoản SSH có quyền `sudo` (NOPASSWD).
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="{{ url_for('my_resources') }}" class="btn btn-outline-secondary mt-3">
+        <i class="fas fa-arrow-left me-1"></i> Quay lại Danh sách Tài nguyên
+    </a>
+</div>
+{% endblock %}
