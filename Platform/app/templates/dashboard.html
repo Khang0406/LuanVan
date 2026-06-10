@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Dashboard</h1>
+<p class="text-muted">Nền tảng web tự động hóa cài Kubernetes bằng Ansible và triển khai ứng dụng lên K3s/Kubernetes.</p>
+<div class="row g-3">
+{% for label, value in stats.items() %}
+  <div class="col-md"><div class="card"><div class="card-body"><h6 class="text-uppercase text-muted">{{ label }}</h6><div class="display-6">{{ value }}</div></div></div></div>
+{% endfor %}
+</div>
+<div class="mt-4 d-flex gap-2">
+  <a class="btn btn-primary" href="{{ url_for('servers.new_server') }}">Thêm server</a>
+  <a class="btn btn-outline-primary" href="{{ url_for('clusters.new_cluster') }}">Tạo cluster</a>
+  <a class="btn btn-outline-success" href="{{ url_for('applications.new_application') }}">Tạo application</a>
+</div>
+{% endblock %}

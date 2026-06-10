@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Tạo application</h1>
+<form method="post" class="card card-body">
+  <label class="form-label">Tên application</label><input class="form-control mb-2" name="name" required>
+  <label class="form-label">Namespace</label><input class="form-control mb-2" name="namespace" placeholder="demo-app" required>
+  <label class="form-label">Owner</label><input class="form-control mb-2" name="owner" value="developer">
+  <label class="form-label">Mô tả</label><textarea class="form-control mb-3" name="description"></textarea>
+  <button class="btn btn-primary">Tạo</button>
+</form>
+{% endblock %}

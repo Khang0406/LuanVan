@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% block content %}
+<h1>{{ cluster.name }}</h1>
+<p>Status: <span class="badge bg-secondary">{{ cluster.status }}</span></p>
+<div class="d-flex gap-2 mb-3">
+  <form method="post" action="{{ url_for('clusters.ping', cluster_id=cluster.id) }}"><button class="btn btn-outline-primary">Test SSH bằng Ansible Ping</button></form>
+  <form method="post" action="{{ url_for('clusters.install', cluster_id=cluster.id) }}"><button class="btn btn-danger">Install K3s Cluster</button></form>
+  <form method="post" action="{{ url_for('clusters.refresh_nodes', cluster_id=cluster.id) }}"><button class="btn btn-outline-success">kubectl get nodes</button></form>
+</div>
+<table class="table"><thead><tr><th>Server</th><th>IP</th><th>Role</th><th>K8s Status</th></tr></thead><tbody>
+{% for node in cluster.nodes %}<tr><td>{{ node.server.name }}</td><td>{{ node.server.ip }}</td><td>{{ node.role }}</td><td>{{ node.k8s_status }}</td></tr>{% endfor %}
+</tbody></table>
+{% endblock %}

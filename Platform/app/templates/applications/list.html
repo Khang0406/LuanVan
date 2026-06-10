@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block content %}
+<div class="d-flex justify-content-between"><h1>Applications</h1><a class="btn btn-primary" href="{{ url_for('applications.new_application') }}">Tạo application</a></div>
+{% for app in applications %}
+<div class="card mb-3"><div class="card-body">
+  <div class="d-flex justify-content-between"><div><h4>{{ app.name }}</h4><p class="text-muted">namespace: {{ app.namespace }} | owner: {{ app.owner }}</p></div><a class="btn btn-outline-primary" href="{{ url_for('applications.new_service', app_id=app.id) }}">Thêm service</a></div>
+  <table class="table"><thead><tr><th>Service</th><th>Image</th><th>Replicas</th><th>Status</th><th></th></tr></thead><tbody>
+  {% for svc in app.services %}<tr><td>{{ svc.name }}</td><td>{{ svc.image }}</td><td>{{ svc.replicas }}</td><td>{{ svc.status }}</td><td><a href="{{ url_for('deployments.detail', service_id=svc.id) }}">Chi tiết</a></td></tr>{% endfor %}
+  </tbody></table>
+</div></div>
+{% endfor %}
+{% endblock %}

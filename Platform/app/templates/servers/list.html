@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block content %}
+<div class="d-flex justify-content-between align-items-center"><h1>Server Inventory</h1><a class="btn btn-primary" href="{{ url_for('servers.new_server') }}">Thêm server</a></div>
+<table class="table table-striped"><thead><tr><th>Tên</th><th>IP</th><th>SSH</th><th>OS</th><th>Status</th></tr></thead><tbody>
+{% for server in servers %}<tr><td>{{ server.name }}</td><td>{{ server.ip }}</td><td>{{ server.ssh_user }}@{{ server.ip }}:{{ server.ssh_port }}</td><td>{{ server.os }}</td><td>{{ server.status }}</td></tr>{% endfor %}
+</tbody></table>
+{% endblock %}
