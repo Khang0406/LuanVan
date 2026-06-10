@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Thêm server</h1>
+<form method="post" class="card card-body">
+  <div class="row g-3">
+    <div class="col-md-6"><label class="form-label">Tên</label><input class="form-control" name="name" required></div>
+    <div class="col-md-6"><label class="form-label">IP</label><input class="form-control" name="ip" required></div>
+    <div class="col-md-4"><label class="form-label">SSH port</label><input class="form-control" name="ssh_port" value="22"></div>
+    <div class="col-md-4"><label class="form-label">SSH user</label><input class="form-control" name="ssh_user" value="ubuntu" required></div>
+    <div class="col-md-4"><label class="form-label">OS</label><input class="form-control" name="os" value="Ubuntu"></div>
+    <div class="col-md-6"><label class="form-label">SSH password (demo)</label><input class="form-control" name="ssh_password" type="password"></div>
+    <div class="col-md-6"><label class="form-label">SSH key path</label><input class="form-control" name="ssh_key_path" placeholder="~/.ssh/id_rsa"></div>
+  </div>
+  <button class="btn btn-primary mt-3">Lưu</button>
+</form>
+{% endblock %}

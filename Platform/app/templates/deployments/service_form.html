@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Tạo service cho {{ application.name }}</h1>
+<form method="post" class="card card-body">
+  <label class="form-label">Service name</label><input class="form-control mb-2" name="name" value="demo-nginx" required>
+  <label class="form-label">Docker image</label><input class="form-control mb-2" name="image" value="nginx:latest" required>
+  <div class="row"><div class="col"><label class="form-label">Port</label><input class="form-control mb-2" name="port" value="80"></div><div class="col"><label class="form-label">Replicas</label><input class="form-control mb-2" name="replicas" value="2"></div></div>
+  <label class="form-label">Service type</label><select class="form-select mb-2" name="service_type"><option>NodePort</option><option>ClusterIP</option></select>
+  <label class="form-label">NodePort (30000-32767, optional)</label><input class="form-control mb-3" name="node_port" value="30080">
+  <button class="btn btn-primary">Lưu service</button>
+</form>
+{% endblock %}

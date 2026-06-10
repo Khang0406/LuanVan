@@ -1,0 +1,6 @@
+- name: Test SSH connection to managed servers
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Ping host through Ansible
+      ansible.builtin.ping:

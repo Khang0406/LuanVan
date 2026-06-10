@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Tạo cluster K3s/Kubernetes</h1>
+<form method="post" class="card card-body">
+  <label class="form-label">Tên cluster</label><input class="form-control mb-2" name="name" value="lab-cluster" required>
+  <label class="form-label">Mô tả</label><textarea class="form-control mb-3" name="description"></textarea>
+  <h5>Chọn vai trò server</h5>
+  <table class="table"><thead><tr><th>Server</th><th>IP</th><th>Role</th></tr></thead><tbody>
+  {% for server in servers %}
+    <tr><td>{{ server.name }}</td><td>{{ server.ip }}</td><td><select class="form-select" name="role_{{ server.id }}"><option value="">Không dùng</option><option value="master">Master</option><option value="worker">Worker</option></select></td></tr>
+  {% endfor %}
+  </tbody></table>
+  <button class="btn btn-primary">Tạo cluster</button>
+</form>
+{% endblock %}
