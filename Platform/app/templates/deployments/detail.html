@@ -1,11 +1,8 @@
 {% extends 'base.html' %}{% block content %}
-<h1>{{ service.name }}</h1>
-<p>Image: <code>{{ service.image }}</code> | Status: {{ service.status }}</p>
-<div class="d-flex gap-2 mb-3">
-  <form method="post" action="{{ url_for('deployments.deploy', service_id=service.id) }}"><button class="btn btn-success">Deploy / Redeploy</button></form>
-  <form method="post" action="{{ url_for('deployments.scale', service_id=service.id) }}" class="d-flex gap-2"><input class="form-control" style="width:120px" name="replicas" value="{{ service.replicas }}"><button class="btn btn-outline-primary">Scale</button></form>
-  <a class="btn btn-outline-secondary" href="{{ url_for('deployments.logs', service_id=service.id) }}">Xem logs</a>
-</div>
-<h5>Pods</h5><pre class="bg-light p-3">{{ pod_status }}</pre>
-<h5>Deployment history</h5><table class="table"><thead><tr><th>ID</th><th>Image</th><th>Replicas</th><th>Status</th><th>Endpoint</th></tr></thead><tbody>{% for d in service.deployments %}<tr><td>{{ d.id }}</td><td>{{ d.image }}</td><td>{{ d.replicas }}</td><td>{{ d.status }}</td><td>{{ d.endpoint_url }}</td></tr>{% endfor %}</tbody></table>
+<h1>Deployment Management</h1><p class="text-muted">Giao diện quản lý rollout, replicas, endpoint và trạng thái pod.</p>
+<div class="row g-4"><div class="col-lg-8"><div class="card soft-card"><div class="card-body p-4"><h4>Deployments</h4><table class="table"><thead><tr><th>App</th><th>Status</th><th>Replicas</th><th>Endpoint</th><th>Actions</th></tr></thead><tbody>{% for app in applications %}<tr><td>{{ app.name }}</td><td>{{ app.status }}</td><td>{{ app.replicas }}</td><td><code>{{ app.url }}</code></td><td><button class="btn btn-sm btn-outline-primary">Scale</button> <button class="btn btn-sm btn-outline-warning">Restart</button> <button class="btn btn-sm btn-outline-secondary">Rollback</button></td></tr>{% endfor %}</tbody></table></div></div></div><div class="col-lg-4"><div class="card soft-card"><div class="card-body p-4"><h4>Rollout status</h4><pre class="bg-light p-3 rounded">deployment/student-portal
+  image: ghcr.io/team/student:1.2.0
+  ready: 4/4
+  revision: 12
+  strategy: RollingUpdate</pre><a href="{{ url_for('ui.deployment_logs') }}" class="btn btn-outline-primary w-100">Xem logs</a></div></div></div></div>
 {% endblock %}

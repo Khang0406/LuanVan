@@ -1,17 +1,17 @@
-# API/Route design MVP
+# API design dự kiến
 
-- `GET/POST /login`
-- `GET /servers`
-- `GET/POST /servers/new`
-- `GET /clusters`
-- `GET/POST /clusters/new`
-- `GET /clusters/{id}`
-- `POST /clusters/{id}/ping`
-- `POST /clusters/{id}/install`
-- `POST /clusters/{id}/refresh-nodes`
-- `GET /applications`
-- `GET/POST /applications/new`
-- `GET/POST /applications/{id}/services/new`
-- `POST /services/{id}/deploy`
-- `POST /services/{id}/scale`
-- `GET /services/{id}/logs`
+Bản hiện tại chưa triển khai API thật. Các route UI đang dùng mock data.
+
+## API sẽ bổ sung
+
+- `POST /api/servers`
+- `POST /api/servers/{id}/test-ssh`
+- `POST /api/clusters`
+- `POST /api/clusters/{id}/install`
+- `GET /api/clusters/{id}/nodes`
+- `POST /api/applications`
+- `POST /api/services`
+- `POST /api/services/{id}/deploy`
+- `POST /api/services/{id}/scale`
+- `GET /api/services/{id}/logs`
+- `POST /api/webhooks/github`

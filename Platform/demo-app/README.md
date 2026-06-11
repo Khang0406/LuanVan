@@ -1,8 +1,3 @@
-# Demo App
+# Demo app placeholder
 
-Ứng dụng HTML tĩnh dùng để build Docker image và deploy thử lên Kubernetes.
-
-```bash
-docker build -t <docker-user>/cict-demo-app:latest .
-docker push <docker-user>/cict-demo-app:latest
-```
+Thư mục này để trống phần code demo app. Sau khi UI được duyệt, nhóm sẽ bổ sung ứng dụng mẫu dùng cho luồng CI/CD và deploy Kubernetes.

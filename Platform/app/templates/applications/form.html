@@ -1,10 +1,4 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Tạo application</h1>
-<form method="post" class="card card-body">
-  <label class="form-label">Tên application</label><input class="form-control mb-2" name="name" required>
-  <label class="form-label">Namespace</label><input class="form-control mb-2" name="namespace" placeholder="demo-app" required>
-  <label class="form-label">Owner</label><input class="form-control mb-2" name="owner" value="developer">
-  <label class="form-label">Mô tả</label><textarea class="form-control mb-3" name="description"></textarea>
-  <button class="btn btn-primary">Tạo</button>
-</form>
+<h1>Tạo application</h1><p class="text-muted">Developer khai báo project/app trước khi deploy service.</p>
+<div class="card soft-card"><div class="card-body p-4"><form class="mock-form row g-3"><div class="col-md-6"><label class="form-label">Tên application</label><input class="form-control" value="student-portal"></div><div class="col-md-6"><label class="form-label">Namespace</label><input class="form-control" value="prod-student"></div><div class="col-md-6"><label class="form-label">Owner/team</label><input class="form-control" value="team-web"></div><div class="col-md-6"><label class="form-label">Environment</label><select class="form-select"><option>Production</option><option>Staging</option><option>Development</option></select></div><div class="col-12"><label class="form-label">Mô tả</label><textarea class="form-control">Website sinh viên demo triển khai trên Kubernetes</textarea></div><div class="col-12"><button class="btn btn-primary" type="button">Tạo application</button></div></form></div></div>
 {% endblock %}

@@ -1,10 +1,9 @@
 {% extends 'base.html' %}{% block content %}
-{% if jobs %}
-<h1>Ansible Jobs</h1><table class="table"><thead><tr><th>ID</th><th>Playbook</th><th>Status</th><th></th></tr></thead><tbody>{% for item in jobs %}<tr><td>{{ item.id }}</td><td>{{ item.playbook }}</td><td>{{ item.status }}</td><td><a href="{{ url_for('jobs.detail', job_id=item.id) }}">Logs</a></td></tr>{% endfor %}</tbody></table>
-{% else %}
-<h1>Job #{{ job.id }} - {{ job.status }}</h1>
-<p>{{ job.playbook }}</p>
-<pre id="job-log" data-url="{{ url_for('jobs.logs', job_id=job.id) }}" class="bg-dark text-light p-3 rounded log-box">{% for log in job.logs %}{{ log.line }}
-{% endfor %}</pre>
-{% endif %}
+<h1>Ansible Job Logs</h1><p class="text-muted">Màn hình mô phỏng log khi website chạy playbook cài Kubernetes.</p>
+<div class="row g-4"><div class="col-lg-4"><div class="card soft-card"><div class="card-body p-4"><h4>Job #1024</h4><p><span class="badge text-bg-primary">RUNNING</span></p>{% for step in steps %}<div class="mb-3"><strong>{{ step.step }}</strong><br><span class="text-muted">{{ step.status }} - {{ step.note }}</span></div>{% endfor %}</div></div></div><div class="col-lg-8"><pre class="log-panel">$ ansible-playbook -i generated/lab-cluster.ini install_k3s_cluster.yml
+TASK [Ping hosts] ******************************* ok: [k8s-master-01]
+TASK [Install prerequisites] ******************** changed: [k8s-worker-01]
+TASK [Install K3s server] *********************** running...
+
+UI prototype: backend runner sẽ bổ sung sau.</pre></div></div>
 {% endblock %}

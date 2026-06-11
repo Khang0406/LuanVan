@@ -1,3 +1,0 @@
-- import_playbook: install_prerequisites.yml
-- import_playbook: install_k3s_master.yml
-- import_playbook: install_k3s_worker.yml

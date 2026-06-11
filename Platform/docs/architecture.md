@@ -9,18 +9,16 @@ flowchart LR
     Admin[Admin/DevOps] --> Web[Management Web UI]
     Dev --> Web
 
-    Web --> API[Backend API]
-    API --> DB[(Database)]
-    API --> Ansible[Ansible Runner]
-    API --> Kubectl[kubectl / Kubernetes Client]
+    Web --> Backend[Backend modules bổ sung sau]
+    Backend --> DB[(Database)]
+    Backend --> Ansible[Ansible Runner]
+    Backend --> Kubectl[kubectl / Kubernetes Client]
 
-    Ansible --> M1[Master Server]
-    Ansible --> W1[Worker Server 1]
-    Ansible --> W2[Worker Server 2]
-
-    Kubectl --> K8S[K3s/Kubernetes Cluster]
-    Registry --> K8S
-    K8S --> App[Deployed Web/Microservices]
+    Ansible --> Master[Master Server]
+    Ansible --> Worker[Worker Nodes]
+    Kubectl --> Cluster[K3s/Kubernetes Cluster]
+    Registry --> Cluster
+    Cluster --> Apps[Web/Microservices]
 ```
 
-Management server chạy Web UI, Backend, database demo, Ansible và kubectl. Server này điều khiển các máy target bằng SSH/Ansible để cài K3s, sau đó dùng Kubernetes API/kubectl để deploy ứng dụng.
+Bản hiện tại chỉ code phần Web UI để trình bày trải nghiệm người dùng. Các khối Backend, Database, Ansible Runner và Kubernetes Client đã được định vị trong cấu trúc source nhưng chưa triển khai logic.

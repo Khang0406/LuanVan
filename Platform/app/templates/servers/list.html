@@ -1,6 +1,6 @@
 {% extends 'base.html' %}{% block content %}
-<div class="d-flex justify-content-between align-items-center"><h1>Server Inventory</h1><a class="btn btn-primary" href="{{ url_for('servers.new_server') }}">Thêm server</a></div>
-<table class="table table-striped"><thead><tr><th>Tên</th><th>IP</th><th>SSH</th><th>OS</th><th>Status</th></tr></thead><tbody>
-{% for server in servers %}<tr><td>{{ server.name }}</td><td>{{ server.ip }}</td><td>{{ server.ssh_user }}@{{ server.ip }}:{{ server.ssh_port }}</td><td>{{ server.os }}</td><td>{{ server.status }}</td></tr>{% endfor %}
-</tbody></table>
+<div class="d-flex justify-content-between align-items-center mb-3"><div><h1>Server Inventory</h1><p class="text-muted">Danh sách máy website/management và các máy sẽ cài master/worker.</p></div><a class="btn btn-primary" href="{{ url_for('ui.server_form') }}">+ Thêm server</a></div>
+<div class="card soft-card"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Tên máy</th><th>IP</th><th>Vai trò</th><th>Trạng thái</th><th>CPU</th><th>RAM</th><th>Hành động</th></tr></thead><tbody>
+{% for s in servers %}<tr><td class="fw-semibold">{{ s.name }}</td><td><code>{{ s.ip }}</code></td><td>{{ s.role }}</td><td><span class="status-dot dot-green"></span>{{ s.status }}</td><td>{{ s.cpu }}</td><td>{{ s.ram }}</td><td><button class="btn btn-sm btn-outline-primary">Test SSH</button></td></tr>{% endfor %}
+</tbody></table></div></div>
 {% endblock %}

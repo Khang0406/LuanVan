@@ -1,4 +1,9 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Logs - {{ service.name }}</h1>
-<pre class="bg-dark text-light p-3 rounded log-box">{{ logs }}</pre>
+<h1>Pod Logs</h1><pre class="log-panel">[09:14:01] Starting container web-frontend
+[09:14:03] Listening on port 80
+[09:14:04] Health check passed
+[09:15:10] GET / 200 14ms
+[09:15:11] GET /api/profile 200 31ms
+
+UI prototype: dữ liệu logs thật sẽ lấy từ kubectl logs sau khi backend được bổ sung.</pre>
 {% endblock %}

@@ -1,12 +1,4 @@
 {% extends 'base.html' %}{% block content %}
-<h1>{{ cluster.name }}</h1>
-<p>Status: <span class="badge bg-secondary">{{ cluster.status }}</span></p>
-<div class="d-flex gap-2 mb-3">
-  <form method="post" action="{{ url_for('clusters.ping', cluster_id=cluster.id) }}"><button class="btn btn-outline-primary">Test SSH bằng Ansible Ping</button></form>
-  <form method="post" action="{{ url_for('clusters.install', cluster_id=cluster.id) }}"><button class="btn btn-danger">Install K3s Cluster</button></form>
-  <form method="post" action="{{ url_for('clusters.refresh_nodes', cluster_id=cluster.id) }}"><button class="btn btn-outline-success">kubectl get nodes</button></form>
-</div>
-<table class="table"><thead><tr><th>Server</th><th>IP</th><th>Role</th><th>K8s Status</th></tr></thead><tbody>
-{% for node in cluster.nodes %}<tr><td>{{ node.server.name }}</td><td>{{ node.server.ip }}</td><td>{{ node.role }}</td><td>{{ node.k8s_status }}</td></tr>{% endfor %}
-</tbody></table>
+<h1>Chi tiết cluster</h1>
+<div class="row g-4"><div class="col-lg-8"><div class="card soft-card"><div class="card-body p-4"><h4>Nodes</h4><table class="table"><thead><tr><th>Name</th><th>IP</th><th>Role</th><th>Status</th><th>CPU</th><th>RAM</th></tr></thead><tbody>{% for s in servers %}<tr><td>{{ s.name }}</td><td>{{ s.ip }}</td><td>{{ s.role }}</td><td>{{ s.status }}</td><td>{{ s.cpu }}</td><td>{{ s.ram }}</td></tr>{% endfor %}</tbody></table></div></div></div><div class="col-lg-4"><div class="card soft-card"><div class="card-body p-4"><h4>Cluster actions</h4><button class="btn btn-outline-primary w-100 mb-2">kubectl get nodes</button><button class="btn btn-outline-primary w-100 mb-2">Cài metrics-server</button><button class="btn btn-outline-danger w-100">Drain node</button></div></div></div></div>
 {% endblock %}

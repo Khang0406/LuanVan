@@ -1,26 +1,21 @@
-# Hướng dẫn chuẩn bị môi trường
-
-## Management server
+# Hướng dẫn chạy UI prototype
 
 ```bash
-sudo apt update
-sudo apt install -y git curl wget openssh-client sshpass python3 python3-venv python3-pip ansible
+cd Platform
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python run.py
 ```
 
-Cài kubectl và chuẩn bị kubeconfig sau khi K3s cài xong.
+Truy cập `http://127.0.0.1:8000`.
 
-## Target servers
+## Công nghệ cần chuẩn bị cho giai đoạn backend
 
-Mỗi máy Ubuntu target cần bật SSH:
-
-```bash
-sudo apt update
-sudo apt install -y openssh-server curl
-sudo systemctl enable --now ssh
-```
-
-Nên cấu hình SSH key từ management server:
-
-```bash
-ssh-copy-id ubuntu@<target-ip>
-```
+- Ubuntu management server.
+- Python/Flask.
+- Ansible.
+- kubectl.
+- Docker.
+- K3s/Kubernetes target VMs.
+- GitHub + Docker Registry/GHCR.

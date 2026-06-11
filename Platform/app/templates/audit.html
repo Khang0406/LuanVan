@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Audit Log</h1><p class="text-muted">Theo dõi ai đã thao tác gì trên hạ tầng và ứng dụng.</p>
+<div class="card soft-card"><div class="card-body p-4"><table class="table"><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Target</th><th>Result</th></tr></thead><tbody>{% for log in logs %}<tr><td>{{ log.time }}</td><td>{{ log.user }}</td><td>{{ log.action }}</td><td>{{ log.target }}</td><td><span class="badge text-bg-success">{{ log.result }}</span></td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

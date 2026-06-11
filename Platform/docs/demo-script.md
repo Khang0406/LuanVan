@@ -1,23 +1,32 @@
-# Demo script thứ 6
+# Demo script UI thứ 6
 
-## Kịch bản 1: Cài Kubernetes từ website
+## Mục tiêu demo
 
-1. Mở CICT Platform và đăng nhập `admin/admin`.
-2. Vào Servers, thêm master và worker.
-3. Vào Clusters, tạo `lab-cluster`, chọn role master/worker.
-4. Bấm `Test SSH bằng Ansible Ping`.
-5. Bấm `Install K3s Cluster` và giải thích log Ansible.
-6. Bấm `kubectl get nodes` để xác nhận cluster ready.
+Cho thầy thấy sản phẩm sẽ hỗ trợ người dùng làm gì, luồng thao tác ra sao và backend/business logic sẽ được nối vào các màn hình nào.
 
-## Kịch bản 2: Deploy website
+## Kịch bản 1: Admin cài Kubernetes từ website
 
-1. Vào Applications, tạo `demo-web` namespace `demo-web`.
-2. Thêm service `demo-nginx`, image `nginx:latest`, port `80`, replicas `2`, NodePort `30080`.
-3. Bấm deploy.
-4. Mở `http://<node-ip>:30080`.
-5. Scale từ 2 lên 4 replicas.
-6. Xem logs pod.
+1. Mở Dashboard để giới thiệu mô hình end-to-end.
+2. Vào Server Inventory, trình bày danh sách máy management/master/worker.
+3. Mở form thêm server, giải thích thông tin SSH/role.
+4. Vào Kubernetes Setup, trình bày wizard chọn node master/worker.
+5. Mở Job Logs, giải thích nơi hiển thị log Ansible khi backend được bổ sung.
+6. Mở Cluster Detail, giải thích nơi hiển thị `kubectl get nodes`.
 
-## Kịch bản CI/CD mô phỏng
+## Kịch bản 2: Developer deploy website
 
-Developer push code lên GitHub, GitHub Actions build image và push registry. Trên platform, Developer đổi image tag và bấm redeploy. Webhook tự động là hướng phát triển tiếp theo.
+1. Vào Applications, tạo application/namespace.
+2. Mở form tạo service, khai báo image/repo, port, replicas, env.
+3. Vào Deployment Management, trình bày deploy/restart/scale/rollback.
+4. Vào Pod Logs, trình bày logs ứng dụng.
+
+## Kịch bản 3: CI/CD
+
+1. Vào CI/CD Flow.
+2. Trình bày Developer push code lên GitHub.
+3. GitHub Actions build image và push Registry.
+4. Platform nhận image/webhook và redeploy lên Kubernetes.
+
+## Ghi chú
+
+Backend thật sẽ bổ sung sau theo module đã tạo sẵn. Bản này tập trung UI để chốt yêu cầu, activity/use case/sequence và luồng demo trước.

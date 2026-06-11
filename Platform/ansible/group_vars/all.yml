@@ -1,2 +1,0 @@
-k3s_version: "stable"
-k3s_kubeconfig_local: "{{ lookup('env', 'HOME') }}/.kube/config"

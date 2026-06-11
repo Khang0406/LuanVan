@@ -1,11 +1,5 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Tạo service cho {{ application.name }}</h1>
-<form method="post" class="card card-body">
-  <label class="form-label">Service name</label><input class="form-control mb-2" name="name" value="demo-nginx" required>
-  <label class="form-label">Docker image</label><input class="form-control mb-2" name="image" value="nginx:latest" required>
-  <div class="row"><div class="col"><label class="form-label">Port</label><input class="form-control mb-2" name="port" value="80"></div><div class="col"><label class="form-label">Replicas</label><input class="form-control mb-2" name="replicas" value="2"></div></div>
-  <label class="form-label">Service type</label><select class="form-select mb-2" name="service_type"><option>NodePort</option><option>ClusterIP</option></select>
-  <label class="form-label">NodePort (30000-32767, optional)</label><input class="form-control mb-3" name="node_port" value="30080">
-  <button class="btn btn-primary">Lưu service</button>
-</form>
+<h1>Tạo service / microservice</h1>
+<div class="card soft-card"><div class="card-body p-4"><form class="mock-form row g-3"><div class="col-md-6"><label class="form-label">Tên service</label><input class="form-control" value="web-frontend"></div><div class="col-md-6"><label class="form-label">Phương thức deploy</label><select class="form-select"><option>Docker image</option><option>GitHub repository</option></select></div><div class="col-12"><label class="form-label">Docker image hoặc repo URL</label><input class="form-control" value="ghcr.io/team/student-portal:1.2.0"></div><div class="col-md-4"><label class="form-label">Port</label><input class="form-control" value="80"></div><div class="col-md-4"><label class="form-label">Replicas</label><input class="form-control" value="3"></div><div class="col-md-4"><label class="form-label">Resource limit</label><input class="form-control" value="500m CPU / 512Mi RAM"></div><div class="col-12"><label class="form-label">Environment variables</label><textarea class="form-control">NODE_ENV=production
+API_URL=https://api.demo.local</textarea></div><div class="col-12"><button class="btn btn-success" type="button">Deploy service</button><button class="btn btn-outline-secondary ms-2" type="button">Lưu nháp</button></div></form></div></div>
 {% endblock %}

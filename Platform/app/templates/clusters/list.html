@@ -1,6 +1,6 @@
 {% extends 'base.html' %}{% block content %}
-<div class="d-flex justify-content-between align-items-center"><h1>Clusters</h1><a class="btn btn-primary" href="{{ url_for('clusters.new_cluster') }}">Tạo cluster</a></div>
-<table class="table"><thead><tr><th>Tên</th><th>Status</th><th>Nodes</th><th></th></tr></thead><tbody>
-{% for cluster in clusters %}<tr><td>{{ cluster.name }}</td><td>{{ cluster.status }}</td><td>{{ cluster.nodes|length }}</td><td><a href="{{ url_for('clusters.detail', cluster_id=cluster.id) }}">Chi tiết</a></td></tr>{% endfor %}
-</tbody></table>
+<div class="d-flex justify-content-between align-items-center mb-3"><div><h1>Kubernetes Setup</h1><p class="text-muted">Wizard cài K3s/Kubernetes từ website qua Ansible.</p></div><a class="btn btn-primary" href="{{ url_for('ui.cluster_install') }}">Mở wizard cài đặt</a></div>
+<div class="row g-4"><div class="col-lg-7"><div class="card soft-card"><div class="card-body p-4"><h4>Cluster lab-cluster</h4><p><span class="badge text-bg-success">Ready</span> 1 master / 14 workers</p>
+<table class="table"><thead><tr><th>Node</th><th>IP</th><th>Role</th><th>Status</th></tr></thead><tbody>{% for s in servers %}<tr><td>{{ s.name }}</td><td>{{ s.ip }}</td><td>{{ s.role }}</td><td>{{ s.status }}</td></tr>{% endfor %}</tbody></table>
+</div></div></div><div class="col-lg-5"><div class="card soft-card"><div class="card-body p-4"><h4>Tiến trình cài đặt mẫu</h4>{% for step in steps %}<div class="timeline-item ms-4"><strong>{{ step.step }}</strong><p class="text-muted mb-1">{{ step.note }}</p><span class="badge text-bg-light">{{ step.status }}</span></div>{% endfor %}</div></div></div></div>
 {% endblock %}
