@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Wizard cài đặt Kubernetes bằng Ansible</h1><p class="text-muted">Giao diện trước, phần sinh inventory và chạy playbook sẽ nối sau.</p>
+<div class="row g-4"><div class="col-lg-8"><div class="card soft-card"><div class="card-body p-4 mock-form">
+  <h4>1. Chọn máy chủ</h4><table class="table"><thead><tr><th>Chọn</th><th>Server</th><th>IP</th><th>Role</th></tr></thead><tbody>{% for s in servers %}<tr><td><input type="checkbox" checked></td><td>{{ s.name }}</td><td>{{ s.ip }}</td><td><select class="form-select form-select-sm"><option>{{ s.role }}</option><option>Master</option><option>Worker</option></select></td></tr>{% endfor %}</tbody></table>
+  <h4 class="mt-4">2. Cấu hình cài đặt</h4><div class="row g-3"><div class="col-md-6"><label class="form-label">Kubernetes distro</label><select class="form-select"><option>K3s</option><option>kubeadm Kubernetes</option></select></div><div class="col-md-6"><label class="form-label">Network plugin</label><select class="form-select"><option>Flannel mặc định</option><option>Calico</option></select></div></div>
+  <button class="btn btn-danger mt-4" type="button">Install Kubernetes</button><button class="btn btn-outline-primary mt-4 ms-2" type="button">Dry-run inventory</button>
+</div></div></div><div class="col-lg-4"><div class="card soft-card"><div class="card-body p-4"><h4>Checklist</h4><ul><li>SSH từ máy web đến tất cả node</li><li>User có sudo</li><li>Node truy cập internet hoặc mirror nội bộ</li><li>Port 6443/10250 mở trong LAN</li></ul></div></div></div></div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Thêm server</h1><p class="text-muted">Form UI mô phỏng. Backend lưu server và test SSH sẽ bổ sung sau.</p>
+<div class="card soft-card"><div class="card-body p-4"><form class="mock-form row g-3">
+  <div class="col-md-6"><label class="form-label">Tên máy</label><input class="form-control" value="k8s-worker-03"></div>
+  <div class="col-md-6"><label class="form-label">Địa chỉ IP</label><input class="form-control" value="172.30.122.63"></div>
+  <div class="col-md-4"><label class="form-label">SSH user</label><input class="form-control" value="ubuntu"></div>
+  <div class="col-md-4"><label class="form-label">SSH port</label><input class="form-control" value="22"></div>
+  <div class="col-md-4"><label class="form-label">Vai trò dự kiến</label><select class="form-select"><option>Worker</option><option>Master</option><option>Management</option></select></div>
+  <div class="col-12"><label class="form-label">SSH key path / credential</label><input class="form-control" value="~/.ssh/id_rsa"></div>
+  <div class="col-12"><button type="button" class="btn btn-primary">Lưu server</button><button type="button" class="btn btn-outline-primary ms-2">Test SSH bằng Ansible</button></div>
+</form></div></div>
+{% endblock %}

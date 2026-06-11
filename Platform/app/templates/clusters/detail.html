@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Chi tiết cluster</h1>
+<div class="row g-4"><div class="col-lg-8"><div class="card soft-card"><div class="card-body p-4"><h4>Nodes</h4><table class="table"><thead><tr><th>Name</th><th>IP</th><th>Role</th><th>Status</th><th>CPU</th><th>RAM</th></tr></thead><tbody>{% for s in servers %}<tr><td>{{ s.name }}</td><td>{{ s.ip }}</td><td>{{ s.role }}</td><td>{{ s.status }}</td><td>{{ s.cpu }}</td><td>{{ s.ram }}</td></tr>{% endfor %}</tbody></table></div></div></div><div class="col-lg-4"><div class="card soft-card"><div class="card-body p-4"><h4>Cluster actions</h4><button class="btn btn-outline-primary w-100 mb-2">kubectl get nodes</button><button class="btn btn-outline-primary w-100 mb-2">Cài metrics-server</button><button class="btn btn-outline-danger w-100">Drain node</button></div></div></div></div>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block content %}
+<h1>CI/CD Flow</h1><p class="text-muted">Mô hình Developer push code → GitHub build image → Registry → Platform redeploy lên Kubernetes.</p>
+<div class="card soft-card mb-4"><div class="card-body p-4"><div class="row text-center g-3"><div class="col"><div class="p-3 bg-light rounded">Developer<br><small>commit/push</small></div></div><div class="col"><div class="p-3 bg-light rounded">GitHub<br><small>webhook/actions</small></div></div><div class="col"><div class="p-3 bg-light rounded">Registry<br><small>image tag</small></div></div><div class="col"><div class="p-3 bg-light rounded">CICT Platform<br><small>redeploy</small></div></div><div class="col"><div class="p-3 bg-light rounded">Kubernetes<br><small>rollout</small></div></div></div></div></div>
+<div class="card soft-card"><div class="card-body p-4"><h4>Pipeline events</h4><table class="table"><thead><tr><th>Time</th><th>Actor</th><th>Event</th><th>Status</th></tr></thead><tbody>{% for e in events %}<tr><td>{{ e.time }}</td><td>{{ e.actor }}</td><td>{{ e.event }}</td><td>{{ e.status }}</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

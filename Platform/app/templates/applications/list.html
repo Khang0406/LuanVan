@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3"><div><h1>Applications</h1><p class="text-muted">Không gian quản lý website/microservice của Developer.</p></div><a class="btn btn-primary" href="{{ url_for('ui.application_form') }}">+ Tạo application</a></div>
+<div class="row g-4">{% for app in applications %}<div class="col-lg-4"><div class="card soft-card h-100"><div class="card-body p-4"><div class="d-flex justify-content-between"><h4>{{ app.name }}</h4><span class="badge text-bg-{{ 'success' if app.status == 'Running' else 'warning' }}">{{ app.status }}</span></div><p class="text-muted">{{ app.namespace }} • {{ app.owner }}</p><p>Replicas: <strong>{{ app.replicas }}</strong></p><p>URL: <code>{{ app.url }}</code></p><a class="btn btn-outline-primary" href="{{ url_for('ui.service_form') }}">Thêm service</a></div></div></div>{% endfor %}</div>
+{% endblock %}

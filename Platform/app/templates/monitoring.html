@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block content %}
+<h1>Monitoring</h1><p class="text-muted">Dashboard giám sát node, application và resource usage.</p>
+<div class="row g-4"><div class="col-lg-6"><div class="card soft-card"><div class="card-body p-4"><h4>Node resources</h4><table class="table"><thead><tr><th>Node</th><th>CPU</th><th>RAM</th><th>Status</th></tr></thead><tbody>{% for s in servers %}<tr><td>{{ s.name }}</td><td>{{ s.cpu }}</td><td>{{ s.ram }}</td><td>{{ s.status }}</td></tr>{% endfor %}</tbody></table></div></div></div><div class="col-lg-6"><div class="card soft-card"><div class="card-body p-4"><h4>Application health</h4>{% for app in applications %}<div class="d-flex justify-content-between border-bottom py-2"><span>{{ app.name }}</span><span>{{ app.status }} • {{ app.replicas }}</span></div>{% endfor %}</div></div></div></div>
+{% endblock %}
