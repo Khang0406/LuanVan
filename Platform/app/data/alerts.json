@@ -1,0 +1,30 @@
+[
+  {
+    "time": "2026-07-08 10:41:56",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-02 18:48:35",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-07 16:50:07"
+  },
+  {
+    "time": "2026-07-02 12:42:13",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-02 16:24:04"
+  },
+  {
+    "time": "2026-07-02 12:42:13",
+    "severity": "WARNING",
+    "message": "App demo-nginx: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-02 16:23:55"
+  }
+]

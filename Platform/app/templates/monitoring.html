@@ -1,4 +1,153 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Monitoring</h1><p class="text-muted">Dashboard giám sát node, application và resource usage.</p>
-<div class="row g-4"><div class="col-lg-6"><div class="card soft-card"><div class="card-body p-4"><h4>Node resources</h4><table class="table"><thead><tr><th>Node</th><th>CPU</th><th>RAM</th><th>Status</th></tr></thead><tbody>{% for s in servers %}<tr><td>{{ s.name }}</td><td>{{ s.cpu }}</td><td>{{ s.ram }}</td><td>{{ s.status }}</td></tr>{% endfor %}</tbody></table></div></div></div><div class="col-lg-6"><div class="card soft-card"><div class="card-body p-4"><h4>Application health</h4>{% for app in applications %}<div class="d-flex justify-content-between border-bottom py-2"><span>{{ app.name }}</span><span>{{ app.status }} • {{ app.replicas }}</span></div>{% endfor %}</div></div></div></div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1>Monitoring</h1>
+    <p class="text-muted">Dashboard giám sát node, application và resource usage.</p>
+  </div>
+  <div>
+    <a class="btn btn-outline-primary btn-sm me-2" href="{{ url_for('ui.monitoring_refresh') }}">🔄 Làm mới metrics</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.monitoring_alerts') }}">🔔 Alerts ({{ alert_counts.active }})</a>
+  </div>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card soft-card text-center p-3">
+      <h3 class="mb-0">{{ summary.nodes }}</h3>
+      <small class="text-muted">Nodes</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card soft-card text-center p-3">
+      <h3 class="mb-0">{{ summary.node_cpu_pct }}% / {{ summary.node_ram_pct }}%</h3>
+      <small class="text-muted">CPU / RAM avg</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card soft-card text-center p-3">
+      <h3 class="mb-0">{{ summary.apps }}</h3>
+      <small class="text-muted">Applications</small>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card soft-card text-center p-3">
+      <h3 class="mb-0">{{ summary.ready_pods }}/{{ summary.total_pods }}</h3>
+      <small class="text-muted">Pods ready ({{ summary.pod_health_pct }}%)</small>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Node resources -->
+  <div class="col-lg-7">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Node Resources</h5>
+        {% if nodes %}
+        <table class="table table-sm">
+          <thead><tr><th>Node</th><th>CPU (cores)</th><th>CPU %</th><th>RAM</th><th>RAM %</th></tr></thead>
+          <tbody>
+          {% for node in nodes %}
+          <tr>
+            <td><strong>{{ node.name }}</strong></td>
+            <td>{{ (node.cpu_cores / 1000) | round(2) }} cores</td>
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="progress flex-grow-1 me-2" style="height:6px;">
+                  <div class="progress-bar {{ 'bg-danger' if node.cpu_percent > 80 else 'bg-success' }}" style="width:{{ node.cpu_percent }}%"></div>
+                </div>
+                <small>{{ node.cpu_percent }}%</small>
+              </div>
+            </td>
+            <td>{{ (node.memory_bytes / (1024*1024*1024)) | round(1) }} Gi</td>
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="progress flex-grow-1 me-2" style="height:6px;">
+                  <div class="progress-bar {{ 'bg-danger' if node.memory_percent > 90 else 'bg-warning' if node.memory_percent > 70 else 'bg-success' }}" style="width:{{ node.memory_percent }}%"></div>
+                </div>
+                <small>{{ node.memory_percent }}%</small>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">Không có dữ liệu node metrics. Đảm bảo metrics-server đã được cài và cluster đang hoạt động.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Application health -->
+  <div class="col-lg-5">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Application Health</h5>
+        {% if app_metrics %}
+        <table class="table table-sm">
+          <thead><tr><th>App</th><th>Pods</th><th>Status</th></tr></thead>
+          <tbody>
+          {% for app in app_metrics %}
+          <tr>
+            <td>
+              <a href="{{ url_for('ui.application_detail', application_id=app.app_id) }}">{{ app.namespace }}</a>
+            </td>
+            <td>
+              {{ app.ready_pods }}/{{ app.total_pods }}
+              {% if app.restarts > 0 %}
+                <span class="badge bg-warning text-dark ms-1" title="Pod restarts">{{ app.restarts }} restart</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge {{ 'bg-success' if app.status == 'Healthy' else 'bg-warning text-dark' if app.status == 'Degraded' else 'bg-danger' }}">{{ app.status }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">Chưa có application nào được deploy.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Active alerts -->
+  <div class="col-12">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Alerts đang active</h5>
+        {% if alerts %}
+        <table class="table table-sm">
+          <thead><tr><th>Time</th><th>Severity</th><th>Message</th><th></th></tr></thead>
+          <tbody>
+          {% for alert in alerts %}
+          {% if not alert.acknowledged %}
+          <tr>
+            <td><small>{{ alert.time }}</small></td>
+            <td><span class="badge {{ 'bg-danger' if alert.severity == 'CRITICAL' else 'bg-warning text-dark' }}">{{ alert.severity }}</span></td>
+            <td>{{ alert.message }}</td>
+            <td><a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.monitoring_ack_alert', alert_id=loop.index0) }}">Ack</a></td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">✅ Không có alert nào. Hệ thống hoạt động bình thường.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Auto-refresh script -->
+<script>
+  // Auto-refresh every 30 seconds
+  setTimeout(function () {
+    location.reload();
+  }, 30000);
+</script>
 {% endblock %}

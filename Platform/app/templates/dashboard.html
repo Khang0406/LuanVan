@@ -1,30 +1,93 @@
-{% extends 'base.html' %}{% block content %}
-<div class="card hero-card mb-4"><div class="card-body p-4 p-lg-5">
-  <h1 class="display-6 fw-bold">Nền tảng web cài Kubernetes bằng Ansible và deploy ứng dụng</h1>
-  <p class="lead mb-0">Prototype giao diện cho luồng: khai báo server → cài K3s/Kubernetes → quản lý cluster → deploy website/microservice → CI/CD → monitoring.</p>
-</div></div>
-<div class="row g-3 mb-4">
-  {% for key, value in stats.items() %}
-  <div class="col-md-4 col-xl-2"><div class="card stat-card"><div class="card-body"><div class="text-muted small text-uppercase">{{ key.replace('_',' ') }}</div><div class="h4 mb-0">{{ value }}</div></div></div></div>
-  {% endfor %}
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header mb-4">
+  <div>
+    <h1 class="page-title mb-2">Dashboard</h1>
+    <p class="page-subtitle mb-0">Tổng quan hệ thống quản lý hạ tầng và triển khai ứng dụng.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('ui.clusters') }}">Thiết lập Kubernetes</a>
 </div>
-<div class="row g-4">
-  <div class="col-lg-7"><div class="card soft-card"><div class="card-body p-4"><h4>Luồng demo chính</h4>
-    <div class="timeline mt-4">
-      <div class="timeline-item"><strong>Admin khai báo 15 máy chủ</strong><p class="text-muted mb-0">Management server, master và worker nodes.</p></div>
-      <div class="timeline-item"><strong>Website chạy Ansible</strong><p class="text-muted mb-0">Sinh inventory, kiểm tra SSH, cài K3s và join node.</p></div>
-      <div class="timeline-item"><strong>Developer deploy ứng dụng</strong><p class="text-muted mb-0">Chọn Docker image/GitHub repo, port, replicas và namespace.</p></div>
-      <div class="timeline-item"><strong>Quản lý vận hành</strong><p class="text-muted mb-0">Xem logs, scale, monitoring, audit log và pipeline CI/CD.</p></div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6 col-xl-3">
+    <div class="card stat-card">
+      <div class="card-body">
+        <div class="stat-label">Servers</div>
+        <div class="stat-value">{{ stats.servers }}</div>
+      </div>
     </div>
-  </div></div></div>
-  <div class="col-lg-5"><div class="card soft-card"><div class="card-body p-4"><h4>Điểm nhấn trình bày với thầy</h4>
-    <ul class="mb-0">
-      <li>Không SSH thủ công từng máy; thao tác qua web.</li>
-      <li>Ansible là lớp tự động hóa hạ tầng.</li>
-      <li>Kubernetes/K3s là nền tảng chạy ứng dụng.</li>
-      <li>CI/CD nối GitHub, registry và cluster.</li>
-      <li>Backend thực thi sẽ bổ sung sau theo các module đã chia.</li>
-    </ul>
-  </div></div></div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card stat-card">
+      <div class="card-body">
+        <div class="stat-label">Cluster</div>
+        <div class="stat-value">{{ stats.clusters }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card stat-card">
+      <div class="card-body">
+        <div class="stat-label">Applications</div>
+        <div class="stat-value">{{ stats.applications }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card stat-card">
+      <div class="card-body">
+        <div class="stat-label">Jobs</div>
+        <div class="stat-value">{{ stats.jobs_running }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <div class="section-heading">
+          <h4 class="mb-1">Quy trình chính</h4>
+          <p class="text-muted mb-0">Các bước vận hành cốt lõi của hệ thống.</p>
+        </div>
+
+        <div class="workflow-grid mt-4">
+          <div class="workflow-item">
+            <span>01</span>
+            <strong>Khai báo server</strong>
+          </div>
+          <div class="workflow-item">
+            <span>02</span>
+            <strong>Cài Kubernetes</strong>
+          </div>
+          <div class="workflow-item">
+            <span>03</span>
+            <strong>Deploy ứng dụng</strong>
+          </div>
+          <div class="workflow-item">
+            <span>04</span>
+            <strong>Giám sát vận hành</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <div class="section-heading">
+          <h4 class="mb-1">Tổng quan</h4>
+          <p class="text-muted mb-0">Hệ thống hỗ trợ quản lý máy chủ, cài đặt cluster và triển khai ứng dụng từ giao diện web.</p>
+        </div>
+
+        <div class="demo-note mt-4">
+          <span class="status-dot dot-blue"></span>
+          Giao diện được tối giản để tập trung vào luồng chức năng chính.
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

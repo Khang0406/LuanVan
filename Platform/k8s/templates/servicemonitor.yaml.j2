@@ -1,0 +1,23 @@
+{# Jinja2 template for Prometheus ServiceMonitor — one per application service #}
+{# Variables expected: namespace, app_id, service_name, port_name (default: http) #}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ app_id }}-{{ service_name }}
+  namespace: {{ namespace }}
+  labels:
+    app.kubernetes.io/part-of: {{ app_id }}
+    managed-by: luanvan-platform
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ app_id }}-{{ service_name }}
+      app.kubernetes.io/part-of: {{ app_id }}
+  namespaceSelector:
+    matchNames:
+      - {{ namespace }}
+  endpoints:
+    - port: {{ port_name | default("http") }}
+      interval: 30s
+      path: /metrics

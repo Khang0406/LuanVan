@@ -1,0 +1,106 @@
+{% extends 'base.html' %}{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1>{{ server.name }}</h1>
+    <p class="text-muted mb-0">Chi tiết server và log kiểm tra/bootstrap gần nhất.</p>
+  </div>
+  <div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('ui.servers') }}">← Danh sách server</a>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-2" style="white-space: pre-wrap;">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between mb-3">
+          <h5 class="mb-0">Thông tin server</h5>
+          <span class="badge text-bg-{{ 'success' if server.status in ['Ready', 'Online', 'Sudo Ready'] else 'warning' }}">{{ server.status }}</span>
+        </div>
+        <div class="small d-grid gap-2">
+          <div><strong>ID:</strong> <code>{{ server.id }}</code></div>
+          <div><strong>IP:</strong> <code>{{ server.ip }}</code></div>
+          <div><strong>Vai trò:</strong> {{ server.role }}</div>
+          <div><strong>SSH user:</strong> <code>{{ server.ssh_user }}</code></div>
+          <div><strong>SSH port:</strong> {{ server.get('ssh_port', 22) }}</div>
+          <div><strong>SSH key:</strong> <code>{{ server.get('ssh_key_path', '~/.ssh/id_rsa') }}</code></div>
+          <div><strong>CPU:</strong> {{ server.get('cpu', '-') }}</div>
+          <div><strong>RAM:</strong> {{ server.get('ram', '-') }}</div>
+          <div><strong>Kiểm tra lần cuối:</strong> {{ server.last_check or '-' }}</div>
+        </div>
+
+        <hr>
+
+        <h6 class="mb-2">Test kết nối</h6>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <form method="post" action="{{ url_for('ui.server_test_ssh', server_id=server.id) }}">
+            <button class="btn btn-outline-primary btn-sm" type="submit">Test SSH</button>
+          </form>
+          <form method="post" action="{{ url_for('ui.server_test_ansible', server_id=server.id) }}">
+            <button class="btn btn-primary btn-sm" type="submit">Test Ansible</button>
+          </form>
+          <form method="post" action="{{ url_for('ui.server_test_sudo', server_id=server.id) }}">
+            <button class="btn btn-outline-success btn-sm" type="submit">Test sudo</button>
+          </form>
+        </div>
+
+        <h6 class="mb-2">Bootstrap sudo NOPASSWD</h6>
+        <form method="post" action="{{ url_for('ui.server_bootstrap_sudo', server_id=server.id) }}" class="d-flex gap-2">
+          <input
+            class="form-control form-control-sm"
+            style="max-width: 200px;"
+            type="password"
+            name="sudo_password"
+            autocomplete="current-password"
+            placeholder="Sudo password"
+            required
+          >
+          <button class="btn btn-warning btn-sm" type="submit">Bootstrap</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between mb-3">
+          <h5 class="mb-0">Raw output lần kiểm tra/bootstrap gần nhất</h5>
+          {% if server.status in ['Online', 'Sudo Ready'] %}
+            <span class="badge bg-success">PASSED</span>
+          {% elif server.last_output %}
+            <span class="badge bg-warning text-dark">FAILED / WARNING</span>
+          {% endif %}
+        </div>
+        {% if server.last_output %}
+          <pre class="bg-dark text-light rounded p-3 mb-0" style="white-space: pre-wrap; max-height: 520px; overflow: auto;">{{ server.last_output }}</pre>
+        {% else %}
+          <p class="text-muted">Chưa có output kiểm tra nào. Bấm một trong các nút Test/Bootstrap ở bên trái để kiểm tra kết nối tới server này.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card soft-card mt-4">
+  <div class="card-body">
+    <h5 class="mb-2">Hướng dẫn</h5>
+    <ul class="mb-0 text-muted">
+      <li><strong>Test SSH:</strong> kiểm tra kết nối SSH cơ bản bằng BatchMode.</li>
+      <li><strong>Test Ansible:</strong> dùng Ansible ping để xác nhận kết nối và Python trên máy đích.</li>
+      <li><strong>Test sudo:</strong> chạy <code>sudo whoami</code> qua Ansible để kiểm tra quyền sudo NOPASSWD đã sẵn sàng chưa.</li>
+      <li><strong>Bootstrap:</strong> cài đặt sudo NOPASSWD rule một lần để các playbook cài K3s không cần nhập password.</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

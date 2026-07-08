@@ -1,0 +1,185 @@
+{% extends 'base.html' %}{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1>{{ app.name }}</h1>
+    <p class="text-muted mb-0">{{ app.description or 'Application được quản lý bởi Platform.' }}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('ui.applications') }}">← Applications</a>
+    <form method="post" action="{{ url_for('ui.application_pipeline_trigger', application_id=app.id) }}">
+      <button class="btn btn-success" type="submit">🚀 Trigger Pipeline</button>
+    </form>
+    <form method="post" action="{{ url_for('ui.application_deploy', application_id=app.id) }}">
+      <button class="btn btn-primary" type="submit">Deploy / Apply</button>
+    </form>
+    <form method="post" action="{{ url_for('ui.application_restart', application_id=app.id) }}">
+      <button class="btn btn-outline-warning" type="submit">Restart</button>
+    </form>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-2" style="white-space: pre-wrap;">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between mb-3">
+          <h5 class="mb-0">Overview</h5>
+          <span class="badge text-bg-{{ 'success' if app.status == 'Running' else ('danger' if 'Failed' in app.status else 'warning') }}">{{ app.status }}</span>
+        </div>
+        <div class="small d-grid gap-2">
+          <div><strong>ID:</strong> <code>{{ app.id }}</code></div>
+          <div><strong>Namespace:</strong> <code>{{ app.namespace }}</code></div>
+          <div><strong>Owner:</strong> {{ app.owner }}</div>
+          <div><strong>Source:</strong> {{ app.source_type|upper }}</div>
+          <div><strong>Services:</strong> {{ runtime.services }}</div>
+          <div><strong>Replicas:</strong> {{ runtime.replicas }}</div>
+          <div><strong>CPU limits:</strong> {{ runtime.cpu_limit }}</div>
+          <div><strong>Memory limits:</strong> {{ runtime.memory_limit }}</div>
+          <div><strong>Last deployed:</strong> {{ app.last_deployed_at or '-' }}</div>
+          <div><strong>URL:</strong> {% if app.url %}<a href="{{ app.url }}" target="_blank" rel="noopener">{{ app.url }}</a>{% else %}<span class="text-muted">Chưa có URL</span>{% endif %}</div>
+        </div>
+
+        <hr>
+        <form method="post" action="{{ url_for('ui.application_scale', application_id=app.id) }}" class="d-flex gap-2">
+          <input class="form-control" type="number" min="1" name="replicas" value="{{ app.services[0].replicas if app.services else 1 }}">
+          <button class="btn btn-outline-primary" type="submit">Scale</button>
+        </form>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.application_logs', application_id=app.id) }}">Xem logs</a>
+          <form method="post" action="{{ url_for('ui.application_delete_workloads', application_id=app.id) }}" onsubmit="return confirm('Xoá workloads khỏi Kubernetes?');">
+            <button class="btn btn-outline-danger btn-sm" type="submit">Delete workloads</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card soft-card mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">CI/CD flow</h5>
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('ui.application_pipeline_history', application_id=app.id) }}">Pipeline History</a>
+        </div>
+        <div class="row g-3">
+          {% for step in pipeline_steps %}
+          <div class="col-md-6">
+            <div class="border rounded p-3 h-100">
+              <div class="d-flex justify-content-between align-items-center">
+                <strong>{{ loop.index }}. {{ step.name }}</strong>
+                <span class="badge text-bg-{{ 'success' if step.status == 'Done' else ('danger' if step.status == 'Failed' else ('warning' if step.status in ['Pending','Planned','Waiting'] else 'info')) }}">{{ step.status }}</span>
+              </div>
+              <p class="text-muted small mb-0 mt-2">{{ step.note }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Kubernetes runtime status</h5>
+        {% if cluster_status.raw_error %}
+          <div class="alert alert-warning" style="white-space: pre-wrap;">{{ cluster_status.raw_error }}</div>
+        {% endif %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Deployments</div>
+              <div class="display-6">{{ cluster_status.deployments|length }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Pods</div>
+              <div class="display-6">{{ cluster_status.pods|length }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="border rounded p-3 h-100">
+              <div class="text-muted small">Services</div>
+              <div class="display-6">{{ cluster_status.services|length }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive mt-3">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Pod</th><th>Phase</th><th>Node</th><th>Created</th></tr></thead>
+            <tbody>
+              {% for pod in cluster_status.pods %}
+              <tr>
+                <td><code>{{ pod.metadata.name }}</code></td>
+                <td>{{ pod.status.phase }}</td>
+                <td>{{ pod.spec.nodeName or '-' }}</td>
+                <td>{{ pod.metadata.creationTimestamp }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-muted">Chưa có pod hoặc chưa kết nối được Kubernetes.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Services</h5>
+        {% for service in app.services %}
+        <div class="border rounded p-3 mb-3">
+          <div class="d-flex justify-content-between">
+            <strong>{{ service.name }}</strong>
+            <span class="badge text-bg-light">{{ service.service_type }}</span>
+          </div>
+          <div class="small mt-2">
+            <div>Image: <code>{{ service.image }}</code></div>
+            <div>Port: {{ service.container_port }} • Replicas: {{ service.replicas }}</div>
+            <div>Resources: {{ service.cpu_request }}/{{ service.cpu_limit }} CPU, {{ service.memory_request }}/{{ service.memory_limit }} RAM</div>
+            <div>Autoscaling: {{ 'On' if service.autoscaling else 'Off' }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Activity logs</h5>
+        <div class="d-grid gap-2">
+          {% for log in app.activity_logs %}
+          {% set border_color = 'success' if log.status == 'Done' else ('danger' if log.status == 'Failed' else ('warning' if log.status == 'Warning' else 'secondary')) %}
+          <div class="border-start border-3 border-{{ border_color }} ps-3 py-1">
+            <div class="d-flex justify-content-between align-items-start">
+              <strong class="{{ 'text-warning' if log.type == 'SCAN' else '' }}">
+                {% if log.type == 'SCAN' %}⚠ SCAN{% else %}{{ log.type }}{% endif %}
+              </strong>
+              <span class="badge text-bg-{{ 'success' if log.status == 'Done' else ('danger' if log.status == 'Failed' else ('warning' if log.status == 'Warning' else 'secondary')) }} ms-2">{{ log.status }}</span>
+            </div>
+            <div class="text-muted small">{{ log.time }}</div>
+            <div class="small" style="white-space: pre-wrap; word-break: break-word;">{{ log.message }}</div>
+          </div>
+          {% else %}
+          <p class="text-muted">Chưa có activity.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

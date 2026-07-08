@@ -1,8 +1,58 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Deployment Management</h1><p class="text-muted">Giao diện quản lý rollout, replicas, endpoint và trạng thái pod.</p>
-<div class="row g-4"><div class="col-lg-8"><div class="card soft-card"><div class="card-body p-4"><h4>Deployments</h4><table class="table"><thead><tr><th>App</th><th>Status</th><th>Replicas</th><th>Endpoint</th><th>Actions</th></tr></thead><tbody>{% for app in applications %}<tr><td>{{ app.name }}</td><td>{{ app.status }}</td><td>{{ app.replicas }}</td><td><code>{{ app.url }}</code></td><td><button class="btn btn-sm btn-outline-primary">Scale</button> <button class="btn btn-sm btn-outline-warning">Restart</button> <button class="btn btn-sm btn-outline-secondary">Rollback</button></td></tr>{% endfor %}</tbody></table></div></div></div><div class="col-lg-4"><div class="card soft-card"><div class="card-body p-4"><h4>Rollout status</h4><pre class="bg-light p-3 rounded">deployment/student-portal
+<h1>Deployment Management</h1>
+<p class="text-muted">Giao diện quản lý rollout, replicas, endpoint và trạng thái pod.</p>
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h4>Deployments</h4>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>App</th>
+              <th>Status</th>
+              <th>Replicas</th>
+              <th>Endpoint</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for app in applications %}
+            <tr>
+              <td>{{ app.name }}</td>
+              <td>{{ app.status }}</td>
+              <td>{{ app.replicas }}</td>
+              <td>
+                {% if app.url %}
+                <a href="{{ app.url }}" target="_blank" rel="noopener">{{ app.url }}</a>
+                {% else %}
+                <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary">Scale</button>
+                <button class="btn btn-sm btn-outline-warning">Restart</button>
+                <button class="btn btn-sm btn-outline-secondary">Rollback</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h4>Rollout status</h4>
+        <pre class="bg-light p-3 rounded">deployment/student-portal
   image: ghcr.io/team/student:1.2.0
   ready: 4/4
   revision: 12
-  strategy: RollingUpdate</pre><a href="{{ url_for('ui.deployment_logs') }}" class="btn btn-outline-primary w-100">Xem logs</a></div></div></div></div>
+  strategy: RollingUpdate</pre>
+        <a href="{{ url_for('ui.deployment_logs') }}" class="btn btn-outline-primary w-100">Xem logs</a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

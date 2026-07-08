@@ -1,6 +1,124 @@
 {% extends 'base.html' %}{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3"><div><h1>Server Inventory</h1><p class="text-muted">Danh sách máy website/management và các máy sẽ cài master/worker.</p></div><a class="btn btn-primary" href="{{ url_for('ui.server_form') }}">+ Thêm server</a></div>
-<div class="card soft-card"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Tên máy</th><th>IP</th><th>Vai trò</th><th>Trạng thái</th><th>CPU</th><th>RAM</th><th>Hành động</th></tr></thead><tbody>
-{% for s in servers %}<tr><td class="fw-semibold">{{ s.name }}</td><td><code>{{ s.ip }}</code></td><td>{{ s.role }}</td><td><span class="status-dot dot-green"></span>{{ s.status }}</td><td>{{ s.cpu }}</td><td>{{ s.ram }}</td><td><button class="btn btn-sm btn-outline-primary">Test SSH</button></td></tr>{% endfor %}
-</tbody></table></div></div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1>Server Inventory</h1>
+    <p class="text-muted">Danh sách tóm tắt các máy management/master/worker dùng để test SSH, Ansible và Kubernetes.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('ui.server_form') }}">+ Thêm server</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-2" style="white-space: pre-wrap;">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="card soft-card mb-3">
+  <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <h5 class="mb-1">Kiểm tra kết nối hàng loạt</h5>
+      <p class="text-muted mb-0">Chọn các server cần kiểm tra/bootstrap trước khi cài Kubernetes. Log chi tiết nằm trong trang chi tiết từng server.</p>
+    </div>
+    <div class="d-flex flex-column gap-2">
+      <form id="bulk-test-form" method="post" action="{{ url_for('ui.servers_bulk_test') }}" class="d-flex flex-wrap gap-2">
+        <button class="btn btn-outline-primary" type="submit" name="test_type" value="ssh">Test SSH</button>
+        <button class="btn btn-primary" type="submit" name="test_type" value="ansible">Test Ansible</button>
+      </form>
+      <form method="post" action="{{ url_for('ui.servers_bulk_bootstrap_sudo') }}" class="d-flex flex-wrap gap-2">
+        {% for s in servers %}
+          <input type="hidden" name="server_ids" value="{{ s.id }}">
+        {% endfor %}
+        <input
+          class="form-control form-control-sm"
+          style="max-width: 260px;"
+          type="password"
+          name="sudo_password"
+          autocomplete="current-password"
+          placeholder="Sudo password (để trống nếu đã NOPASSWD)"
+        >
+        <button class="btn btn-warning btn-sm" type="submit">Bootstrap sudo NOPASSWD</button>
+        <div class="small text-muted" style="max-width: 400px;">
+          Nếu server đã có NOPASSWD sudo, để trống password. 
+          Nếu chưa, nhập sudo password (1 lần cho tất cả nếu dùng chung).
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card soft-card">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Chọn</th>
+          <th>Tên máy</th>
+          <th>IP</th>
+          <th>Vai trò</th>
+          <th>SSH user</th>
+          <th>Trạng thái</th>
+          <th>Kiểm tra lần cuối</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in servers %}
+        <tr>
+          <td>
+            <input class="form-check-input" type="checkbox" name="server_ids" value="{{ s.id }}" form="bulk-test-form" checked>
+          </td>
+           <td>
+             <a class="fw-semibold text-decoration-none" href="{{ url_for('ui.server_detail', server_id=s.id) }}">{{ s.name }}</a>
+             <div class="small text-muted" style="max-width: 300px">{% if s.preview %}{{ s.preview }}{% elif s.last_output %}Có log kiểm tra gần nhất{% else %}-{% endif %}</div>
+           </td>
+          <td><code>{{ s.ip }}</code></td>
+          <td>{{ s.role }}</td>
+          <td><code>{{ s.ssh_user }}</code></td>
+          <td>
+             {% if s.status in ['Ready', 'Online', 'Sudo Ready'] %}
+               <span class="badge bg-success">{{ s.status }}</span>
+             {% elif s.status == 'Sudo Needed' %}
+               <span class="badge bg-warning text-dark">{{ s.status }}</span>
+             {% else %}
+               <span class="badge bg-danger">{{ s.status }}</span>
+             {% endif %}
+          </td>
+          <td>{{ s.last_check or '-' }}</td>
+          <td>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('ui.server_detail', server_id=s.id) }}">Chi tiết</a>
+              <form method="post" action="{{ url_for('ui.server_test_ssh', server_id=s.id) }}">
+                <button class="btn btn-sm btn-outline-primary" type="submit">Test SSH</button>
+              </form>
+              <form method="post" action="{{ url_for('ui.server_test_ansible', server_id=s.id) }}">
+                <button class="btn btn-sm btn-primary" type="submit">Test Ansible</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-4">Chưa có server nào. Bấm “+ Thêm server” để thêm máy thật.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card soft-card mt-3">
+  <div class="card-body">
+    <h5 class="mb-2">Cách test nhanh</h5>
+    <p class="text-muted mb-2">Sau khi thêm server, có thể test nhanh từ danh sách hoặc vào trang chi tiết để test sudo/bootstrap và xem raw output.</p>
+    <div class="d-flex flex-column gap-1">
+      <code>ssh <ssh_user>@<ip> hostname</code>
+      <code>ansible target -i app/data/ansible-<server_id>.ini -m ping -o</code>
+      <code>target | SUCCESS => {"changed": false, "ping": "pong"}</code>
+    </div>
+  </div>
+</div>
 {% endblock %}

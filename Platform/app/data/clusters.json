@@ -1,0 +1,128 @@
+[
+  {
+    "id": "cluster-260704190107",
+    "name": "cluster-260704190107",
+    "master_ip": "192.168.56.11",
+    "nodes": [
+      {
+        "server_id": "b2204938",
+        "name": "b2204938",
+        "ip": "192.168.56.11",
+        "role": "Master"
+      },
+      {
+        "server_id": "khang",
+        "name": "khang-virtualbox",
+        "ip": "192.168.56.12",
+        "role": "Worker"
+      }
+    ],
+    "created_at": "2026-07-04 19:01:07",
+    "status": "active"
+  },
+  {
+    "id": "cluster-260705211844",
+    "name": "cluster-260705211844",
+    "master_ip": "192.168.56.11",
+    "nodes": [
+      {
+        "server_id": "khang",
+        "name": "khang-virtualbox",
+        "ip": "192.168.56.12",
+        "role": "Worker"
+      },
+      {
+        "server_id": "b2204938",
+        "name": "b2204938",
+        "ip": "192.168.56.11",
+        "role": "Master"
+      }
+    ],
+    "created_at": "2026-07-05 21:18:44",
+    "status": "active"
+  },
+  {
+    "id": "cluster-260706221546",
+    "name": "cluster-260706221546",
+    "master_ip": "192.168.56.11",
+    "nodes": [
+      {
+        "server_id": "khang",
+        "name": "khang-virtualbox",
+        "ip": "192.168.56.12",
+        "role": "Worker"
+      },
+      {
+        "server_id": "b2204938",
+        "name": "b2204938",
+        "ip": "192.168.56.11",
+        "role": "Master"
+      }
+    ],
+    "created_at": "2026-07-06 22:15:46",
+    "status": "active"
+  },
+  {
+    "id": "cluster-260707111144",
+    "name": "cluster-260707111144",
+    "master_ip": "192.168.56.11",
+    "nodes": [
+      {
+        "server_id": "khang",
+        "name": "khang-virtualbox",
+        "ip": "192.168.56.12",
+        "role": "Worker"
+      },
+      {
+        "server_id": "b2204938",
+        "name": "b2204938",
+        "ip": "192.168.56.11",
+        "role": "Master"
+      }
+    ],
+    "created_at": "2026-07-07 11:11:44",
+    "status": "active"
+  },
+  {
+    "id": "cluster-260707220410",
+    "name": "cluster-260707220410",
+    "master_ip": "192.168.56.11",
+    "nodes": [
+      {
+        "server_id": "khang",
+        "name": "khang-virtualbox",
+        "ip": "192.168.56.12",
+        "role": "Worker"
+      },
+      {
+        "server_id": "b2204938",
+        "name": "b2204938",
+        "ip": "192.168.56.11",
+        "role": "Master"
+      }
+    ],
+    "created_at": "2026-07-07 22:04:10",
+    "status": "active"
+  },
+  {
+    "id": "cluster-260708104939",
+    "name": "cluster-260708104939",
+    "master_ip": "192.168.56.11",
+    "nodes": [
+      {
+        "server_id": "khang",
+        "name": "khang-virtualbox",
+        "ip": "192.168.56.12",
+        "role": "Worker"
+      },
+      {
+        "server_id": "b2204938",
+        "name": "b2204938",
+        "ip": "192.168.56.11",
+        "role": "Master"
+      }
+    ],
+    "created_at": "2026-07-08 10:49:39",
+    "status": "active"
+  }
+]

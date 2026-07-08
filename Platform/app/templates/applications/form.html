@@ -1,4 +1,282 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Tạo application</h1><p class="text-muted">Developer khai báo project/app trước khi deploy service.</p>
-<div class="card soft-card"><div class="card-body p-4"><form class="mock-form row g-3"><div class="col-md-6"><label class="form-label">Tên application</label><input class="form-control" value="student-portal"></div><div class="col-md-6"><label class="form-label">Namespace</label><input class="form-control" value="prod-student"></div><div class="col-md-6"><label class="form-label">Owner/team</label><input class="form-control" value="team-web"></div><div class="col-md-6"><label class="form-label">Environment</label><select class="form-select"><option>Production</option><option>Staging</option><option>Development</option></select></div><div class="col-12"><label class="form-label">Mô tả</label><textarea class="form-control">Website sinh viên demo triển khai trên Kubernetes</textarea></div><div class="col-12"><button class="btn btn-primary" type="button">Tạo application</button></div></form></div></div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1>Tạo application</h1>
+    <p class="text-muted">Khai báo Docker image hoặc GitHub repository, cấu hình nhiều service với runtime, tài nguyên và autoscaling.</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('ui.applications') }}">← Danh sách</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-2">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<form method="post" id="multi-service-form" class="row g-4">
+  <!-- Application info -->
+  <div class="col-12">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Thông tin application</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Tên application *</label>
+            <input class="form-control" name="name" value="{{ form.name or '' }}" placeholder="student-portal" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Namespace</label>
+            <input class="form-control" name="namespace" value="{{ form.namespace or '' }}" placeholder="auto theo tên nếu để trống">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Owner/team *</label>
+            <input class="form-control" name="owner" value="{{ form.owner or '' }}" placeholder="team-web" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Nguồn deploy</label>
+            <select class="form-select" name="source_type">
+              <option value="docker" {{ 'selected' if form.source_type != 'github' else '' }}>Docker image có sẵn</option>
+              <option value="github" {{ 'selected' if form.source_type == 'github' else '' }}>GitHub source code</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Default Docker image</label>
+            <input class="form-control" name="docker_image" value="{{ form.docker_image or '' }}" placeholder="khi service không tự khai báo image">
+            <div class="form-text">Image mặc định nếu service không tự khai báo.</div>
+          </div>
+          <div class="col-md-6 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+            <label class="form-label">GitHub repository</label>
+            <input class="form-control" name="github_url" value="{{ form.github_url or '' }}" placeholder="https://github.com/org/repo">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Mô tả</label>
+            <textarea class="form-control" name="description" rows="2" placeholder="Mô tả chức năng application">{{ form.description or '' }}</textarea>
+          </div>
+        </div>
+        <!-- Docker Registry config (visible for GitHub source) -->
+        <div class="row g-3 mt-1 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+          <div class="col-12"><h6 class="text-muted mb-0">Docker Registry (dùng để push image sau build)</h6></div>
+          <div class="col-md-4">
+            <label class="form-label">Registry URL</label>
+            <input class="form-control" name="registry_url" value="{{ form.registry_url or '' }}" placeholder="docker.io (mặc định)">
+            <div class="form-text">Để trống → docker.io</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Username</label>
+            <input class="form-control" name="registry_username" value="{{ form.registry_username or '' }}" placeholder="dockerhub username">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Password / Token</label>
+            <input class="form-control" type="password" name="registry_password" value="{{ form.registry_password or '' }}" placeholder="PAT hoặc password">
+            <div class="form-text">Personal Access Token khuyến nghị</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared resource defaults -->
+  <div class="col-12">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Cấu hình tài nguyên mặc định (nếu service không tự khai báo riêng)</h5>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">CPU request</label>
+            <input class="form-control" name="cpu_request" value="{{ form.cpu_request or '100m' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">CPU limit</label>
+            <input class="form-control" name="cpu_limit" value="{{ form.cpu_limit or '500m' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Memory request</label>
+            <input class="form-control" name="memory_request" value="{{ form.memory_request or '128Mi' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Memory limit</label>
+            <input class="form-control" name="memory_limit" value="{{ form.memory_limit or '512Mi' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Min replicas</label>
+            <input class="form-control" type="number" min="1" name="min_replicas" value="{{ form.min_replicas or 1 }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Max replicas</label>
+            <input class="form-control" type="number" min="1" name="max_replicas" value="{{ form.max_replicas or 3 }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">CPU threshold %</label>
+            <input class="form-control" type="number" min="1" max="100" name="cpu_threshold" value="{{ form.cpu_threshold or 70 }}">
+          </div>
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="autoscaling" id="autoscaling" {{ 'checked' if form.autoscaling else '' }}>
+              <label class="form-check-label" for="autoscaling">Bật HorizontalPodAutoscaler (HPA)</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Services list -->
+  <div class="col-12">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">Services</h5>
+          <button type="button" class="btn btn-outline-primary btn-sm" id="add-service-btn">+ Thêm service</button>
+        </div>
+        <div id="services-container">
+          <template id="service-template">
+            <div class="service-block border rounded p-3 mb-3 position-relative">
+              <button type="button" class="btn-close position-absolute top-0 end-0 mt-2 me-2 remove-service-btn" aria-label="Xoá service"></button>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Tên service</label>
+                  <input class="form-control service-name" name="service_names" placeholder="web" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Docker image</label>
+                  <input class="form-control service-image" name="service_images" placeholder="nginx:stable-alpine (để trống dùng default)">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Port</label>
+                  <input class="form-control service-port" type="number" name="service_ports" value="80" required>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Replicas</label>
+                  <input class="form-control service-replicas" type="number" min="1" name="service_replicas" value="1">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Service type</label>
+                  <select class="form-select service-type" name="service_types">
+                    <option value="NodePort">NodePort</option>
+                    <option value="ClusterIP">ClusterIP</option>
+                    <option value="LoadBalancer">LoadBalancer</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">NodePort</label>
+                  <input class="form-control service-node-port" name="service_node_ports" placeholder="30080">
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Environment variables</label>
+                  <textarea class="form-control service-env" name="service_envs" rows="3" placeholder="KEY=value&#10;API_URL=https://example.com"></textarea>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div id="prefill-data"
+          {% if form and form.getlist('service_names') %}
+          data-names="{{ form.getlist('service_names') | join('|||') }}"
+          data-images="{{ form.getlist('service_images') | join('|||') }}"
+          data-ports="{{ form.getlist('service_ports') | join('|||') }}"
+          data-replicas="{{ form.getlist('service_replicas') | join('|||') }}"
+          data-types="{{ form.getlist('service_types') | join('|||') }}"
+          data-node-ports="{{ form.getlist('service_node_ports') | join('|||') }}"
+          data-envs="{{ form.getlist('service_envs') | join('|||') }}"
+          {% endif %}
+        ></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <button class="btn btn-primary" type="submit">Tạo application</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('ui.applications') }}">Huỷ</a>
+  </div>
+</form>
+
+<script>
+(() => {
+  // Toggle GitHub-only fields when source_type changes
+  const sourceSelect = document.querySelector('[name="source_type"]');
+  if (sourceSelect) {
+    sourceSelect.addEventListener('change', function () {
+      const isGithub = this.value === 'github';
+      document.querySelectorAll('.github-only').forEach(el => {
+        el.style.display = isGithub ? 'block' : 'none';
+      });
+      // Enable/disable required fields
+      const githubUrlInput = document.querySelector('[name="github_url"]');
+      if (githubUrlInput) {
+        githubUrlInput.toggleAttribute('required', isGithub);
+      }
+    });
+  }
+
+  const container = document.getElementById('services-container');
+  const template = document.getElementById('service-template');
+  const addBtn = document.getElementById('add-service-btn');
+
+  function createServiceBlock(name, image, port, replicas, svcType, nodePort, env) {
+    const clone = template.content.cloneNode(true);
+    const block = clone.querySelector('.service-block');
+
+    block.querySelector('.service-name').value = name || '';
+    block.querySelector('.service-image').value = image || '';
+    block.querySelector('.service-port').value = port || 80;
+    block.querySelector('.service-replicas').value = replicas || 1;
+    if (svcType) block.querySelector('.service-type').value = svcType;
+    block.querySelector('.service-node-port').value = nodePort || '';
+    block.querySelector('.service-env').value = env || '';
+
+    block.querySelector('.remove-service-btn').addEventListener('click', function () {
+      if (container.querySelectorAll('.service-block').length > 1) {
+        block.remove();
+      }
+    });
+
+    return block;
+  }
+
+  function addService(data) {
+    container.appendChild(createServiceBlock(
+      data ? data.name : '',
+      data ? data.image : '',
+      data ? data.port : 80,
+      data ? data.replicas : 1,
+      data ? data.type : 'NodePort',
+      data ? data.nodePort : '',
+      data ? data.env : ''
+    ));
+  }
+
+  // Initialize: 1 default service or prefill from validation
+  const prefillEl = document.getElementById('prefill-data');
+  const namesRaw = prefillEl ? (prefillEl.getAttribute('data-names') || '') : '';
+  if (namesRaw) {
+    const names = namesRaw.split('|||');
+    const images = (prefillEl.getAttribute('data-images') || '').split('|||');
+    const ports = (prefillEl.getAttribute('data-ports') || '').split('|||');
+    const replicasList = (prefillEl.getAttribute('data-replicas') || '').split('|||');
+    const types = (prefillEl.getAttribute('data-types') || '').split('|||');
+    const nodePorts = (prefillEl.getAttribute('data-node-ports') || '').split('|||');
+    const envs = (prefillEl.getAttribute('data-envs') || '').split('|||');
+    for (let i = 0; i < names.length; i++) {
+      addService({
+        name: names[i] || '',
+        image: images[i] || '',
+        port: ports[i] || 80,
+        replicas: replicasList[i] || 1,
+        type: types[i] || 'NodePort',
+        nodePort: nodePorts[i] || '',
+        env: envs[i] || '',
+      });
+    }
+  } else {
+    addService({ name: 'web', port: 80, replicas: 1, type: 'NodePort' });
+  }
+
+  addBtn.addEventListener('click', () => addService({ port: 80, replicas: 1, type: 'NodePort' }));
+})();
+</script>
 {% endblock %}

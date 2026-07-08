@@ -1,8 +1,15 @@
+from app.modules.servers.service import load_servers
+
+
 def dashboard_stats():
+    servers = load_servers()
+    master_count = sum(1 for server in servers if server.get("role") == "Master")
+    worker_count = sum(1 for server in servers if server.get("role") == "Worker")
+
     return {
-        "servers": 15,
-        "clusters": 1,
-        "nodes_ready": "1 master / 14 workers",
+        "servers": len(servers),
+        "clusters": 1 if servers else 0,
+        "nodes_ready": f"{master_count} master / {worker_count} worker{'s' if worker_count != 1 else ''}",
         "applications": 6,
         "deployments": 18,
         "jobs_running": 2,
@@ -17,7 +24,7 @@ SERVERS = [
 ]
 
 INSTALL_STEPS = [
-    {"step": "Kiểm tra SSH", "status": "Hoàn tất", "note": "Ansible ping thành công trên 15/15 máy"},
+    {"step": "Kiểm tra SSH", "status": "Hoàn tất", "note": "Kiểm tra SSH/Ansible ping trên các server đã chọn"},
     {"step": "Cài gói nền", "status": "Hoàn tất", "note": "curl, container runtime, sysctl"},
     {"step": "Cài master", "status": "Đang chạy", "note": "Khởi tạo K3s control plane"},
     {"step": "Join workers", "status": "Chờ", "note": "Sử dụng node-token từ master"},
@@ -33,7 +40,6 @@ APPLICATIONS = [
 PIPELINE_EVENTS = [
     {"time": "09:10", "actor": "Developer", "event": "Push code lên GitHub", "status": "Done"},
     {"time": "09:11", "actor": "GitHub Actions", "event": "Build Docker image", "status": "Done"},
-    {"time": "09:13", "actor": "Registry", "event": "Push image ghcr.io/team/student:1.2.0", "status": "Done"},
     {"time": "09:14", "actor": "Platform", "event": "Redeploy lên Kubernetes", "status": "Running"},
 ]
 

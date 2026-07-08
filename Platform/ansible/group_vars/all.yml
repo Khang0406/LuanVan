@@ -1,0 +1,17 @@
+---
+# K3s version
+k3s_version: "v1.29.6+k3s2"
+
+# K3s cluster token
+k3s_token: "luanvan-k3s-demo-token"
+
+# Master node URL (workers sẽ join vào đây)
+# Được set động trong inventory hoặc playbook
+# k3s_server_url: "https://<master_ip>:6443"
+
+# Flannel network interface — dùng host-only adapter (enp0s8) để 
+# đảm bảo VXLAN tunnel giữa các VM sử dụng đúng mạng host-only
+flannel_iface: "enp0s8"
+
+# Pod network CIDR
+pod_network_cidr: "10.42.0.0/16"

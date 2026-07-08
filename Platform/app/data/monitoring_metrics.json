@@ -1,0 +1,61 @@
+{
+  "nodes": [
+    {
+      "name": "b2204938-virtualbox",
+      "cpu_cores": 158.0,
+      "cpu_percent": 7.0,
+      "memory_bytes": 1388314624.0,
+      "memory_percent": 67.0
+    },
+    {
+      "name": "khang-virtualbox",
+      "cpu_cores": 23.0,
+      "cpu_percent": 1.0,
+      "memory_bytes": 1062207488.0,
+      "memory_percent": 51.0
+    }
+  ],
+  "apps": [
+    {
+      "app_id": "demo-nginx",
+      "namespace": "demo-nginx",
+      "total_pods": 1,
+      "ready_pods": 1,
+      "restarts": 0,
+      "status": "Healthy",
+      "pods": [
+        {
+          "name": "demo-nginx-web-dd88bdb6c-j47nv",
+          "phase": "Running",
+          "ready": true,
+          "restarts": 0
+        }
+      ]
+    },
+    {
+      "app_id": "map",
+      "namespace": "map",
+      "total_pods": 1,
+      "ready_pods": 1,
+      "restarts": 0,
+      "status": "Healthy",
+      "pods": [
+        {
+          "name": "map-web-7c46f9c5db-btsd9",
+          "phase": "Running",
+          "ready": true,
+          "restarts": 0
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "nodes": 2,
+    "node_cpu_pct": 4.0,
+    "node_ram_pct": 59.0,
+    "apps": 2,
+    "total_pods": 2,
+    "ready_pods": 2,
+    "pod_health_pct": 100.0
+  }
+}

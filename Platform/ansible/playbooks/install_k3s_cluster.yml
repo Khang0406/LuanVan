@@ -1,0 +1,148 @@
+---
+- name: Prepare all K3s nodes
+  hosts: k3s_cluster
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+        state: present
+        update_cache: true
+        lock_timeout: 300
+      register: required_packages_result
+      retries: 3
+      delay: 20
+      until: required_packages_result is succeeded
+      when: ansible_os_family == "Debian"
+
+    - name: Disable swap for current session
+      ansible.builtin.command: swapoff -a
+      changed_when: false
+      failed_when: false
+
+    - name: Disable swap in fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\sswap\s.*)$'
+        replace: '# \1'
+
+    - name: Load required kernel modules
+      ansible.builtin.shell: |
+        modprobe overlay
+        modprobe br_netfilter
+      changed_when: false
+
+    - name: Configure Kubernetes sysctl params
+      ansible.builtin.copy:
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+        mode: "0644"
+        content: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+
+    - name: Apply sysctl params
+      ansible.builtin.command: sysctl --system
+      changed_when: false
+
+
+- name: Install K3s master
+  hosts: masters
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Install K3s server on master
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | \
+        INSTALL_K3S_VERSION="{{ k3s_version | default('v1.29.6+k3s2') }}" \
+        K3S_TOKEN="{{ k3s_token | default('luanvan-k3s-demo-token') }}" \
+        sh -s - server \
+          --write-kubeconfig-mode 644 \
+          --node-ip "{{ ansible_host }}" \
+          --advertise-address "{{ ansible_host }}" \
+          --flannel-iface "{{ flannel_iface | default('enp0s8') }}"
+      args:
+        creates: /etc/systemd/system/k3s.service
+
+    - name: Wait for K3s API on master
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: 6443
+        delay: 5
+        timeout: 180
+
+    - name: Show master node status
+      ansible.builtin.command: k3s kubectl get nodes -o wide
+      register: master_nodes
+      changed_when: false
+
+    - name: Print master node status
+      ansible.builtin.debug:
+        var: master_nodes.stdout_lines
+
+
+- name: Join K3s workers
+  hosts: workers
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Install K3s agent on worker
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | \
+        INSTALL_K3S_VERSION="{{ k3s_version | default('v1.29.6+k3s2') }}" \
+        K3S_URL="{{ k3s_server_url }}" \
+        K3S_TOKEN="{{ k3s_token | default('luanvan-k3s-demo-token') }}" \
+        sh -s - agent --node-ip "{{ ansible_host }}" --flannel-iface "{{ flannel_iface | default('enp0s8') }}"
+      args:
+        creates: /etc/systemd/system/k3s-agent.service
+
+
+- name: Verify cluster from master
+  hosts: masters
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Wait for worker nodes to join
+      ansible.builtin.command: k3s kubectl get nodes -o wide
+      register: cluster_nodes
+      changed_when: false
+      retries: 12
+      delay: 10
+      until: cluster_nodes.rc == 0
+
+    - name: Print final cluster nodes
+      ansible.builtin.debug:
+        var: cluster_nodes.stdout_lines
+
+
+- name: Fix cross-node pod networking (allow pod subnet in FORWARD chain)
+  hosts: k3s_cluster
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check if FORWARD chain exists
+      ansible.builtin.command: iptables -L FORWARD -n
+      register: fwd_check
+      changed_when: false
+      failed_when: false
+
+    - name: Allow source pod subnet (10.42.0.0/16) in FORWARD chain
+      ansible.builtin.shell: |
+        set -e
+        if ! iptables -C FORWARD -s 10.42.0.0/16 -j ACCEPT 2>/dev/null; then
+          iptables -I FORWARD 1 -s 10.42.0.0/16 -j ACCEPT -m comment --comment "K3s: allow pod egress from anywhere"
+        fi
+      changed_when: false
+      when: fwd_check.rc == 0
+
+    - name: Allow destination pod subnet (10.42.0.0/16) in FORWARD chain
+      ansible.builtin.shell: |
+        set -e
+        if ! iptables -C FORWARD -d 10.42.0.0/16 -j ACCEPT 2>/dev/null; then
+          iptables -I FORWARD 1 -d 10.42.0.0/16 -j ACCEPT -m comment --comment "K3s: allow ingress to pod network from anywhere"
+        fi
+      changed_when: false
+      when: fwd_check.rc == 0

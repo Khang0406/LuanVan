@@ -1,0 +1,424 @@
+---
+# Playbook: Deploy Prometheus + Grafana monitoring stack on K3s cluster
+#
+# Prerequisites:
+#   1. K3s cluster must already be installed (see install_k3s_cluster.yml)
+#   2. kubectl must be available on master node
+#   3. kubeconfig at ~/.kube/config or /etc/rancher/k3s/k3s.yaml
+#
+# What this playbook does:
+#   1. Create monitoring namespace
+#   2. Install kube-prometheus-stack CRDs (ServiceMonitor, PodMonitor, PrometheusRule)
+#   3. Deploy Prometheus (Deployment + ConfigMap + PVC + Service)
+#   4. Deploy Grafana (Deployment + ConfigMap + PVC + Service)
+#   5. Deploy node-exporter DaemonSet for host-level metrics
+#   6. Deploy kube-state-metrics for K8s object metrics
+#   7. Auto-configure Grafana datasource + default dashboards
+#
+# Usage:
+#   ansible-playbook -i ansible/inventories/generated/cluster.ini \
+#     ansible/playbooks/install_monitoring_stack.yml
+#
+# TODO for partner:
+#   - Fill implementation for each task below
+#   - Use ansible.builtin.k8s module to apply YAML manifests
+#   - Or use ansible.builtin.shell to run kubectl apply -f
+#   - Set resource limits appropriate for the cluster size (2Gi RAM for Prometheus is a good start)
+#   - Add health check tasks (wait for pods to be Ready)
+
+- name: Deploy Prometheus + Grafana monitoring stack
+  hosts: master
+  gather_facts: yes
+  vars:
+    monitoring_namespace: "monitoring"
+    prometheus_version: "v2.54.1"
+    prometheus_storage: "10Gi"
+    prometheus_retention: "15d"
+    prometheus_nodeport: 30900
+    grafana_version: "11.2.0"
+    grafana_storage: "5Gi"
+    grafana_nodeport: 30300
+    grafana_admin_password: "admin"  # TODO: generate random or read from vault
+
+  tasks:
+    # ---- Namespace ----
+    - name: Create monitoring namespace
+      ansible.builtin.shell: |
+        kubectl create namespace {{ monitoring_namespace }} --dry-run=client -o yaml | kubectl apply -f -
+      changed_when: false
+
+    # ---- CRDs (ServiceMonitor, PodMonitor, PrometheusRule) ----
+    - name: Apply prometheus-operator CRDs
+      ansible.builtin.shell: |
+        kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml
+        kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml
+        kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml
+      changed_when: true
+
+    # ---- RBAC for Prometheus (ServiceAccount + ClusterRole + ClusterRoleBinding) ----
+    - name: Create RBAC for Prometheus
+      ansible.builtin.shell: |
+        kubectl apply -n {{ monitoring_namespace }} -f - <<EOF
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: prometheus
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRole
+        metadata:
+          name: prometheus
+        rules:
+          - apiGroups: [""]
+            resources: ["nodes", "nodes/metrics", "services", "endpoints", "pods"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: [""]
+            resources: ["configmaps"]
+            verbs: ["get"]
+          - apiGroups: ["discovery.k8s.io"]
+            resources: ["endpointslices"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["apps"]
+            resources: ["deployments", "replicasets"]
+            verbs: ["get", "list", "watch"]
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: ClusterRoleBinding
+        metadata:
+          name: prometheus
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: prometheus
+        subjects:
+          - kind: ServiceAccount
+            name: prometheus
+            namespace: {{ monitoring_namespace }}
+        EOF
+      changed_when: true
+
+    # ---- Prometheus ConfigMap ----
+    - name: Create Prometheus configuration ConfigMap
+      ansible.builtin.shell: |
+        kubectl apply -n {{ monitoring_namespace }} -f - <<'PROMCFG'
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: prometheus-config
+        data:
+          prometheus.yml: |
+            global:
+              scrape_interval: 15s
+              evaluation_interval: 15s
+            scrape_configs:
+              - job_name: "prometheus"
+                static_configs:
+                  - targets: ["localhost:9090"]
+              - job_name: "kubernetes-pods"
+                kubernetes_sd_configs:
+                  - role: pod
+                relabel_configs:
+                  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                    action: keep
+                    regex: true
+                  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                    action: replace
+                    target_label: __metrics_path__
+                    regex: (.+)
+                  - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                    action: replace
+                    regex: ([^:]+)(?::\d+)?;(\d+)
+                    replacement: $1:$2
+                    target_label: __address__
+                  - action: labelmap
+                    regex: __meta_kubernetes_pod_label_(.+)
+              - job_name: "kubernetes-nodes"
+                kubernetes_sd_configs:
+                  - role: node
+                relabel_configs:
+                  - action: labelmap
+                    regex: __meta_kubernetes_node_label_(.+)
+                scheme: https
+                tls_config:
+                  ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                  insecure_skip_verify: true
+                bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        PROMCFG
+      changed_when: true
+
+    # ---- Prometheus Deployment + Service + PVC ----
+    - name: Deploy Prometheus
+      ansible.builtin.shell: |
+        kubectl apply -n {{ monitoring_namespace }} -f - <<EOF
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: prometheus-data
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: {{ prometheus_storage }}
+        ---
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: prometheus
+          labels:
+            app: prometheus
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: prometheus
+          template:
+            metadata:
+              labels:
+                app: prometheus
+            spec:
+              serviceAccountName: prometheus
+              containers:
+                - name: prometheus
+                  image: prom/prometheus:{{ prometheus_version }}
+                  args:
+                    - "--config.file=/etc/prometheus/prometheus.yml"
+                    - "--storage.tsdb.path=/prometheus"
+                    - "--storage.tsdb.retention.time={{ prometheus_retention }}"
+                    - "--web.enable-lifecycle"
+                  ports:
+                    - containerPort: 9090
+                  volumeMounts:
+                    - name: config
+                      mountPath: /etc/prometheus
+                    - name: data
+                      mountPath: /prometheus
+                  resources:
+                    requests:
+                      cpu: 200m
+                      memory: 512Mi
+                    limits:
+                      cpu: 1000m
+                      memory: 2Gi
+              volumes:
+                - name: config
+                  configMap:
+                    name: prometheus-config
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: prometheus-data
+        ---
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: prometheus
+          labels:
+            app: prometheus
+        spec:
+          type: NodePort
+          selector:
+            app: prometheus
+          ports:
+            - name: http
+              port: 9090
+              targetPort: 9090
+              nodePort: {{ prometheus_nodeport }}
+        EOF
+      changed_when: true
+
+    # ---- Grafana Deployment + ConfigMap + Service + PVC ----
+    - name: Create Grafana datasource ConfigMap
+      ansible.builtin.shell: |
+        kubectl apply -n {{ monitoring_namespace }} -f - <<EOF
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: grafana-datasources
+        data:
+          datasources.yaml: |
+            apiVersion: 1
+            datasources:
+              - name: Prometheus
+                type: prometheus
+                url: http://prometheus.{{ monitoring_namespace }}.svc.cluster.local:9090
+                access: proxy
+                isDefault: true
+        EOF
+      changed_when: true
+
+    - name: Deploy Grafana
+      ansible.builtin.shell: |
+        kubectl apply -n {{ monitoring_namespace }} -f - <<EOF
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: grafana-data
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: {{ grafana_storage }}
+        ---
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: grafana
+          labels:
+            app: grafana
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: grafana
+          template:
+            metadata:
+              labels:
+                app: grafana
+            spec:
+              containers:
+                - name: grafana
+                  image: grafana/grafana:{{ grafana_version }}
+                  env:
+                    - name: GF_SECURITY_ADMIN_PASSWORD
+                      value: "{{ grafana_admin_password }}"
+                    - name: GF_AUTH_ANONYMOUS_ENABLED
+                      value: "true"
+                    - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+                      value: "Viewer"
+                  ports:
+                    - containerPort: 3000
+                  volumeMounts:
+                    - name: data
+                      mountPath: /var/lib/grafana
+                    - name: datasources
+                      mountPath: /etc/grafana/provisioning/datasources
+                  resources:
+                    requests:
+                      cpu: 100m
+                      memory: 256Mi
+                    limits:
+                      cpu: 500m
+                      memory: 512Mi
+              volumes:
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: grafana-data
+                - name: datasources
+                  configMap:
+                    name: grafana-datasources
+        ---
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: grafana
+          labels:
+            app: grafana
+        spec:
+          type: NodePort
+          selector:
+            app: grafana
+          ports:
+            - name: http
+              port: 3000
+              targetPort: 3000
+              nodePort: {{ grafana_nodeport }}
+        EOF
+      changed_when: true
+
+    # ---- Node Exporter DaemonSet (host-level CPU/mem/disk/network) ----
+    - name: Deploy node-exporter DaemonSet
+      ansible.builtin.shell: |
+        kubectl apply -n {{ monitoring_namespace }} -f - <<EOF
+        apiVersion: apps/v1
+        kind: DaemonSet
+        metadata:
+          name: node-exporter
+          labels:
+            app: node-exporter
+        spec:
+          selector:
+            matchLabels:
+              app: node-exporter
+          template:
+            metadata:
+              labels:
+                app: node-exporter
+            spec:
+              hostNetwork: true
+              hostPID: true
+              containers:
+                - name: node-exporter
+                  image: quay.io/prometheus/node-exporter:v1.8.2
+                  args:
+                    - "--path.rootfs=/host"
+                  ports:
+                    - containerPort: 9100
+                  volumeMounts:
+                    - name: root
+                      mountPath: /host
+                      readOnly: true
+              volumes:
+                - name: root
+                  hostPath:
+                    path: /
+        EOF
+      changed_when: true
+
+    # ---- Kube-state-metrics (K8s objects: deployments, pods, nodes) ----
+    - name: Deploy kube-state-metrics
+      ansible.builtin.shell: |
+        kubectl apply -n {{ monitoring_namespace }} -f - <<EOF
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: kube-state-metrics
+          labels:
+            app: kube-state-metrics
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: kube-state-metrics
+          template:
+            metadata:
+              labels:
+                app: kube-state-metrics
+            spec:
+              serviceAccountName: prometheus
+              containers:
+                - name: kube-state-metrics
+                  image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
+                  ports:
+                    - containerPort: 8080
+        ---
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: kube-state-metrics
+          labels:
+            app: kube-state-metrics
+        spec:
+          clusterIP: None
+          selector:
+            app: kube-state-metrics
+          ports:
+            - name: http
+              port: 8080
+        EOF
+      changed_when: true
+
+    # ---- Wait for all pods to be Ready ----
+    - name: Wait for Prometheus pod to be Ready
+      ansible.builtin.shell: |
+        kubectl wait --for=condition=Ready pod -l app=prometheus -n {{ monitoring_namespace }} --timeout=120s
+      changed_when: false
+
+    - name: Wait for Grafana pod to be Ready
+      ansible.builtin.shell: |
+        kubectl wait --for=condition=Ready pod -l app=grafana -n {{ monitoring_namespace }} --timeout=120s
+      changed_when: false
+
+    - name: Print access URLs
+      ansible.builtin.debug:
+        msg:
+          - "Prometheus: http://<master-ip>:{{ prometheus_nodeport }}"
+          - "Grafana:    http://<master-ip>:{{ grafana_nodeport }} (admin / {{ grafana_admin_password }})"

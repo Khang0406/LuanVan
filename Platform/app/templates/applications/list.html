@@ -1,4 +1,69 @@
 {% extends 'base.html' %}{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3"><div><h1>Applications</h1><p class="text-muted">Không gian quản lý website/microservice của Developer.</p></div><a class="btn btn-primary" href="{{ url_for('ui.application_form') }}">+ Tạo application</a></div>
-<div class="row g-4">{% for app in applications %}<div class="col-lg-4"><div class="card soft-card h-100"><div class="card-body p-4"><div class="d-flex justify-content-between"><h4>{{ app.name }}</h4><span class="badge text-bg-{{ 'success' if app.status == 'Running' else 'warning' }}">{{ app.status }}</span></div><p class="text-muted">{{ app.namespace }} • {{ app.owner }}</p><p>Replicas: <strong>{{ app.replicas }}</strong></p><p>URL: <code>{{ app.url }}</code></p><a class="btn btn-outline-primary" href="{{ url_for('ui.service_form') }}">Thêm service</a></div></div></div>{% endfor %}</div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1>Applications</h1>
+    <p class="text-muted">Quản lý application thật: nhận Docker image/GitHub source, sinh manifest và deploy lên K3s.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('ui.application_form') }}">+ Tạo application</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-2" style="white-space: pre-wrap;">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="row g-4">
+  {% for app in applications %}
+  <div class="col-lg-4">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between gap-2">
+          <h4 class="mb-1">{{ app.name }}</h4>
+          <span class="badge text-bg-{{ 'success' if app.status == 'Running' else ('danger' if 'Failed' in app.status else 'warning') }}">{{ app.status }}</span>
+        </div>
+        <p class="text-muted mb-2">{{ app.namespace }} • {{ app.owner }}</p>
+        <div class="small mb-3">
+          <div><strong>Source:</strong> {{ app.source_type|upper }}</div>
+          <div><strong>Services:</strong> {{ app.services|length }}
+            <span class="text-muted">({{ app.services | map(attribute='name') | join(', ') }})</span>
+          </div>
+          <div><strong>Total replicas:</strong> {{ app.services | sum(attribute='replicas') }}</div>
+          {% if app.services %}
+          <div><strong>Images:</strong>
+            {% for svc in app.services[:2] %}
+              <code>{{ svc.image }}</code>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+            {% if app.services|length > 2 %}<span class="text-muted">…+{{ app.services|length - 2 }} more</span>{% endif %}
+          </div>
+          {% endif %}
+          <div><strong>URL:</strong> {% if app.url %}<a href="{{ app.url }}" target="_blank" rel="noopener">{{ app.url }}</a>{% else %}<span class="text-muted">Chưa deploy</span>{% endif %}</div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('ui.application_detail', application_id=app.id) }}">Chi tiết</a>
+          <form method="post" action="{{ url_for('ui.application_deploy', application_id=app.id) }}">
+            <button class="btn btn-primary btn-sm" type="submit">Deploy</button>
+          </form>
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.application_logs', application_id=app.id) }}">Logs</a>
+          <form method="post" action="{{ url_for('ui.application_delete', application_id=app.id) }}" onsubmit="return confirm('Xóa application {{ app.name }}? Hành động này sẽ xóa namespace K8s và toàn bộ dữ liệu liên quan.');">
+            <button class="btn btn-outline-danger btn-sm" type="submit">Xóa</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="card soft-card">
+      <div class="card-body text-center text-muted py-5">
+        Chưa có application. Bấm “+ Tạo application” để thêm Docker image hoặc GitHub source.
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
 {% endblock %}

@@ -1,8 +1,152 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Wizard cài đặt Kubernetes bằng Ansible</h1><p class="text-muted">Giao diện trước, phần sinh inventory và chạy playbook sẽ nối sau.</p>
-<div class="row g-4"><div class="col-lg-8"><div class="card soft-card"><div class="card-body p-4 mock-form">
-  <h4>1. Chọn máy chủ</h4><table class="table"><thead><tr><th>Chọn</th><th>Server</th><th>IP</th><th>Role</th></tr></thead><tbody>{% for s in servers %}<tr><td><input type="checkbox" checked></td><td>{{ s.name }}</td><td>{{ s.ip }}</td><td><select class="form-select form-select-sm"><option>{{ s.role }}</option><option>Master</option><option>Worker</option></select></td></tr>{% endfor %}</tbody></table>
-  <h4 class="mt-4">2. Cấu hình cài đặt</h4><div class="row g-3"><div class="col-md-6"><label class="form-label">Kubernetes distro</label><select class="form-select"><option>K3s</option><option>kubeadm Kubernetes</option></select></div><div class="col-md-6"><label class="form-label">Network plugin</label><select class="form-select"><option>Flannel mặc định</option><option>Calico</option></select></div></div>
-  <button class="btn btn-danger mt-4" type="button">Install Kubernetes</button><button class="btn btn-outline-primary mt-4 ms-2" type="button">Dry-run inventory</button>
-</div></div></div><div class="col-lg-4"><div class="card soft-card"><div class="card-body p-4"><h4>Checklist</h4><ul><li>SSH từ máy web đến tất cả node</li><li>User có sudo</li><li>Node truy cập internet hoặc mirror nội bộ</li><li>Port 6443/10250 mở trong LAN</li></ul></div></div></div></div>
+<h1>Wizard cài đặt Kubernetes bằng Ansible</h1>
+<p class="text-muted">Chọn master/worker, dry-run để kiểm tra inventory, sau đó chạy playbook cài K3s từ xa.</p>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-2">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card soft-card">
+      <div class="card-body p-4 mock-form">
+        <form method="post">
+          <h4>1. Chọn máy chủ</h4>
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Chọn</th>
+                <th>Server</th>
+                <th>IP</th>
+                <th>SSH user</th>
+                <th>Role khi cài</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in servers %}
+              <tr>
+                <td>
+                  <input class="form-check-input" type="checkbox" name="server_ids" value="{{ s.id }}" checked>
+                </td>
+                <td>{{ s.name }}</td>
+                <td><code>{{ s.ip }}</code></td>
+                <td><code>{{ s.ssh_user }}</code></td>
+                <td>
+                  <select class="form-select form-select-sm" name="role_{{ s.id }}">
+                    <option value="Master" {% if s.role == 'Master' %}selected{% endif %}>Master</option>
+                    <option value="Worker" {% if s.role != 'Master' %}selected{% endif %}>Worker</option>
+                  </select>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">Chưa có server nào. Hãy thêm server ở Server Inventory trước.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <h4 class="mt-4">2. Cấu hình cài đặt</h4>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Kubernetes distro</label>
+              <select class="form-select" name="distro">
+                <option value="k3s">K3s</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Network plugin</label>
+              <select class="form-select" name="network_plugin">
+                <option value="flannel">Flannel mặc định</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Sudo password tùy chọn</label>
+              <input
+                class="form-control"
+                type="password"
+                name="sudo_password"
+                autocomplete="current-password"
+                placeholder="Có thể để trống nếu đã Bootstrap sudo"
+              >
+              <div class="form-text">
+                Chỉ cần nhập nếu node chưa được Bootstrap sudo NOPASSWD. Khuyến nghị bootstrap trước ở Server Inventory để không phải nhập nhiều lần.
+              </div>
+            </div>
+            <div class="col-md-12">
+              <div class="alert alert-info mb-0">
+                <div class="fw-semibold mb-2">Khuyến nghị: Bootstrap sudo NOPASSWD trước khi install</div>
+                <div class="mb-2">
+                  Playbook cần quyền <code>sudo</code> để cài package, tắt swap, cấu hình sysctl và cài K3s.
+                  Nếu đã bấm <strong>Bootstrap sudo NOPASSWD</strong> thành công ở Server Inventory,
+                  ô sudo password có thể để trống khi install Kubernetes.
+                </div>
+                <div class="small text-muted">
+                  Trường sudo password chỉ còn là phương án dự phòng cho lần install trực tiếp khi node chưa bootstrap.
+                  Luồng khuyến nghị: Test SSH → Test Ansible → Bootstrap sudo NOPASSWD → Install Kubernetes.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button class="btn btn-danger" type="submit" formaction="{{ url_for('ui.cluster_install_submit') }}">
+              Install Kubernetes
+            </button>
+            <button class="btn btn-outline-primary" type="submit" formaction="{{ url_for('ui.cluster_dry_run') }}">
+              Dry-run inventory
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if result_output %}
+    <div class="card soft-card mt-3">
+      <div class="card-body p-4">
+        <h4>Kết quả</h4>
+        {% if result_message %}
+          <p class="text-muted">{{ result_message }}</p>
+        {% endif %}
+        <pre class="bg-dark text-light rounded p-3 mb-0" style="white-space: pre-wrap; max-height: 480px; overflow: auto;">{{ result_output }}</pre>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h4>Checklist</h4>
+        <ul>
+          <li>SSH từ máy web đến tất cả node</li>
+          <li>Ansible ping thành công tới tất cả node</li>
+          <li>User SSH có quyền sudo trên từng node</li>
+          <li>Bootstrap sudo <code>NOPASSWD</code> thành công để install không cần nhập password nhiều lần</li>
+          <li>Node truy cập internet hoặc mirror nội bộ</li>
+          <li>Port 6443/10250 mở trong LAN</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card soft-card mt-3">
+      <div class="card-body p-4">
+        <h4>Luồng thực hiện</h4>
+        <ol class="mb-0">
+          <li>Chọn master/worker.</li>
+          <li>Bấm <strong>Dry-run inventory</strong> để xem trước file Ansible inventory.</li>
+          <li>Nếu chưa bootstrap sudo, quay lại Server Inventory và bấm <strong>Bootstrap sudo NOPASSWD</strong>.</li>
+          <li>Nếu inventory đúng, bấm <strong>Install Kubernetes</strong>.</li>
+          <li>Sau khi cài xong, kiểm tra node và deploy website demo.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

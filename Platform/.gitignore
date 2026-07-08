@@ -1,6 +1,13 @@
 .venv/
+.vevn/
 __pycache__/
 *.pyc
 .instance/
 instance/
 .env
+# Build history — excluded to keep repo clean
+app/data/builds/
+ansible/inventories/generated/
+k8s/generated/*.yaml
+!k8s/generated/demo-nginx.yaml
+k8s/generated/.gitkeep

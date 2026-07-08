@@ -1,12 +1,55 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Thêm server</h1><p class="text-muted">Form UI mô phỏng. Backend lưu server và test SSH sẽ bổ sung sau.</p>
-<div class="card soft-card"><div class="card-body p-4"><form class="mock-form row g-3">
-  <div class="col-md-6"><label class="form-label">Tên máy</label><input class="form-control" value="k8s-worker-03"></div>
-  <div class="col-md-6"><label class="form-label">Địa chỉ IP</label><input class="form-control" value="172.30.122.63"></div>
-  <div class="col-md-4"><label class="form-label">SSH user</label><input class="form-control" value="ubuntu"></div>
-  <div class="col-md-4"><label class="form-label">SSH port</label><input class="form-control" value="22"></div>
-  <div class="col-md-4"><label class="form-label">Vai trò dự kiến</label><select class="form-select"><option>Worker</option><option>Master</option><option>Management</option></select></div>
-  <div class="col-12"><label class="form-label">SSH key path / credential</label><input class="form-control" value="~/.ssh/id_rsa"></div>
-  <div class="col-12"><button type="button" class="btn btn-primary">Lưu server</button><button type="button" class="btn btn-outline-primary ms-2">Test SSH bằng Ansible</button></div>
-</form></div></div>
+<h1>Thêm server</h1>
+<p class="text-muted">Nhập thông tin máy thật để lưu vào Server Inventory, sau đó quay lại danh sách để Test SSH.</p>
+
+<div class="card soft-card">
+  <div class="card-body p-4">
+    <form method="post" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Tên máy</label>
+        <input name="name" class="form-control" value="{{ form.get('name', '') }}" placeholder="b2204938-virtualbox" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Địa chỉ IP</label>
+        <input name="ip" class="form-control" value="{{ form.get('ip', '') }}" placeholder="192.168.56.11" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">SSH user</label>
+        <input name="ssh_user" class="form-control" value="{{ form.get('ssh_user', '') }}" placeholder="b2204938" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">SSH port</label>
+        <input name="ssh_port" class="form-control" value="{{ form.get('ssh_port', 22) }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Vai trò dự kiến</label>
+        {% set selected_role = form.get('role', 'Worker') %}
+        <select name="role" class="form-select">
+          <option {% if selected_role == 'Worker' %}selected{% endif %}>Worker</option>
+          <option {% if selected_role == 'Master' %}selected{% endif %}>Master</option>
+          <option {% if selected_role == 'Management' %}selected{% endif %}>Management</option>
+        </select>
+      </div>
+      <!-- <div class="col-12">
+        <label class="form-label">SSH key path / credential</label>
+        <input name="ssh_key_path" class="form-control" value="{{ form.get('ssh_key_path', '~/.ssh/id_rsa') }}">
+        <div class="form-text">Đường dẫn key nằm trên WSL Ubuntu-24.04, ví dụ: ~/.ssh/id_rsa hoặc ~/.ssh/id_ed25519</div>
+      </div> -->
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">Lưu server</button>
+        <a class="btn btn-outline-secondary ms-2" href="{{ url_for('ui.servers') }}">Quay lại</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card soft-card mt-3">
+  <div class="card-body">
+    <h5 class="mb-2">Thông tin 2 máy hiện tại của bạn</h5>
+    <ul class="mb-0 text-muted">
+      <li>Master: <code>192.168.56.11</code>, SSH user <code>b2204938</code></li>
+      <li>Worker: <code>192.168.56.12</code>, SSH user <code>khang</code></li>
+    </ul>
+  </div>
+</div>
 {% endblock %}
