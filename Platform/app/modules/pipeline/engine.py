@@ -659,7 +659,8 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                 for svc in application.get("services", []):
                     deploy_name = f"{application['id']}-{svc['name']}"
                     try:
-                        # Get ALL pod names for this deployment (fix: was only getting items[0])
+                        # Get all RUNNING pod names for this deployment
+                        # Filter Running only — terminating pods cause exit code 143 (SIGTERM)
                         pod_result = subprocess.run(
                             ["kubectl", "get", "pod", "-n", namespace, "-l", f"app.kubernetes.io/name={deploy_name}",
                              "-o", "json"],
@@ -668,7 +669,10 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                         if pod_result.returncode != 0 or not pod_result.stdout.strip():
                             continue
                         pods_data = json.loads(pod_result.stdout)
-                        pod_names = [item["metadata"]["name"] for item in pods_data.get("items", [])]
+                        pod_names = [
+                            item["metadata"]["name"] for item in pods_data.get("items", [])
+                            if item.get("status", {}).get("phase") == "Running"
+                        ]
                         for pod_name in pod_names:
                             # Check if mysqli already loaded — skip expensive compile if yes
                             check_result = subprocess.run(
