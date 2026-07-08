@@ -659,53 +659,54 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                 for svc in application.get("services", []):
                     deploy_name = f"{application['id']}-{svc['name']}"
                     try:
-                        # Get pod name
+                        # Get ALL pod names for this deployment (fix: was only getting items[0])
                         pod_result = subprocess.run(
                             ["kubectl", "get", "pod", "-n", namespace, "-l", f"app.kubernetes.io/name={deploy_name}",
-                             "-o", "jsonpath={.items[0].metadata.name}"],
+                             "-o", "json"],
                             capture_output=True, text=True, timeout=15,
                         )
-                        pod_name = pod_result.stdout.strip()
-                        if not pod_name:
+                        if pod_result.returncode != 0 or not pod_result.stdout.strip():
                             continue
+                        pods_data = json.loads(pod_result.stdout)
+                        pod_names = [item["metadata"]["name"] for item in pods_data.get("items", [])]
+                        for pod_name in pod_names:
+                            # Check if mysqli already loaded — skip expensive compile if yes
+                            check_result = subprocess.run(
+                                ["kubectl", "exec", "-n", namespace, pod_name, "--",
+                                 "php", "-r", "exit(extension_loaded('mysqli') ? 0 : 1);"],
+                                capture_output=True, text=True, timeout=10,
+                            )
+                            if check_result.returncode == 0:
+                                add_activity(application, "PIPELINE",
+                                    f"mysqli already loaded in pod {pod_name} — skipping install", "Done")
+                                # Just reload Apache to be safe
+                                subprocess.run(
+                                    ["kubectl", "exec", "-n", namespace, pod_name, "--",
+                                     "bash", "-c",
+                                     "apache2ctl -k graceful 2>/dev/null || service apache2 reload 2>/dev/null || true"],
+                                    capture_output=True, text=True, timeout=15,
+                                )
+                                continue
 
-                        # Check if mysqli already loaded — skip expensive compile if yes
-                        check_result = subprocess.run(
-                            ["kubectl", "exec", "-n", namespace, pod_name, "--",
-                             "php", "-r", "exit(extension_loaded('mysqli') ? 0 : 1);"],
-                            capture_output=True, text=True, timeout=10,
-                        )
-                        if check_result.returncode == 0:
-                            add_activity(application, "PIPELINE",
-                                f"mysqli already loaded in pod {pod_name} — skipping install", "Done")
-                            # Just reload Apache to be safe
-                            subprocess.run(
+                            # mysqli not loaded — try fast apt-get first, fallback to compile
+                            _update_stage(pipeline_run, "DEPLOY", "Running",
+                                f"Installing mysqli extension in {pod_name}...")
+                            install_result = subprocess.run(
                                 ["kubectl", "exec", "-n", namespace, pod_name, "--",
                                  "bash", "-c",
+                                 # 1) Try apt-get (fast, ~15-30s on Debian/php:8.2-apache)
+                                 "apt-get update -qq && apt-get install -y --no-install-recommends php-mysql 2>/dev/null "
+                                 "|| docker-php-ext-install mysqli; "   # 2) fallback: compile from source
+                                 "docker-php-ext-enable mysqli 2>/dev/null || true; "
                                  "apache2ctl -k graceful 2>/dev/null || service apache2 reload 2>/dev/null || true"],
-                                capture_output=True, text=True, timeout=15,
+                                capture_output=True, text=True, timeout=180,  # reduced: 3min max
                             )
-                            continue
-
-                        # mysqli not loaded — try fast apt-get first, fallback to compile
-                        _update_stage(pipeline_run, "DEPLOY", "Running",
-                            f"Installing mysqli extension in {pod_name}...")
-                        install_result = subprocess.run(
-                            ["kubectl", "exec", "-n", namespace, pod_name, "--",
-                             "bash", "-c",
-                             # 1) Try apt-get (fast, ~15-30s on Debian/php:8.2-apache)
-                             "apt-get update -qq && apt-get install -y --no-install-recommends php-mysql 2>/dev/null "
-                             "|| docker-php-ext-install mysqli; "   # 2) fallback: compile from source
-                             "docker-php-ext-enable mysqli 2>/dev/null || true; "
-                             "apache2ctl -k graceful 2>/dev/null || service apache2 reload 2>/dev/null || true"],
-                            capture_output=True, text=True, timeout=180,  # reduced: 3min max
-                        )
-                        if install_result.returncode == 0:
-                            add_activity(application, "PIPELINE",
-                                f"Đã cài mysqli extension cho pod {pod_name}", "Done")
-                        else:
-                            add_activity(application, "PIPELINE",
-                                f"Cài mysqli thất bại: {install_result.stderr.strip()[:150]}", "Warning")
+                            if install_result.returncode == 0:
+                                add_activity(application, "PIPELINE",
+                                    f"Đã cài mysqli extension cho pod {pod_name}", "Done")
+                            else:
+                                add_activity(application, "PIPELINE",
+                                    f"Cài mysqli thất bại: {install_result.stderr.strip()[:150]}", "Warning")
                     except Exception as ex:
                         add_activity(application, "PIPELINE", f"Lỗi khi cài mysqli: {ex}", "Warning")
 
@@ -752,25 +753,28 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                     try:
                         for svc in application.get("services", []):
                             deploy_name = f"{application['id']}-{svc['name']}"
-                            # Wait for pod to be Running (max 30s)
-                            pod_name = None
-                            for _ in range(6):
+                            # Wait for at least 1 pod to be Running (then install on ALL pods)
+                            pod_names = []
+                            for _ in range(10):
                                 pod_result = subprocess.run(
                                     ["kubectl", "get", "pod", "-n", namespace, "-l", f"app.kubernetes.io/name={deploy_name}",
-                                     "-o", "jsonpath={.items[0].metadata.name}"],
+                                     "-o", "json"],
                                     capture_output=True, text=True, timeout=15
                                 )
-                                pod_name = pod_result.stdout.strip()
-                                if pod_name:
-                                    status_result = subprocess.run(
-                                        ["kubectl", "get", "pod", "-n", namespace, pod_name, "-o", "jsonpath={.status.phase}"],
-                                        capture_output=True, text=True, timeout=15
-                                    )
-                                    if status_result.stdout.strip() == "Running":
+                                if pod_result.returncode == 0 and pod_result.stdout.strip():
+                                    pods_data = json.loads(pod_result.stdout)
+                                    items = pods_data.get("items", [])
+                                    all_running = all(
+                                        item.get("status", {}).get("phase") == "Running"
+                                        for item in items
+                                    ) if items else False
+                                    all_names = [item["metadata"]["name"] for item in items]
+                                    if all_running and all_names:
+                                        pod_names = all_names
                                         break
                                 time.sleep(5)
 
-                            if pod_name:
+                            for pod_name in pod_names:
                                 # Check if mysqli already loaded — skip expensive compile if yes
                                 check_result = subprocess.run(
                                     ["kubectl", "exec", "-n", namespace, pod_name, "--",
