@@ -1,4 +1,7 @@
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+import json
+from typing import Any
+
+from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, url_for
 
 from app.modules.applications.service import (
     build_pipeline_steps,
@@ -23,6 +26,8 @@ from app.modules.servers.service import (
     bootstrap_sudo_nopasswd,
     find_server,
     load_servers,
+    ping_scan_network,
+    scan_network,
     test_ansible_ping,
     test_multiple_servers,
     test_ssh,
@@ -38,15 +43,23 @@ from app.modules.pipeline.engine import (
 from app.modules.monitoring.collector import (
     application_metrics,
     cluster_summary,
+    get_cached_data,
+    get_chart_history,
     node_metrics,
+    record_snapshot,
     save_snapshot,
+    start_background_collector,
 )
 from app.modules.monitoring.alerting import (
     acknowledge_alert,
     alert_summary,
     collect_and_persist,
+    get_prometheus_app_metrics,
+    get_prometheus_node_metrics,
     load_alerts,
 )
+from app.modules.monitoring.grafana import get_grafana_embed_url
+from app.modules.monitoring.k8s_manifests import deploy_monitoring_stack
 
 from .mock_data import AUDIT_LOGS, INSTALL_STEPS
 
@@ -356,25 +369,212 @@ def cicd():
     return render_template("cicd.html", events=events)
 
 
+def _get_monitoring_data() -> dict[str, Any]:
+    """Return live monitoring data from Prometheus (primary) and kubectl (fallback).
+
+    Prometheus queries are fast (<1s) when the cluster is healthy.
+    Falls back to kubectl only when Prometheus has no data.
+    """
+    from datetime import datetime
+
+    apps: list[dict[str, Any]] = []
+    try:
+        apps = load_applications()
+    except Exception:
+        pass
+
+    # --- node metrics: Prometheus (node_exporter) → kubectl ---
+    nodes: list[dict[str, Any]] = []
+    try:
+        nodes = get_prometheus_node_metrics()
+    except Exception:
+        pass
+    if not nodes:
+        try:
+            nodes = node_metrics()
+        except Exception:
+            pass
+
+    # --- app metrics: Prometheus (kube-state-metrics) → kubectl ---
+    app_metrics_list: list[dict[str, Any]] = []
+    try:
+        app_metrics_list = get_prometheus_app_metrics(apps)
+    except Exception:
+        pass
+    if not app_metrics_list:
+        try:
+            app_metrics_list = application_metrics(apps)
+        except Exception:
+            pass
+
+    # --- summary from fetched data ---
+    total_pods = sum(a.get("total_pods", 0) for a in app_metrics_list)
+    ready_pods = sum(a.get("ready_pods", 0) for a in app_metrics_list)
+    summary: dict[str, Any] = {
+        "nodes": len(nodes),
+        "node_cpu_pct": round(sum(n.get("cpu_percent", 0) for n in nodes) / max(len(nodes), 1), 1),
+        "node_ram_pct": round(sum(n.get("memory_percent", 0) for n in nodes) / max(len(nodes), 1), 1),
+        "apps": len(apps),
+        "total_pods": total_pods,
+        "ready_pods": ready_pods,
+        "pod_health_pct": round(ready_pods / max(total_pods, 1) * 100, 1),
+    }
+
+    # --- alerts ---
+    all_alerts: list[dict[str, Any]] = []
+    try:
+        all_alerts = collect_and_persist(apps, nodes=nodes, app_metrics=app_metrics_list)
+    except Exception:
+        pass
+
+    alert_counts: dict[str, int] = {"total": 0, "active": 0, "critical": 0, "warning": 0}
+    try:
+        alert_counts = alert_summary()
+    except Exception:
+        pass
+
+    # --- grafana ---
+    grafana_embed: str = ""
+    try:
+        grafana_embed = get_grafana_embed_url() or ""
+    except Exception:
+        pass
+
+    # --- ring buffer ---
+    try:
+        record_snapshot(apps, nodes=nodes)
+    except Exception:
+        pass
+
+    return {
+        "nodes": nodes,
+        "app_metrics": app_metrics_list,
+        "summary": summary,
+        "alerts": all_alerts,
+        "alert_counts": alert_counts,
+        "grafana_embed": grafana_embed,
+        "fetched_at": datetime.now().strftime("%H:%M:%S"),
+    }
+
+
 @ui_bp.route("/monitoring")
 def monitoring():
-    apps = load_applications()
-    nodes = node_metrics()
-    app_metrics_list = application_metrics(apps)
-    summary = cluster_summary(apps)
-    # Collect and persist alerts
-    all_alerts = collect_and_persist(apps)
-    alert_counts = alert_summary()
+    data = _get_monitoring_data()
     return render_template(
         "monitoring.html",
         servers=load_servers(),
-        applications=apps,
-        nodes=nodes,
-        app_metrics=app_metrics_list,
-        summary=summary,
-        alerts=all_alerts,
-        alert_counts=alert_counts,
+        applications=load_applications(),
+        nodes=data["nodes"],
+        app_metrics=data["app_metrics"],
+        summary=data["summary"],
+        alerts=data["alerts"],
+        alert_counts=data["alert_counts"],
+        grafana_embed=data["grafana_embed"],
     )
+
+
+@ui_bp.route("/monitoring/api/metrics")
+def monitoring_api_metrics():
+    """JSON endpoint for real-time AJAX polling. Always returns valid JSON."""
+    try:
+        return jsonify(_get_monitoring_data())
+    except Exception as exc:
+        current_app.logger.exception("monitoring_api_metrics failed")
+        return jsonify({"error": str(exc), "fetched_at": ""}), 500
+
+
+@ui_bp.route("/monitoring/api/charts")
+def monitoring_api_charts():
+    """JSON endpoint for chart time-series data (last 30 min).
+
+    Tries Prometheus range queries first; falls back to the kubectl
+    ring-buffer maintained by _get_monitoring_data().
+    Always returns valid JSON.
+    """
+    import time
+
+    empty = {"cpu": [], "memory": [], "network": [], "fetched_at": time.strftime("%H:%M:%S")}
+
+    # --- try Prometheus first ---
+    try:
+        from app.modules.monitoring.prometheus import get_prometheus_client
+
+        now = int(time.time())
+        start = str(now - 1800)
+        end = str(now)
+        step = "30s"
+
+        client = get_prometheus_client()
+        if client.is_available():
+            cpu_series = client.range_query(
+                'avg(rate(node_cpu_seconds_total{mode!="idle"}[5m])) by (instance) * 100',
+                start=start, end=end, step=step,
+            )
+            mem_series = client.range_query(
+                "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
+                start=start, end=end, step=step,
+            )
+            net_series = client.range_query(
+                "sum(rate(node_network_receive_bytes_total[5m])) by (instance) * 8 / 1e6",
+                start=start, end=end, step=step,
+            )
+            # If we got *any* data, return it
+            if cpu_series or mem_series or net_series:
+                return jsonify({
+                    "cpu": cp2chart(cpu_series),
+                    "memory": cp2chart(mem_series),
+                    "network": cp2chart(net_series),
+                    "fetched_at": time.strftime("%H:%M:%S"),
+                })
+    except Exception:
+        pass
+
+    # --- fallback: kubectl ring buffer ---
+    try:
+        history = get_chart_history()
+        cpu_rows = history.get("cpu", [])
+        mem_rows = history.get("memory", [])
+        net_rows = history.get("network_rx", [])
+
+        def _build_kubectl_series(samples: list[dict[str, Any]]) -> list[dict[str, Any]]:
+            """Convert ring-buffer samples → Chart.js compatible series."""
+            series: dict[str, list[dict[str, Any]]] = {}  # instance → [{x: ts, y: val}]
+            for snap in samples:
+                ts = snap["ts"]
+                for d in snap["data"]:
+                    inst = d.get("instance", "?")
+                    series.setdefault(inst, []).append({"x": ts, "y": d.get("value", 0)})
+            return [{"label": inst, "points": pts} for inst, pts in series.items()]
+
+        return jsonify({
+            "cpu": _build_kubectl_series(cpu_rows),
+            "memory": _build_kubectl_series(mem_rows),
+            "network": _build_kubectl_series(net_rows),
+            "fetched_at": time.strftime("%H:%M:%S"),
+        })
+    except Exception as exc:
+        current_app.logger.exception("monitoring_api_charts fallback failed")
+        return jsonify(empty), 500
+
+
+def cp2chart(prom_result: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert Prometheus range-query result to Chart.js-friendly format."""
+    import re
+
+    series: list[dict[str, Any]] = []
+    seen = set()
+    for r in prom_result:
+        metric = r.get("metric", {})
+        raw_label = metric.get("node") or metric.get("instance") or metric.get("nodename") or "?"
+        label = re.sub(r":\d+$", "", raw_label)
+        label = re.sub(r":.*$", "", label) if ":" in label else label
+        if label in seen:
+            continue
+        seen.add(label)
+        values = r.get("values", [])
+        points = [{"x": v[0], "y": float(v[1])} for v in values]
+        series.append({"label": label, "points": points})
+    return series
 
 
 @ui_bp.route("/monitoring/refresh")
@@ -387,14 +587,96 @@ def monitoring_refresh():
     return redirect(url_for("ui.monitoring"))
 
 
+@ui_bp.route("/monitoring/grafana")
+def monitoring_grafana():
+    """Render Grafana embedded iframe page."""
+    data = _get_monitoring_data()
+    grafana_embed = get_grafana_embed_url() or data.get("grafana_embed", "")
+    return render_template(
+        "monitoring.html",
+        servers=load_servers(),
+        applications=load_applications(),
+        nodes=data["nodes"],
+        app_metrics=data["app_metrics"],
+        summary=data["summary"],
+        alerts=data["alerts"],
+        alert_counts=data["alert_counts"],
+        grafana_embed=grafana_embed,
+    )
+
+
+@ui_bp.route("/monitoring/install-stack", methods=["POST"])
+def monitoring_install_stack():
+    """Install Prometheus+Grafana monitoring stack on the K3s cluster."""
+    result = deploy_monitoring_stack()
+    success_all = all(result.values())
+    flash(f"Deploy monitoring stack: {'✅ tất cả thành công' if success_all else '⚠ có lỗi - kiểm tra log'} — {result}", "success" if success_all else "warning")
+    return redirect(url_for("ui.monitoring"))
+
+
+@ui_bp.route("/monitoring/proxy/prometheus", defaults={"rest": ""}, methods=["GET", "POST"])
+@ui_bp.route("/monitoring/proxy/prometheus/<path:rest>", methods=["GET", "POST"])
+def monitoring_proxy_prometheus(rest=""):
+    """Proxy requests to Prometheus API (frontend query endpoint)."""
+    from flask import Response
+    import urllib.request
+    import urllib.error
+
+    prom_url = current_app.config.get("PROMETHEUS_URL", "http://localhost:30900")
+    target = f"{prom_url}/api/v1/{rest}?{request.query_string.decode()}"
+    try:
+        body = request.get_data()
+        req = urllib.request.Request(target, data=body if body else None, method=request.method)
+        if "Content-Type" in request.headers:
+            req.add_header("Content-Type", request.headers["Content-Type"])
+        resp = urllib.request.urlopen(req, timeout=10)
+        return Response(resp.read(), status=resp.status, content_type=resp.headers.get("Content-Type", "application/json"))
+    except urllib.error.HTTPError as e:
+        return Response(e.read(), status=e.code)
+    except Exception as e:
+        return Response(json.dumps({"status": "error", "error": str(e)}), status=502, content_type="application/json")
+
+
+@ui_bp.route("/monitoring/proxy/grafana/", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+@ui_bp.route("/monitoring/proxy/grafana/<path:rest>", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+def monitoring_proxy_grafana(rest=""):
+    """Proxy requests to Grafana. Grafana has serve_from_sub_path=true with
+    root_url path = /monitoring/proxy/grafana, so we forward the full path."""
+    from flask import Response
+    import urllib.request
+    import urllib.error
+
+    from app.modules.monitoring.grafana import resolve_grafana_url
+
+    graf_url = resolve_grafana_url()
+    full_path = f"/monitoring/proxy/grafana/{rest}" if rest else "/monitoring/proxy/grafana/"
+    qs = request.query_string.decode()
+    target = f"{graf_url}{full_path}"
+    if qs:
+        target = f"{target}?{qs}"
+    try:
+        body = request.get_data()
+        req = urllib.request.Request(target, data=body if body else None, method=request.method)
+        # Forward relevant headers
+        for key in ("Content-Type", "Accept", "Authorization"):
+            if key in request.headers:
+                req.add_header(key, request.headers[key])
+        resp = urllib.request.urlopen(req, timeout=30)
+        ct = resp.headers.get("Content-Type", "text/html")
+        return Response(resp.read(), status=resp.status, content_type=ct)
+    except urllib.error.HTTPError as e:
+        return Response(e.read(), status=e.code, content_type=e.headers.get("Content-Type", "text/html"))
+    except Exception as e:
+        return Response(str(e), status=502)
+
+
 @ui_bp.route("/monitoring/alerts")
 def monitoring_alerts():
     """View all alert history."""
-    alerts = load_alerts()
-    alert_counts = alert_summary()
+    data = _get_monitoring_data()
     return render_template("monitoring.html", servers=load_servers(), applications=load_applications(),
-                           nodes=node_metrics(), app_metrics=application_metrics(load_applications()),
-                           summary=cluster_summary(load_applications()), alerts=alerts, alert_counts=alert_counts)
+                           nodes=data["nodes"], app_metrics=data["app_metrics"],
+                           summary=data["summary"], alerts=data["alerts"], alert_counts=data["alert_counts"])
 
 
 @ui_bp.route("/monitoring/alerts/<int:alert_id>/ack")
@@ -411,3 +693,66 @@ def monitoring_ack_alert(alert_id):
 @ui_bp.route("/audit")
 def audit():
     return render_template("audit.html", logs=AUDIT_LOGS)
+
+
+# ---------------------------------------------------------------------------
+# network scan
+# ---------------------------------------------------------------------------
+
+@ui_bp.route("/servers/scan", methods=["GET", "POST"])
+def servers_scan():
+    if request.method == "POST":
+        subnet = request.form.get("subnet", "").strip()
+        mode = request.form.get("mode", "ssh").strip()
+        ssh_user = request.form.get("ssh_user", "").strip()
+        ssh_key = request.form.get("ssh_key_path", "~/.ssh/id_ed25519").strip()
+        ssh_port = int(request.form.get("ssh_port", 22))
+        selected = request.form.getlist("selected_ips")
+
+        if not subnet:
+            flash("Vui lòng nhập dãy IP (VD: 10.0.0.0/24 hoặc 10.0.0.1-10.0.0.254).", "warning")
+            return render_template("servers/scan.html", servers=[], subnet=subnet, mode=mode,
+                                  ssh_user=ssh_user, ssh_key=ssh_key, ssh_port=ssh_port)
+
+        # Scan
+        if mode == "ping":
+            discovered = ping_scan_network(subnet)
+        else:
+            if not ssh_user:
+                flash("Vui lòng nhập SSH User cho chế độ SSH scan.", "warning")
+                return render_template("servers/scan.html", servers=[], subnet=subnet, mode=mode,
+                                      ssh_user=ssh_user, ssh_key=ssh_key, ssh_port=ssh_port)
+            discovered = scan_network(subnet, ssh_user, ssh_key, ssh_port)
+
+        # Add selected
+        if selected:
+            added = 0
+            for d in discovered:
+                if d["ip"] in selected:
+                    # Check if already exists
+                    existing = load_servers()
+                    if any(s["ip"] == d["ip"] for s in existing):
+                        continue
+                    form_data = {
+                        "name": d["hostname"],
+                        "ip": d["ip"],
+                        "ssh_user": d["ssh_user"],
+                        "ssh_port": str(d["ssh_port"]),
+                        "ssh_key_path": ssh_key,
+                        "role": d["role"],
+                    }
+                    add_server(form_data)
+                    added += 1
+            flash(f"Đã thêm {added} server mới vào hệ thống.", "success")
+            return redirect(url_for("ui.servers"))
+
+        if not discovered:
+            flash(f"Không tìm thấy server nào trong dãy {subnet}.", "warning")
+        else:
+            flash(f"Tìm thấy {len(discovered)} server trong dãy {subnet}. Chọn server muốn thêm.", "info")
+
+        return render_template("servers/scan.html", servers=discovered, subnet=subnet, mode=mode,
+                               ssh_user=ssh_user, ssh_key=ssh_key, ssh_port=ssh_port)
+
+    return render_template("servers/scan.html", servers=[], subnet="", mode="ssh",
+                           ssh_user="", ssh_key="~/.ssh/id_ed25519", ssh_port=22)

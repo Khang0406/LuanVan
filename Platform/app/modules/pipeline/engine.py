@@ -8,6 +8,7 @@ from typing import Any
 from app.config import BASE_DIR
 from app.modules.applications.service import add_activity, find_application, save_application
 from app.modules.deployments.kubectl import deploy_application, delete_application_workloads
+from app.modules.monitoring.k8s_manifests import deploy_servicemonitor
 from app.modules.pipeline.build import build_from_github
 
 DATA_DIR = BASE_DIR / "app" / "data"
@@ -238,6 +239,17 @@ spec:
     add_activity(application, "PIPELINE",
                  f"MySQL pod da ready, SQL schema da duoc auto-import tu /docker-entrypoint-initdb.d/{sql_basename}",
                  "Done")
+
+    # Ensure database exists (MYSQL_DATABASE only creates one DB, app might use different name)
+    try:
+        subprocess.run(
+            ["kubectl", "exec", "-n", namespace, f"deploy/{mysql_name}", "--",
+             "mysql", "-uroot", f"-p{mysql_password}", "-e",
+             f"CREATE DATABASE IF NOT EXISTS `{db_name}`;"],
+            capture_output=True, text=True, timeout=15,
+        )
+    except Exception:
+        pass
 
     return (mysql_name, db_name, mysql_password)
 
@@ -508,10 +520,10 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
             # Find worker node and sync source code
             worker_node = "khang-virtualbox"
             worker_ip = "192.168.56.12"
+            is_cloud_cluster = False
             try:
                 import subprocess
                 import json as _json
-                # Get worker node name from kubectl
                 result = subprocess.run(
                     ["kubectl", "get", "nodes", "-o", "json", "-l", "node-role.kubernetes.io/control-plane!=true"],
                     capture_output=True, text=True, timeout=15,
@@ -526,85 +538,69 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                             if addr.get("type") == "InternalIP":
                                 worker_ip = addr["address"]
                                 break
+                        if addr.get("type") == "ExternalIP":
+                            is_cloud_cluster = worker_ip.startswith(("10.", "34.", "35."))
             except Exception:
-                pass  # fallback to defaults
+                pass
 
-            # Sync source to worker (show errors so failures are visible)
-            remote_path = f"/opt/{application['id']}"
-            mkdir_cmd = f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} 'sudo mkdir -p {remote_path} && sudo chown -R khang:khang {remote_path}'"
-            tar_cmd = f"tar czf - -C {source_dir} . 2>/dev/null | ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} 'tar xzf - -C {remote_path}/'"
-            try:
-                mkdir_result = subprocess.run(mkdir_cmd, shell=True, timeout=30, capture_output=True, text=True)
-                if mkdir_result.returncode != 0:
-                    add_activity(application, "PIPELINE", f"Không tạo được thư mục trên worker: {mkdir_result.stderr.strip()[:200]}", "Warning")
-                elif source_dir and source_dir.exists():
-                    tar_result = subprocess.run(tar_cmd, shell=True, timeout=60, capture_output=True, text=True)
-                    if tar_result.returncode != 0:
-                        add_activity(application, "PIPELINE", f"Không đồng bộ được source lên worker: {tar_result.stderr.strip()[:200]}", "Warning")
-                    else:
-                        add_activity(application, "PIPELINE", f"Đã đồng bộ source code lên worker {worker_node}:{remote_path}", "Done")
-
-                        # Nếu source có frontend/index.php và không có index.html ở root,
-                        # LUÔN ghi đè index.php ở root với chdir vào frontend/ để fix:
-                        # - Lỗi 403 (Apache không tìm thấy index)
-                        # - Lỗi đường dẫn tương đối (./css, ../backend, ...)
-                        # - Lỗi PHP parse từ pipeline cũ (file index.php lỗi còn tồn tại)
-                        index_fix_cmd = (
-                            f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} "
-                            f"\"if [ -f {remote_path}/frontend/index.php ] && [ ! -f {remote_path}/index.html ]; then "
-                            f"rm -f {remote_path}/.htaccess && "
-                            f"printf '<?php chdir(__DIR__ . \\\"/frontend\\\"); require \\\"index.php\\\";' > {remote_path}/index.php; "
-                            f"fi\""
-                        )
-                        index_fix_result = subprocess.run(index_fix_cmd, shell=True, timeout=15, capture_output=True, text=True)
-                        if index_fix_result.returncode == 0:
-                            add_activity(application, "PIPELINE", "Da tao (hoac ghi de) index.php root -> frontend/ de fix duong dan", "Done")
+            # Skip hostPath on cloud clusters — use initContainer with git clone instead
+            if is_cloud_cluster or (worker_ip and not worker_ip.startswith("192.168.")):
+                add_activity(application, "PIPELINE", "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync", "Done")
+                for svc in application["services"]:
+                    svc["image"] = public_image
+            else:
+                # --- Local VM hostPath sync ---
+                remote_path = f"/opt/{application['id']}"
+                mkdir_cmd = f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} 'sudo mkdir -p {remote_path} && sudo chown -R khang:khang {remote_path}'"
+                tar_cmd = f"tar czf - -C {source_dir} . 2>/dev/null | ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} 'tar xzf - -C {remote_path}/'"
+                try:
+                    mkdir_result = subprocess.run(mkdir_cmd, shell=True, timeout=30, capture_output=True, text=True)
+                    if mkdir_result.returncode != 0:
+                        add_activity(application, "PIPELINE", f"Không tạo được thư mục trên worker: {mkdir_result.stderr.strip()[:200]}", "Warning")
+                    elif source_dir and source_dir.exists():
+                        tar_result = subprocess.run(tar_cmd, shell=True, timeout=60, capture_output=True, text=True)
+                        if tar_result.returncode != 0:
+                            add_activity(application, "PIPELINE", f"Không đồng bộ được source lên worker: {tar_result.stderr.strip()[:200]}", "Warning")
                         else:
-                            add_activity(application, "PIPELINE", f"Khong tao duoc index.php: {index_fix_result.stderr.strip()[:150]}", "Warning")
-                        # Tạo symlink css/ js/ & các file .html ở root → frontend/ để browser load được static files
-                        # Vì chdir chỉ fix PHP include, còn browser request /css/styles.css hay /login.html thì
-                        # Apache serve trực tiếp từ filesystem tại DocumentRoot, cần symlink để trỏ vào frontend/
-                        symlink_cmd = (
-                            f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} "
-                            f"\"cd {remote_path} && "
-                            f"rm -rf css js 2>/dev/null; "
-                            f"rm -f *.html 2>/dev/null; "
-                            f"ln -sfn frontend/css css && "
-                            f"ln -sfn frontend/js js && "
-                            f"for f in frontend/*.html; do "
-                            f"[ -f \\\"\\$f\\\" ] && ln -sfn \\\"\\$f\\\" \\\"\\$(basename \\\"\\$f\\\")\\\"; "
-                            f"done\""
-                        )
-                        symlink_result = subprocess.run(symlink_cmd, shell=True, timeout=15, capture_output=True, text=True)
-                        if symlink_result.returncode == 0:
-                            add_activity(application, "PIPELINE", "Da tao symlink css/, js/ & *.html -> frontend/ de load static files", "Done")
-                        else:
-                            add_activity(application, "PIPELINE", f"Khong tao duoc symlink: {symlink_result.stderr.strip()[:150]}", "Warning")
-                        # NOTE: MySQL deployment + db.php patching is now done in the
-                        # post-deploy section (after delete_application_workloads + deploy_application)
-                        # to avoid deploying MySQL twice (once here, deleted, then again later).
-
-                        # Sửa permission cho Apache user (www-data) đọc được source
-                        chown_cmd = f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} 'sudo chown -R www-data:www-data {remote_path}'"
-                        chown_result = subprocess.run(chown_cmd, shell=True, timeout=15, capture_output=True, text=True)
-                        if chown_result.returncode == 0:
-                            add_activity(application, "PIPELINE", "Da sua permission source code cho Apache (www-data)", "Done")
-                        else:
-                            add_activity(application, "PIPELINE", f"Khong sua duoc permission: {chown_result.stderr.strip()[:150]}", "Warning")
-
-            except Exception as e:
-                add_activity(application, "PIPELINE", f"Cảnh báo: không đồng bộ được source lên worker: {e}", "Warning")
-
-            # Update service config with public image + hostPath
-            using_hostpath = True
-            for svc in application["services"]:
-                svc["image"] = public_image
-                svc["host_path"] = remote_path
-                svc["container_mount"] = container_mount
-                svc["node_name"] = worker_node
-
-            pipeline_run["image"] = public_image
-            add_activity(application, "PIPELINE", f"Sử dụng image public {public_image} + hostPath từ {worker_node}:{remote_path}", "Done")
+                            add_activity(application, "PIPELINE", f"Đã đồng bộ source code lên worker {worker_node}:{remote_path}", "Done")
+                            index_fix_cmd = (
+                                f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} "
+                                f"\"if [ -f {remote_path}/frontend/index.php ] && [ ! -f {remote_path}/index.html ]; then "
+                                f"rm -f {remote_path}/.htaccess && "
+                                f"printf '<?php chdir(__DIR__ . \\\"/frontend\\\"); require \\\"index.php\\\";' > {remote_path}/index.php; "
+                                f"fi\""
+                            )
+                            index_fix_result = subprocess.run(index_fix_cmd, shell=True, timeout=15, capture_output=True, text=True)
+                            if index_fix_result.returncode == 0:
+                                add_activity(application, "PIPELINE", "Da tao (hoac ghi de) index.php root -> frontend/ de fix duong dan", "Done")
+                            symlink_cmd = (
+                                f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} "
+                                f"\"cd {remote_path} && "
+                                f"rm -rf css js 2>/dev/null; "
+                                f"rm -f *.html 2>/dev/null; "
+                                f"ln -sfn frontend/css css && "
+                                f"ln -sfn frontend/js js && "
+                                f"for f in frontend/*.html; do "
+                                f"[ -f \\\"\\$f\\\" ] && ln -sfn \\\"\\$f\\\" \\\"\\$(basename \\\"\\$f\\\")\\\"; "
+                                f"done\""
+                            )
+                            symlink_result = subprocess.run(symlink_cmd, shell=True, timeout=15, capture_output=True, text=True)
+                            if symlink_result.returncode == 0:
+                                add_activity(application, "PIPELINE", "Da tao symlink css/, js/ & *.html -> frontend/ de load static files", "Done")
+                            chown_cmd = f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 khang@{worker_ip} 'sudo chown -R www-data:www-data {remote_path}'"
+                            chown_result = subprocess.run(chown_cmd, shell=True, timeout=15, capture_output=True, text=True)
+                            if chown_result.returncode == 0:
+                                add_activity(application, "PIPELINE", "Da sua permission source code cho Apache (www-data)", "Done")
+                except Exception as e:
+                    add_activity(application, "PIPELINE", f"Cảnh báo: không đồng bộ được source lên worker: {e}", "Warning")
+                using_hostpath = True
+                for svc in application["services"]:
+                    svc["image"] = public_image
+                    svc["host_path"] = remote_path
+                    svc["container_mount"] = container_mount
+                    svc["node_name"] = worker_node
+                pipeline_run["image"] = public_image
+                add_activity(application, "PIPELINE", f"Sử dụng image public {public_image} + hostPath từ {worker_node}:{remote_path}", "Done")
 
     # === STAGE 5: DEPLOY ======================================================
     # Xoá workloads cũ trước khi deploy mới để tránh conflict resource
@@ -700,7 +696,7 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                                  "bash", "-c",
                                  # 1) Try apt-get (fast, ~15-30s on Debian/php:8.2-apache)
                                  "apt-get update -qq && apt-get install -y --no-install-recommends php-mysql 2>/dev/null "
-                                 "|| docker-php-ext-install mysqli; "   # 2) fallback: compile from source
+                                 "|| { rm -rf /usr/src/php/ext/mysqli/.libs /usr/src/php/ext/mysqli/*.lo 2>/dev/null; docker-php-ext-install mysqli; }; "
                                  "docker-php-ext-enable mysqli 2>/dev/null || true; "
                                  "apache2ctl -k graceful 2>/dev/null || service apache2 reload 2>/dev/null || true"],
                                 capture_output=True, text=True, timeout=180,  # reduced: 3min max
@@ -716,27 +712,70 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
 
         _update_stage(pipeline_run, "DEPLOY", "Running", "Setting up database if needed...")
 
-        # === Post-DEPLOY: MySQL + db.php cho PHP projects (tất cả các path) ===
-        # After app pod is running, detect if source has SQL → deploy MySQL + patch db.php
-        # NOTE: delete_application_workloads() above wiped ALL resources (including any
-        # previously-deployed MySQL), so we ALWAYS need to redeploy MySQL here.
+        # === Post-DEPLOY: MySQL + db.php cho PHP projects ===
+        import json as _json
         mysql_already_deployed = False
         work_dir_str = pipeline_run.get("_work_dir", "")
         if not work_dir_str:
-            # Fallback: glob latest build dir (manual uploads don't set _work_dir)
             build_base = Path(BASE_DIR) / "app" / "data" / "builds"
             build_dirs = sorted(build_base.glob(f"{application['id']}-*"), key=lambda p: p.stat().st_mtime, reverse=True) if build_base.exists() else []
             if build_dirs:
                 work_dir_str = str(build_dirs[0])
         if work_dir_str:
             source_dir = Path(work_dir_str)
-            # Check if source has .sql files BEFORE asking _deploy_mysql_if_needed
             sql_files = list(source_dir.glob("*.sql")) + list(source_dir.rglob("*.sql"))
             if sql_files:
                 mysql_name = f"{application['id']}-mysql"
                 db_name = "map-project"
                 mysql_password = "luanvan123"
                 namespace = application["namespace"]
+
+                # Check if MySQL pod is already Running
+                try:
+                    mysql_pods = subprocess.run(
+                        ["kubectl", "get", "pods", "-n", namespace,
+                         "-l", f"app.kubernetes.io/name={mysql_name}",
+                         "-o", "json"],
+                        capture_output=True, text=True, timeout=10,
+                    )
+                    if mysql_pods.returncode == 0:
+                        pod_items = _json.loads(mysql_pods.stdout).get("items", [])
+                        if pod_items and all(
+                            p.get("status", {}).get("phase") == "Running"
+                            and all(c.get("ready") for c in p.get("status", {}).get("containerStatuses", []))
+                            for p in pod_items
+                        ):
+                            mysql_already_deployed = True
+                except Exception:
+                    pass
+
+                # Verify tables actually exist – PVC reuse can skip initdb scripts
+                if mysql_already_deployed:
+                    try:
+                        table_check = subprocess.run(
+                            ["kubectl", "exec", "-n", namespace, f"deploy/{mysql_name}", "--",
+                             "mysql", "-uroot", f"-p{mysql_password}", "-N", "-e",
+                             f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='{db_name}'"],
+                            capture_output=True, text=True, timeout=15,
+                        )
+                        if table_check.returncode == 0 and table_check.stdout.strip() == "0":
+                            add_activity(application, "PIPELINE",
+                                         f"MySQL running but no tables in {db_name} — forcing re-deploy", "Warning")
+                            subprocess.run(
+                                ["kubectl", "delete", "deploy", mysql_name, "-n", namespace, "--ignore-not-found=true"],
+                                capture_output=True, text=True, timeout=30,
+                            )
+                            subprocess.run(
+                                ["kubectl", "delete", "pvc", f"{mysql_name}-pvc", "-n", namespace, "--ignore-not-found=true", "--force", "--grace-period=0"],
+                                capture_output=True, text=True, timeout=30,
+                            )
+                            subprocess.run(
+                                ["kubectl", "delete", "configmap", f"{mysql_name}-init-sql", "-n", namespace, "--ignore-not-found=true"],
+                                capture_output=True, text=True, timeout=15,
+                            )
+                            mysql_already_deployed = False
+                    except Exception:
+                        pass
 
                 if not mysql_already_deployed:
                     _update_stage(pipeline_run, "DEPLOY", "Running", "Deploying MySQL database...")
@@ -745,8 +784,12 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                 # Wait briefly for app pod to be ready before patching
                 time.sleep(5)
                 _update_stage(pipeline_run, "DEPLOY", "Running", "Patching db.php configuration...")
-                if using_hostpath:
-                    _patch_db_php_on_worker(application, mysql_name, db_name, mysql_password, worker_ip, remote_path)
+                if using_hostpath and worker_ip:
+                    try:
+                        _patch_db_php_on_worker(application, mysql_name, db_name, mysql_password, worker_ip, remote_path)
+                    except Exception:
+                        _update_stage(pipeline_run, "DEPLOY", "Running", "Worker SSH failed, using pod-based patch...")
+                        _patch_db_php_in_pod(application, mysql_name, db_name, mysql_password)
                 else:
                     _patch_db_php_in_pod(application, mysql_name, db_name, mysql_password)
 
@@ -797,7 +840,7 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                                      "bash", "-c",
                                      # Try apt-get first (fast), fallback to compile
                                      "apt-get update -qq && apt-get install -y --no-install-recommends php-mysql 2>/dev/null "
-                                     "|| docker-php-ext-install mysqli; "
+                                     "|| { rm -rf /usr/src/php/ext/mysqli/.libs /usr/src/php/ext/mysqli/*.lo 2>/dev/null; docker-php-ext-install mysqli; }; "
                                      "docker-php-ext-enable mysqli 2>/dev/null || true; "
                                      "apache2ctl -k graceful 2>/dev/null || service apache2 reload 2>/dev/null || true"],
                                     capture_output=True, text=True, timeout=180,
@@ -811,6 +854,16 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
 
         _update_stage(pipeline_run, "DEPLOY", "Done", output[:200])
         add_activity(application, "PIPELINE", "Deploy thành công lên K3s cluster", "Done")
+
+        # Auto-create ServiceMonitor for Prometheus scraping
+        try:
+            sm_result = deploy_servicemonitor(application)
+            if sm_result:
+                add_activity(application, "PIPELINE", f"ServiceMonitor created: {sm_result}", "Done")
+            else:
+                add_activity(application, "PIPELINE", "ServiceMonitor skipped (no services or already exists)", "Done")
+        except Exception as sm_exc:
+            add_activity(application, "PIPELINE", f"ServiceMonitor creation failed: {sm_exc}", "Warning")
     else:
         _update_stage(pipeline_run, "DEPLOY", "Failed", output[:200])
         add_activity(application, "PIPELINE", f"Deploy thất bại: {output[:200]}", "Failed")

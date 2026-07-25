@@ -1,4 +1,19 @@
 ---
+- name: Install K3s cluster
+  hosts: k3s_cluster
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Detect default network interface
+      ansible.builtin.shell: ip route get 1.1.1.1 | grep -oP 'dev \K\S+'
+      register: detected_iface
+      changed_when: false
+      failed_when: false
+
+    - name: Set flannel interface fact
+      ansible.builtin.set_fact:
+        flannel_iface: "{{ detected_iface.stdout.strip() or 'eth0' }}"
+
 - name: Prepare all K3s nodes
   hosts: k3s_cluster
   become: true
@@ -146,3 +161,10 @@
         fi
       changed_when: false
       when: fwd_check.rc == 0
+
+# ============================================================
+# Auto-deploy Prometheus + Grafana monitoring stack
+# Runs immediately after cluster is fully ready
+# ============================================================
+- name: Deploy Prometheus + Grafana monitoring stack
+  import_playbook: install_monitoring_stack.yml

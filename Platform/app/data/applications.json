@@ -28,11 +28,768 @@
       }
     ],
     "status": "Running",
-    "url": "http://192.168.56.11:32749",
-    "last_deployed_at": "2026-07-08 11:15:16",
+    "url": "http://35.198.237.48:30914",
+    "last_deployed_at": "2026-07-25 14:47:24",
     "created_at": "2026-06-29 17:03:51",
-    "updated_at": "2026-07-08 11:15:18",
-    "activity_logs": []
+    "updated_at": "2026-07-25 14:47:25",
+    "activity_logs": [
+      {
+        "time": "2026-07-25 14:47:25",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:25",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:24",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:24",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:23",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:18",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: service \"demo-nginx-web\" deleted from demo-nginx namespace\ndeploy/demo-nginx-web: deployment.apps \"demo-nginx-web\" deleted from de",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:18",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:14",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260725144713: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:14",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260725144713: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:13",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260725144713: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:13",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260725144713: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:12:48",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:48",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:47",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:45",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:45",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:43",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:38",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: \ndeploy/demo-nginx-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:38",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:33",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260725141132: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:33",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260725141132: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:32",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260725141132: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:32",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260725141132: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:11:30",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:05:24",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:05:12",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:05:11",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:26",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:19",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:18",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:18",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:17",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:12",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: \ndeploy/demo-nginx-web: deployment.apps \"demo-nginx-web\" deleted from demo-nginx namespace\npvc: No resources found\nWarning: Immedi",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:12",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:07",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260724230605: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:07",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260724230605: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:05",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260724230605: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 23:06:05",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260724230605: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 21:31:38",
+        "type": "DELETE",
+        "message": "Xoá workloads có lỗi: svc/demo-nginx-web: kubectl timeout sau 30 giây: kubectl delete svc demo-nginx-web -n demo-nginx --ignore-not-found=true\ndeploy/demo-nginx-web: kubectl timeout sau 30 giây: kubectl delete deploy demo-nginx-web -n demo-nginx --ignore-not-found=t\npvc: kubectl timeout sau 30 giây: kubectl delete pvc --",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-24 11:08:27",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:18",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:18",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:18",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:17",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:12",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: \ndeploy/demo-nginx-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:12",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:07",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260724110803: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:07",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260724110803: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:04",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260724110803: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:04",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260724110803: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:08:01",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:40",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:30",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:30",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:30",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:28",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:23",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: \ndeploy/demo-nginx-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:23",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:21",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260723194220: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:21",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260723194220: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:20",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260723194220: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:20",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260723194220: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:42:08",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 12:13:14",
+        "type": "RESTART",
+        "message": "Có deployment restart thất bại.",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-21 12:12:13",
+        "type": "RESTART",
+        "message": "Có deployment restart thất bại.",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-21 10:44:44",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:44:34",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:44:34",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:44:34",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:44:33",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:44:28",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: \ndeploy/demo-nginx-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:44:28",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:43:58",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260721104357: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:43:58",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260721104357: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:43:57",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260721104357: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:43:57",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260721104357: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:28:27",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:06:46",
+        "type": "DELETE",
+        "message": "Xoá workloads có lỗi: svc/demo-nginx-web: kubectl timeout sau 30 giây: kubectl delete svc demo-nginx-web -n demo-nginx --ignore-not-found=true\ndeploy/demo-nginx-web: kubectl timeout sau 30 giây: kubectl delete deploy demo-nginx-web -n demo-nginx --ignore-not-found=t\npvc: No resources found\nWarning: Immediate deletion doe",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 08:10:37",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:36",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor skipped (no services or already exists)",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:35",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:35",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:35",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:30",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: \ndeploy/demo-nginx-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:30",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:28",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260721081026: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:28",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260721081026: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:27",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260721081026: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:27",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260721081026: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:10:24",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:18:11",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:18:04",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:18:04",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:18:05",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:18:00",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: \ndeploy/demo-nginx-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:18:00",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:17:58",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708171756: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:17:58",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708171756: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:17:57",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708171756: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:17:57",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708171756: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:17:54",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:29",
+        "type": "PIPELINE",
+        "message": "VERIFY: No running pods found — check cluster",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-08 17:11:24",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:24",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:24",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:19",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: \ndeploy/demo-nginx-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:19",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:17",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708171115: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:17",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708171115: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:16",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708171115: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:16",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708171115: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:11:13",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:18",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:15",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:12",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:12",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:12",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:07",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: service \"demo-nginx-web\" deleted from demo-nginx namespace\ndeploy/demo-nginx-web: deployment.apps \"demo-nginx-web\" deleted from de",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:07",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:05",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708170501: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:05",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708170501: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:04",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708170501: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:05:04",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-20260708170501: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 15:47:34",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 15:46:39",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 15:46:37",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      }
+    ]
   },
   {
     "id": "map",
@@ -55,7 +812,7 @@
         "container_port": 80,
         "replicas": 1,
         "service_type": "NodePort",
-        "node_port": "",
+        "node_port": "30082",
         "env": [],
         "cpu_request": "100m",
         "cpu_limit": "500m",
@@ -64,17 +821,3111 @@
         "min_replicas": 1,
         "max_replicas": 3,
         "autoscaling": false,
-        "cpu_threshold": 70,
-        "host_path": "/opt/map",
-        "container_mount": "/var/www/html",
-        "node_name": "khang-virtualbox"
+        "cpu_threshold": 70
       }
     ],
     "status": "Running",
-    "url": "http://192.168.56.11:31274",
-    "last_deployed_at": "2026-07-08 15:41:19",
+    "url": "http://35.198.237.48:30082",
+    "last_deployed_at": "2026-07-25 16:05:55",
     "created_at": "2026-07-05 21:28:02",
-    "updated_at": "2026-07-08 15:42:19",
-    "activity_logs": []
+    "updated_at": "2026-07-25 16:06:42",
+    "activity_logs": [
+      {
+        "time": "2026-07-25 16:06:42",
+        "type": "PIPELINE",
+        "message": "VERIFY: 2/2 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:06:42",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:06:41",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:06:41",
+        "type": "PIPELINE",
+        "message": "Đã cài và kích hoạt mysqli extension thành công trên pod map-web-7499996df8-r52sq",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:06:11",
+        "type": "PIPELINE",
+        "message": "Khong tim thay pod cho map-web de patch db.php",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 16:06:05",
+        "type": "PIPELINE",
+        "message": "MySQL pod da ready, SQL schema da duoc auto-import tu /docker-entrypoint-initdb.d/map-project.sql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:58",
+        "type": "PIPELINE",
+        "message": "Da deploy MySQL pod + ConfigMap init-sql: map-mysql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:56",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:54",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:49",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: No resources found",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:49",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:45",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:44",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 16:05:44",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 16:05:43",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:39",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:39",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-160536 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:36",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:36",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 16:05:36",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 16:05:36",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 16:05:36",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 16:05:36",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:05:35",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725160534: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:00:21",
+        "type": "PIPELINE",
+        "message": "VERIFY: 2/2 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:00:21",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:00:20",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 16:00:20",
+        "type": "PIPELINE",
+        "message": "Đã cài và kích hoạt mysqli extension thành công trên pod map-web-65fffdd65-fmvj5",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:59:36",
+        "type": "PIPELINE",
+        "message": "Khong tim thay pod cho map-web de patch db.php",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:59:29",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:59:27",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:59:22",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: No resources found",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:59:22",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:59:05",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:59:05",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:59:05",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:59:03",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:58:59",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:58:59",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-155853 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:58:53",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:58:53",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:58:53",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:58:53",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:58:53",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:58:53",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:58:52",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725155851: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:49:22",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:49:22",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:49:21",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:49:21",
+        "type": "PIPELINE",
+        "message": "Đã cài và kích hoạt mysqli extension thành công trên pod map-web-65fffdd65-6gbj4",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:40",
+        "type": "PIPELINE",
+        "message": "Khong tim thay pod cho map-web de patch db.php",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:48:34",
+        "type": "PIPELINE",
+        "message": "Deploy MySQL that bai: Warning: resource services/map-mysql is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources creat",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:48:33",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:30",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:25",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: No resources found",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:25",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:20",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:19",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:48:19",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:48:18",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:14",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:14",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-154812 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:12",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:12",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:48:12",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:48:12",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:48:12",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:48:12",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:10",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725154810: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:05",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:48:04",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:44:08",
+        "type": "PIPELINE",
+        "message": "Deploy thất bại: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:44:08",
+        "type": "DEPLOY",
+        "message": "Deploy application thất bại sau 5 lần thử: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did not find expected '-' indicator",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:44:07",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:44:02",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: No resources found\nWarning: Immediate deletion does not wait f",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:44:02",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:43:57",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:43:56",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:43:56",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:42:52",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:42:47",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:42:47",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-154243 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:42:43",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:42:43",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:42:43",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:42:43",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:42:43",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:42:43",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:42:42",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725154241: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:40:31",
+        "type": "PIPELINE",
+        "message": "Deploy thất bại: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:40:31",
+        "type": "DEPLOY",
+        "message": "Deploy application thất bại sau 5 lần thử: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did not find expected '-' indicator",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:40:30",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:40:25",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: No resources found\nWarning: Immediate deletion does not wait f",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:40:25",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:40:08",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:40:19",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:40:19",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:39:15",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:39:11",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:39:11",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-153909 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:39:09",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:39:09",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:39:09",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:39:09",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:39:09",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:39:09",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:39:08",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725153908: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:31:35",
+        "type": "PIPELINE",
+        "message": "Deploy thất bại: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:31:35",
+        "type": "DEPLOY",
+        "message": "Deploy application thất bại sau 5 lần thử: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did not find expected '-' indicator",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:31:32",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:31:27",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: No resources found",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:31:27",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:31:22",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:31:22",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:31:22",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:30:19",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:30:14",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:30:14",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-153011 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:30:11",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:30:11",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:30:11",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:30:11",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:30:11",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:30:11",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:30:10",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725153009: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:20:28",
+        "type": "DEPLOY",
+        "message": "Deploy application thất bại sau 5 lần thử: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did not find expected '-' indicator",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:20:26",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:15:30",
+        "type": "PIPELINE",
+        "message": "Deploy thất bại: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:15:30",
+        "type": "DEPLOY",
+        "message": "Deploy application thất bại sau 5 lần thử: namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did not find expected '-' indicator",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:15:29",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:15:24",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: No resources found\nWarning: Immediate deletion does not wait f",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:15:24",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:15:18",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:15:18",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:15:18",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:14:15",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:14:11",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:14:11",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-151408 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:14:08",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:14:08",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:14:08",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:14:08",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:14:08",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:14:08",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:14:07",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725151406: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:12:54",
+        "type": "PIPELINE",
+        "message": "Deploy thất bại: namespace/map configured\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:12:54",
+        "type": "DEPLOY",
+        "message": "Deploy application thất bại sau 5 lần thử: namespace/map configured\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did not find expected '-' indicator",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:12:52",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:12:47",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: kubectl timeout sa",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:12:47",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:12:10",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:12:09",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:12:09",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 15:11:06",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:11:01",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:11:01",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-151056 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:10:56",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:10:56",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:10:56",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:10:56",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:10:56",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 15:10:56",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 15:10:54",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725151054: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:50:23",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:50:23",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:50:23",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:50:23",
+        "type": "PIPELINE",
+        "message": "Đã cài và kích hoạt mysqli extension thành công trên pod map-web-58ff965d84-t59g4",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:49:46",
+        "type": "PIPELINE",
+        "message": "Khong tim thay pod cho map-web de patch db.php",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:49:41",
+        "type": "PIPELINE",
+        "message": "Deploy MySQL that bai: The Deployment \"map-mysql\" is invalid: spec.selector: Invalid value: {\"matchLabels\":{\"app.kubernetes.io/name\":\"map-mysql\"}}: field is immutable",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:49:39",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:49:37",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:49:32",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: kubectl timeout sa",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:49:32",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:48:57",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:48:57",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:48:57",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 14:47:54",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:50",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:50",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-144748 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:48",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:48",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:47:48",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:47:48",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:47:48",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:47:48",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:47:47",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725144746: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:19:52",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:19:51",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:17:40",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:17:39",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:17:39",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:17:39",
+        "type": "PIPELINE",
+        "message": "Đã cài và kích hoạt mysqli extension thành công trên pod map-web-57987bfdb-5v2qx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:16:55",
+        "type": "PIPELINE",
+        "message": "Khong tim thay pod cho map-web de patch db.php",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:17:01",
+        "type": "PIPELINE",
+        "message": "Deploy MySQL that bai: The Deployment \"map-mysql\" is invalid: spec.selector: Invalid value: {\"matchLabels\":{\"app.kubernetes.io/name\":\"map-mysql\"}}: field is immutable",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:17:00",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:16:58",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:16:53",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: kubectl timeout sa",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:16:53",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:16:18",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:16:18",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:16:18",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 14:15:15",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:15:11",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:15:11",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-141509 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:15:09",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:15:09",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:15:09",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:15:09",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:15:09",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 14:15:09",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:15:07",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725141507: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:14:02",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:14:00",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:10:15",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:08:52",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:08:50",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:07:31",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:07:29",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:05:38",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 14:05:36",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:47:03",
+        "type": "PIPELINE",
+        "message": "VERIFY: 1/1 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:47:02",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:47:02",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:47:02",
+        "type": "PIPELINE",
+        "message": "Đã cài và kích hoạt mysqli extension thành công trên pod map-web-57987bfdb-hn2tm",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:46:28",
+        "type": "PIPELINE",
+        "message": "Khong tim thay pod cho map-web de patch db.php",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:46:22",
+        "type": "PIPELINE",
+        "message": "Deploy MySQL that bai: The Deployment \"map-mysql\" is invalid: spec.selector: Invalid value: {\"matchLabels\":{\"app.kubernetes.io/name\":\"map-mysql\"}}: field is immutable",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:46:19",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:46:17",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:46:12",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: kubectl timeout sa",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:46:12",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:45:37",
+        "type": "PIPELINE",
+        "message": "Cloud cluster detected — using initContainer (git clone) instead of hostPath SSH sync",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:45:36",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:45:36",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 13:44:34",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:44:30",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:44:30",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-134428 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:44:28",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:44:28",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:44:28",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:44:28",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:44:28",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:44:28",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:44:27",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725134427: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:42:37",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:42:35",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:35:22",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:27:34",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:27:32",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:27:27",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: pod \"map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:27:27",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:27:22",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ ubuntu-2:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:27:22",
+        "type": "PIPELINE",
+        "message": "Không tạo được thư mục trên worker: ssh: connect to host 10.148.0.3 port 22: Connection timed out",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:27:11",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:27:11",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 13:26:09",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:26:05",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:26:05",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-132603 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:26:03",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:26:03",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:26:03",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:26:03",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:26:03",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:26:03",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:26:02",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725132601: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:25:11",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:09:00",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:08:58",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:08:42",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: service \"map-web\" deleted from map namespace\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: kubectl timeout sa",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:08:42",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:06:59",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ ubuntu-2:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:06:59",
+        "type": "PIPELINE",
+        "message": "Không tạo được thư mục trên worker: ssh: connect to host 10.148.0.3 port 22: Connection timed out",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:06:48",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:06:48",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 13:05:46",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:05:42",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:05:42",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-130539 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:05:39",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:05:39",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:05:39",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:05:39",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:05:39",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 13:05:39",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:05:38",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725130538: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:04:00",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:03:59",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:02:49",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:02:47",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:01:33",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 13:01:31",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:59:49",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:59:47",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:49:17",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:49:16",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:49:11",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: No resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:49:11",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:49:07",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ ubuntu-2:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:49:07",
+        "type": "PIPELINE",
+        "message": "Không tạo được thư mục trên worker: ssh: connect to host 10.148.0.3 port 22: Connection timed out",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:48:55",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:48:55",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 12:47:51",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:47:47",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:47:47",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-124745 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:47:45",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:47:45",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:47:45",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:47:45",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:47:45",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:47:45",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:47:43",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725124743: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:21:09",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:21:08",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:21:03",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: No resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:21:03",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:21:00",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ ubuntu-2:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:21:00",
+        "type": "PIPELINE",
+        "message": "Không tạo được thư mục trên worker: ssh: connect to host 10.148.0.3 port 22: Connection timed out",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:20:49",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:20:49",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-25 12:19:46",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:19:43",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:19:42",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260725-121940 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:19:40",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:19:40",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:19:40",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:19:40",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:19:40",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-25 12:19:40",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:19:39",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260725121938: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-25 12:19:35",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-24 11:10:13",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:46:55",
+        "type": "PIPELINE",
+        "message": "VERIFY: 2/2 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:46:55",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:46:54",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:46:54",
+        "type": "PIPELINE",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:46:48",
+        "type": "PIPELINE",
+        "message": "MySQL pod da ready, SQL schema da duoc auto-import tu /docker-entrypoint-initdb.d/map-project.sql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:46:04",
+        "type": "PIPELINE",
+        "message": "Da deploy MySQL pod + ConfigMap init-sql: map-mysql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:46:04",
+        "type": "PIPELINE",
+        "message": "Cài mysqli thất bại: Error from server (NotFound): pods \"map-web-7b8b975bc9-5sdls\" not found",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-23 19:46:04",
+        "type": "PIPELINE",
+        "message": "Đã cài mysqli extension cho pod map-web-6d966dbffb-6krt8",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:45:19",
+        "type": "PIPELINE",
+        "message": "Rollout status map-web: Ready Waiting for deployment \"map-web\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"map-web\" rollout to finish: 1 ol",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:33",
+        "type": "PIPELINE",
+        "message": "Rollout restart map-web: OK deployment.apps/map-web restarted",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:33",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:32",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:24",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: No resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:24",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:22",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:22",
+        "type": "PIPELINE",
+        "message": "Da sua permission source code cho Apache (www-data)",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:22",
+        "type": "PIPELINE",
+        "message": "Da tao symlink css/, js/ & *.html -> frontend/ de load static files",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:21",
+        "type": "PIPELINE",
+        "message": "Da tao (hoac ghi de) index.php root -> frontend/ de fix duong dan",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:21",
+        "type": "PIPELINE",
+        "message": "Đã đồng bộ source code lên worker khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:44:20",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-23 19:44:20",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-23 19:43:12",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:43:08",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:43:08",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260723-194307 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:43:07",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:43:07",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-23 19:43:07",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-23 19:43:07",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-23 19:43:07",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-23 19:43:07",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:43:06",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260723194305: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-23 19:43:02",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:49:23",
+        "type": "PIPELINE",
+        "message": "VERIFY: 2/2 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:49:23",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:49:22",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:49:22",
+        "type": "PIPELINE",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:49:11",
+        "type": "PIPELINE",
+        "message": "MySQL pod da ready, SQL schema da duoc auto-import tu /docker-entrypoint-initdb.d/map-project.sql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:48:35",
+        "type": "PIPELINE",
+        "message": "Da deploy MySQL pod + ConfigMap init-sql: map-mysql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:48:35",
+        "type": "PIPELINE",
+        "message": "Đã cài mysqli extension cho pod map-web-d5fdd9d8-r87vv",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:56",
+        "type": "PIPELINE",
+        "message": "Cài mysqli thất bại: command terminated with exit code 143",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 10:47:53",
+        "type": "PIPELINE",
+        "message": "Rollout status map-web: Ready Waiting for deployment \"map-web\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"map-web\" rollout to finish: 1 ol",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:31",
+        "type": "PIPELINE",
+        "message": "Rollout restart map-web: OK deployment.apps/map-web restarted",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:31",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:30",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:25",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: No resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:25",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:24",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:24",
+        "type": "PIPELINE",
+        "message": "Da sua permission source code cho Apache (www-data)",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:23",
+        "type": "PIPELINE",
+        "message": "Da tao symlink css/, js/ & *.html -> frontend/ de load static files",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:23",
+        "type": "PIPELINE",
+        "message": "Da tao (hoac ghi de) index.php root -> frontend/ de fix duong dan",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:23",
+        "type": "PIPELINE",
+        "message": "Đã đồng bộ source code lên worker khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:47:21",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 10:47:21",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-21 10:46:13",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:46:10",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:46:10",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260721-104608 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:46:08",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:46:08",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 10:46:08",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 10:46:08",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 10:46:08",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 10:46:08",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:46:07",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260721104606: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:37:13",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 10:30:00",
+        "type": "DELETE",
+        "message": "Xoá workloads có lỗi: svc/map-web: kubectl timeout sau 30 giây: kubectl delete svc map-web -n map --ignore-not-found=true\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: kubectl timeout sau 30 giây: kubectl delete pvc --all -n map --ignore-not-found=true --force --grace\npod: pod \"map-mysql-6bd6b",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 08:19:18",
+        "type": "PIPELINE",
+        "message": "VERIFY: 2/2 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:19:18",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor skipped (no services or already exists)",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:19:18",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:19:18",
+        "type": "PIPELINE",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:19:10",
+        "type": "PIPELINE",
+        "message": "MySQL pod da ready, SQL schema da duoc auto-import tu /docker-entrypoint-initdb.d/map-project.sql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:17:57",
+        "type": "PIPELINE",
+        "message": "Da deploy MySQL pod + ConfigMap init-sql: map-mysql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:17:56",
+        "type": "PIPELINE",
+        "message": "Đã cài mysqli extension cho pod map-web-7f9ddd4cc9-8qx4q",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:17:09",
+        "type": "PIPELINE",
+        "message": "Cài mysqli thất bại: command terminated with exit code 143",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 08:17:08",
+        "type": "PIPELINE",
+        "message": "Rollout status map-web: Ready Waiting for deployment \"map-web\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"map-web\" rollout to finish: 1 ol",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:17:07",
+        "type": "PIPELINE",
+        "message": "Rollout restart map-web: OK deployment.apps/map-web restarted",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:17:07",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:17:06",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:17:01",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: pod \"map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:17:01",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:15:41",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:15:41",
+        "type": "PIPELINE",
+        "message": "Da sua permission source code cho Apache (www-data)",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:15:40",
+        "type": "PIPELINE",
+        "message": "Da tao symlink css/, js/ & *.html -> frontend/ de load static files",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:15:40",
+        "type": "PIPELINE",
+        "message": "Da tao (hoac ghi de) index.php root -> frontend/ de fix duong dan",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:15:36",
+        "type": "PIPELINE",
+        "message": "Đã đồng bộ source code lên worker khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:15:34",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 08:15:34",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-21 08:14:26",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:14:22",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:14:22",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260721-081420 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:14:20",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:14:20",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 08:14:20",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 08:14:20",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 08:14:20",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-21 08:14:20",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:14:19",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260721081419: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 08:14:11",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-21 07:49:46",
+        "type": "RESTART",
+        "message": "Restart rollout cho tất cả deployment thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:13:21",
+        "type": "PIPELINE",
+        "message": "VERIFY: 2/2 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:13:21",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:13:21",
+        "type": "PIPELINE",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:13:11",
+        "type": "PIPELINE",
+        "message": "MySQL pod da ready, SQL schema da duoc auto-import tu /docker-entrypoint-initdb.d/map-project.sql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:11:13",
+        "type": "PIPELINE",
+        "message": "Da deploy MySQL pod + ConfigMap init-sql: map-mysql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:11:13",
+        "type": "PIPELINE",
+        "message": "Đã cài mysqli extension cho pod map-web-69789c5899-kzlmw",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:10:32",
+        "type": "PIPELINE",
+        "message": "Rollout status map-web: Ready Waiting for deployment \"map-web\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"map-web\" rollout to finish: 1 ol",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:10:30",
+        "type": "PIPELINE",
+        "message": "Rollout restart map-web: OK deployment.apps/map-web restarted",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:10:29",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:10:28",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:10:23",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: pod \"map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:10:23",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:09:01",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:09:01",
+        "type": "PIPELINE",
+        "message": "Da sua permission source code cho Apache (www-data)",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:09:01",
+        "type": "PIPELINE",
+        "message": "Da tao symlink css/, js/ & *.html -> frontend/ de load static files",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:09:00",
+        "type": "PIPELINE",
+        "message": "Da tao (hoac ghi de) index.php root -> frontend/ de fix duong dan",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:09:00",
+        "type": "PIPELINE",
+        "message": "Đã đồng bộ source code lên worker khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:08:59",
+        "type": "PIPELINE",
+        "message": "Docker không khả dụng — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 19:08:59",
+        "type": "PIPELINE",
+        "message": "BUILD thất bại cho web: Docker is not available — cannot build image",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-08 19:08:58",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:08:58",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 19:08:58",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 19:08:58",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 19:08:58",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 19:08:58",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:08:57",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260708190857: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 19:08:38",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 18:23:43",
+        "type": "DELETE",
+        "message": "Xoá workloads có lỗi: svc/map-web: Unable to connect to the server: net/http: TLS handshake timeout\ndeploy/map-web: deployment.apps \"map-web\" deleted from map namespace\npvc: kubectl timeout sau 30 giây: kubectl delete pvc --all -n map --ignore-not-found=true --force --grace\npod: Warning: Immediate deletion does not wait ",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:39:55",
+        "type": "PIPELINE",
+        "message": "VERIFY: 2/2 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:39:54",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:39:54",
+        "type": "PIPELINE",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:39:44",
+        "type": "PIPELINE",
+        "message": "MySQL pod da ready, SQL schema da duoc auto-import tu /docker-entrypoint-initdb.d/map-project.sql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:39:10",
+        "type": "PIPELINE",
+        "message": "Da deploy MySQL pod + ConfigMap init-sql: map-mysql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:39:10",
+        "type": "PIPELINE",
+        "message": "Đã cài mysqli extension cho pod map-web-86756bc646-5742q",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:38:24",
+        "type": "PIPELINE",
+        "message": "Cài mysqli thất bại: command terminated with exit code 143",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:38:22",
+        "type": "PIPELINE",
+        "message": "Rollout status map-web: Ready Waiting for deployment \"map-web\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"map-web\" rollout to finish: 1 ol",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:38:20",
+        "type": "PIPELINE",
+        "message": "Rollout restart map-web: OK deployment.apps/map-web restarted",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:38:20",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:38:19",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:38:14",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: pod \"map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:38:14",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:36:10",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:36:10",
+        "type": "PIPELINE",
+        "message": "Da sua permission source code cho Apache (www-data)",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:36:09",
+        "type": "PIPELINE",
+        "message": "Da tao symlink css/, js/ & *.html -> frontend/ de load static files",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:36:09",
+        "type": "PIPELINE",
+        "message": "Da tao (hoac ghi de) index.php root -> frontend/ de fix duong dan",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:36:09",
+        "type": "PIPELINE",
+        "message": "Đã đồng bộ source code lên worker khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:36:07",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:36:07",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-08 17:34:56",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:34:50",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:34:50",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260708-173448 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:34:48",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:34:48",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:34:48",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:34:48",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:34:48",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:34:48",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:34:47",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260708173447: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:34:24",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:22:15",
+        "type": "PIPELINE",
+        "message": "VERIFY: 2/2 pod(s) running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:22:15",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:22:15",
+        "type": "PIPELINE",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:22:08",
+        "type": "PIPELINE",
+        "message": "MySQL pod da ready, SQL schema da duoc auto-import tu /docker-entrypoint-initdb.d/map-project.sql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:21:27",
+        "type": "PIPELINE",
+        "message": "Da deploy MySQL pod + ConfigMap init-sql: map-mysql",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:21:27",
+        "type": "PIPELINE",
+        "message": "Cài mysqli thất bại: command terminated with exit code 143",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:21:19",
+        "type": "PIPELINE",
+        "message": "Rollout status map-web: Ready Waiting for deployment \"map-web\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"map-web\" rollout to finish: 1 ol",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:21:02",
+        "type": "PIPELINE",
+        "message": "Rollout restart map-web: OK deployment.apps/map-web restarted",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:21:02",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:21:01",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:20:56",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/map-web: \ndeploy/map-web: \npvc: No resources found\nWarning: Immediate deletion does not wait for confirmation that the running resou\npod: No resou",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:20:56",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:20:55",
+        "type": "PIPELINE",
+        "message": "Sử dụng image public php:8.2-apache + hostPath từ khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:20:55",
+        "type": "PIPELINE",
+        "message": "Da sua permission source code cho Apache (www-data)",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:20:54",
+        "type": "PIPELINE",
+        "message": "Da tao symlink css/, js/ & *.html -> frontend/ de load static files",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:20:54",
+        "type": "PIPELINE",
+        "message": "Da tao (hoac ghi de) index.php root -> frontend/ de fix duong dan",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:20:53",
+        "type": "PIPELINE",
+        "message": "Đã đồng bộ source code lên worker khang-virtualbox:/opt/map",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:20:52",
+        "type": "PIPELINE",
+        "message": "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng) — chuyển sang triển khai bằng image public + hostPath",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:20:52",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-08 17:19:47",
+        "type": "PIPELINE",
+        "message": "TEST: web: ✓ running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:19:44",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:19:44",
+        "type": "BUILD",
+        "message": "Đã build Docker image Khang0406/map-web:build-20260708-171942 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:19:42",
+        "type": "BUILD",
+        "message": "Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:19:42",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:19:42",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:19:42",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:19:42",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-08 17:19:42",
+        "type": "PIPELINE",
+        "message": "SOURCE: Đã clone https://github.com/Khang0406/map-project.git",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:19:42",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-20260708171941: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-08 17:19:34",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      }
+    ]
   }
 ]

@@ -27,7 +27,8 @@
 #   - Add health check tasks (wait for pods to be Ready)
 
 - name: Deploy Prometheus + Grafana monitoring stack
-  hosts: master
+  hosts: masters
+  become: true
   gather_facts: yes
   vars:
     monitoring_namespace: "monitoring"

@@ -146,7 +146,7 @@ def build_cluster_inventory(selected_nodes: list[dict[str, str]]) -> tuple[bool,
         "[k3s_cluster:vars]",
         "ansible_python_interpreter=/usr/bin/python3",
         "k3s_version=v1.29.6+k3s2",
-        "k3s_token=luanvan-k3s-demo-token",
+        "k3s_token=k3s-cluster-secret-token-2026",
         f"k3s_server_url=https://{master_ip}:6443",
         "",
     ]

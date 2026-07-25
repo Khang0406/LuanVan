@@ -1,10 +1,255 @@
 [
   {
+    "time": "2026-07-23 22:04:49",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 92.8% > 90%",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-24 11:08:48"
+  },
+  {
+    "time": "2026-07-23 21:46:40",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 92.9% > 90%",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-24 11:09:44"
+  },
+  {
+    "time": "2026-07-23 21:43:11",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 93.0% > 90%",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-24 11:09:41"
+  },
+  {
+    "time": "2026-07-23 21:42:03",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 93.3% > 90%",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-24 11:09:53"
+  },
+  {
+    "time": "2026-07-23 21:40:53",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 91.8% > 90%",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-24 11:19:33"
+  },
+  {
+    "time": "2026-07-23 21:39:47",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 91.6% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 21:38:39",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 91.9% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 21:37:32",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 91.7% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 21:36:24",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 91.1% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 21:35:18",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 91.2% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 21:30:48",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 90.7% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 21:29:41",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 90.6% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 21:27:26",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 90.8% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 21:24:06",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 92.6% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-23 20:59:45",
+    "severity": "CRITICAL",
+    "message": "Node b2204938-VirtualBox RAM 90.1% > 90%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-21 09:51:52",
+    "severity": "WARNING",
+    "message": "App map: 2 pod(s) not Ready",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-21 09:51:52",
+    "severity": "WARNING",
+    "message": "App demo-nginx: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-24 11:09:57"
+  },
+  {
+    "time": "2026-07-21 08:52:40",
+    "severity": "WARNING",
+    "message": "Node b2204938-virtualbox CPU 90.0% > 80%",
+    "acknowledged": false,
+    "acknowledged_at": ""
+  },
+  {
+    "time": "2026-07-21 08:52:29",
+    "severity": "WARNING",
+    "message": "Node b2204938-virtualbox CPU 84.0% > 80%",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 08:52:33"
+  },
+  {
+    "time": "2026-07-21 08:51:26",
+    "severity": "WARNING",
+    "message": "Node b2204938-virtualbox CPU 91.0% > 80%",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 08:51:48"
+  },
+  {
+    "time": "2026-07-21 08:34:20",
+    "severity": "WARNING",
+    "message": "App map: 2 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 08:51:55"
+  },
+  {
+    "time": "2026-07-21 08:34:20",
+    "severity": "WARNING",
+    "message": "App demo-nginx: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 08:52:01"
+  },
+  {
+    "time": "2026-07-21 08:09:57",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 08:52:09"
+  },
+  {
+    "time": "2026-07-21 07:53:42",
+    "severity": "WARNING",
+    "message": "App map: 2 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 08:09:56"
+  },
+  {
+    "time": "2026-07-21 07:53:42",
+    "severity": "WARNING",
+    "message": "App demo-nginx: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 08:09:52"
+  },
+  {
+    "time": "2026-07-21 07:50:06",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 08:09:57"
+  },
+  {
+    "time": "2026-07-21 07:49:35",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 07:50:05"
+  },
+  {
+    "time": "2026-07-21 07:49:33",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 07:49:34"
+  },
+  {
+    "time": "2026-07-21 07:49:30",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 07:49:32"
+  },
+  {
+    "time": "2026-07-21 07:49:20",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 07:49:29"
+  },
+  {
+    "time": "2026-07-21 07:49:16",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 07:49:19"
+  },
+  {
+    "time": "2026-07-08 19:27:54",
+    "severity": "WARNING",
+    "message": "App map: 2 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 07:49:28"
+  },
+  {
+    "time": "2026-07-08 19:27:54",
+    "severity": "WARNING",
+    "message": "App demo-nginx: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-21 07:49:29"
+  },
+  {
+    "time": "2026-07-08 17:44:36",
+    "severity": "WARNING",
+    "message": "App map: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-08 19:16:28"
+  },
+  {
+    "time": "2026-07-08 17:44:36",
+    "severity": "WARNING",
+    "message": "App demo-nginx: 1 pod(s) not Ready",
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-08 19:16:30"
+  },
+  {
     "time": "2026-07-08 10:41:56",
     "severity": "WARNING",
     "message": "App map: 1 pod(s) not Ready",
-    "acknowledged": false,
-    "acknowledged_at": ""
+    "acknowledged": true,
+    "acknowledged_at": "2026-07-08 15:44:13"
   },
   {
     "time": "2026-07-02 18:48:35",

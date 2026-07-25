@@ -12,10 +12,17 @@ def _now() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def run_kubectl(args: list[str], timeout: int = 60) -> tuple[bool, str]:
+def run_kubectl(args: list[str], timeout: int = 60, stdin: str = "") -> tuple[bool, str]:
     command = ["kubectl", *args]
     try:
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=False)
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+            input=stdin if stdin else None,
+        )
         output = (completed.stdout + completed.stderr).strip()
         return completed.returncode == 0, output
     except subprocess.TimeoutExpired:
@@ -187,14 +194,15 @@ def delete_application_workloads(application: dict[str, Any]) -> tuple[bool, str
             name = f"{application['id']}-{svc['name']}"
             _run_kubectl_with_retry(["delete", "hpa", name, "-n", namespace, "--ignore-not-found=true"], timeout=20)
 
-    # 4) Delete PVC & Pod (old data cleanup without destroying namespace)
-    # Patch PVC finalizer to null first to unblock
+    # 4) Delete app PVCs (skip MySQL PVCs to avoid data loss)
     _run_kubectl_with_retry(
-        ["patch", "-n", namespace, "--all", "pvc", "-p", '{"metadata":{"finalizers":null}}', "--type=merge", "--ignore-not-found=true"],
+        ["patch", "-n", namespace, "-l", f"app.kubernetes.io/part-of={application['id']}",
+         "pvc", "-p", '{"metadata":{"finalizers":null}}', "--type=merge", "--ignore-not-found=true"],
         timeout=20,
     )
     ok_pvc, out_pvc = _run_kubectl_with_retry(
-        ["delete", "pvc", "--all", "-n", namespace, "--ignore-not-found=true", "--force", "--grace-period=0"],
+        ["delete", "pvc", "-n", namespace, "-l", f"app.kubernetes.io/part-of={application['id']}",
+         "--ignore-not-found=true", "--force", "--grace-period=0"],
         timeout=30,
     )
     logs.append(f"pvc: {out_pvc[:100]}")

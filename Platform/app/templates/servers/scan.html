@@ -1,0 +1,81 @@
+{% extends 'base.html' %}{% block content %}
+<h1>🔍 Quét dãy mạng</h1>
+<p class="text-muted">Tự động tìm server trong dãy IP.</p>
+
+<form method="POST" class="row g-3 mb-4">
+  <div class="col-md-3">
+    <label class="form-label">Chế độ quét</label>
+    <select name="mode" class="form-select" onchange="document.querySelectorAll('.ssh-field').forEach(e=>e.style.display=this.value==='ssh'?'':'none')">
+      <option value="ssh" {% if mode=='ssh' %}selected{% endif %}>🔑 SSH (lấy hostname + role)</option>
+      <option value="ping" {% if mode=='ping' %}selected{% endif %}>📡 Ping (chỉ phát hiện máy sống)</option>
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">Dãy IP</label>
+    <input name="subnet" class="form-control" value="{{ subnet }}" placeholder="10.0.0.0/24 hoặc IP1,IP2,IP3" required>
+  </div>
+  <div class="col-md-2 ssh-field" style="display:{{ 'none' if mode=='ping' else '' }}">
+    <label class="form-label">SSH User</label>
+    <input name="ssh_user" class="form-control" value="{{ ssh_user }}" placeholder="user1, user2">
+    <small class="text-muted">Có thể nhiều user, cách dấu phẩy</small>
+  </div>
+  <div class="col-md-2 ssh-field" style="display:{{ 'none' if mode=='ping' else '' }}">
+    <label class="form-label">SSH Port</label>
+    <input name="ssh_port" class="form-control" value="{{ ssh_port }}" type="number">
+  </div>
+  <div class="col-md-3 ssh-field" style="display:{{ 'none' if mode=='ping' else '' }}">
+    <label class="form-label">SSH Key</label>
+    <input name="ssh_key_path" class="form-control" value="{{ ssh_key }}" placeholder="~/.ssh/id_ed25519">
+  </div>
+  <div class="col-md-2 d-flex align-items-end">
+    <button class="btn btn-primary w-100">🔍 Quét</button>
+  </div>
+</form>
+
+{% if servers %}
+<div class="card soft-card">
+  <div class="card-body">
+    <h6>Tìm thấy {{ servers|length }} server</h6>
+    <form method="POST">
+      <input type="hidden" name="subnet" value="{{ subnet }}">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <input type="hidden" name="ssh_user" value="{{ ssh_user }}">
+      <input type="hidden" name="ssh_key_path" value="{{ ssh_key }}">
+      <input type="hidden" name="ssh_port" value="{{ ssh_port }}">
+
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="select-all" onchange="document.querySelectorAll('.ip-check').forEach(c=>c.checked=this.checked)"></th>
+            <th>Hostname</th>
+            <th>IP</th>
+            <th>Role</th>
+            <th>User</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in servers %}
+          <tr>
+            <td><input class="ip-check" type="checkbox" name="selected_ips" value="{{ s.ip }}" {{ 'checked' if mode=='ssh' else '' }}></td>
+            <td><strong>{{ s.hostname or '?' }}</strong></td>
+            <td><code>{{ s.ip }}</code></td>
+            <td><span class="badge {{ 'bg-primary' if s.role == 'Master' else 'bg-info' if s.role == 'Unknown' else 'bg-secondary' }}">{{ s.role }}</span></td>
+            <td>{{ s.get('ssh_user', '?') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if mode == 'ssh' %}
+      <button class="btn btn-success">✅ Thêm server đã chọn</button>
+      {% else %}
+      <div class="alert alert-info mb-0">Chế độ Ping chỉ phát hiện máy sống. Chuyển sang chế độ SSH để thêm vào hệ thống.</div>
+      {% endif %}
+      <a href="{{ url_for('ui.servers') }}" class="btn btn-outline-secondary ms-2">Hủy</a>
+    </form>
+  </div>
+</div>
+{% elif subnet %}
+<div class="alert alert-warning">Không tìm thấy server nào trong dãy <strong>{{ subnet }}</strong>.</div>
+{% endif %}
+{% endblock %}

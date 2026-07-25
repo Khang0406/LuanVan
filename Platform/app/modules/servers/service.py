@@ -416,3 +416,129 @@ def test_multiple_servers(server_ids: list[str], test_type: str) -> tuple[bool, 
         return True, f"Tất cả {len(server_ids)} server được chọn đã kiểm tra thành công.\n{summary}"
 
     return False, f"Có server kiểm tra thất bại trong {len(server_ids)} server được chọn.\n{summary}"
+
+
+# ---------------------------------------------------------------------------
+# network scan — auto-discover servers on a subnet
+# ---------------------------------------------------------------------------
+
+def scan_network(
+    subnet: str,
+    ssh_user: str,
+    ssh_key_path: str,
+    ssh_port: int = 22,
+    timeout: int = 5,
+) -> list[dict[str, Any]]:
+    """Scan a subnet range for reachable SSH servers.
+
+    Parameters
+    ----------
+    subnet : str
+        CIDR notation (e.g. ``10.0.0.0/24``) or explicit range (``10.0.0.1-10.0.0.254``).
+    ssh_user : str
+        SSH username to try on each host.
+    ssh_key_path : str
+        Path to SSH private key.
+    ssh_port : int
+        SSH port (default 22).
+    timeout : int
+        Seconds to wait per host.
+
+    Returns list of discovered servers with ``ip``, ``hostname``, ``role``.
+    """
+    import ipaddress
+
+    # --- resolve comma-list / CIDR / range → list of IPs ---
+    if "," in subnet:
+        ips = [ip.strip() for ip in subnet.split(",") if ip.strip()]
+    elif "-" in subnet:
+        start, end = subnet.split("-")
+        start_ip = ipaddress.IPv4Address(start.strip())
+        end_ip = ipaddress.IPv4Address(end.strip())
+        ips = [str(ipaddress.IPv4Address(i)) for i in range(int(start_ip), int(end_ip) + 1)]
+    elif "/" in subnet:
+        net = ipaddress.IPv4Network(subnet, strict=False)
+        ips = [str(ip) for ip in net.hosts()]
+    else:
+        ips = [subnet.strip()]
+
+    discovered: list[dict[str, Any]] = []
+    ssh_users = [u.strip() for u in ssh_user.split(",") if u.strip()]
+    for ip in ips:
+        found_user = ""
+        found_hostname = ""
+        for user in ssh_users:
+            ok, hostname = _quick_ssh_check(ip, user, ssh_key_path, ssh_port, timeout)
+            if ok:
+                found_user = user
+                found_hostname = hostname
+                break
+        if not found_user:
+            continue
+        role = "Worker"
+        lower = found_hostname.lower()
+        if "master" in lower or "control" in lower:
+            role = "Master"
+        discovered.append({
+            "ip": ip,
+            "hostname": found_hostname,
+            "role": role,
+            "ssh_user": found_user,
+            "ssh_port": ssh_port,
+        })
+    return discovered
+
+
+def ping_scan_network(subnet: str, timeout: int = 2) -> list[dict[str, Any]]:
+    """Quick scan via ICMP ping — no SSH credentials needed.
+
+    Returns list of live hosts with ``ip`` and ``hostname`` (empty if no reverse DNS).
+    """
+    import ipaddress
+
+    if "," in subnet:
+        ips = [ip.strip() for ip in subnet.split(",") if ip.strip()]
+    elif "-" in subnet:
+        start, end = subnet.split("-")
+        start_ip = ipaddress.IPv4Address(start.strip())
+        end_ip = ipaddress.IPv4Address(end.strip())
+        ips = [str(ipaddress.IPv4Address(i)) for i in range(int(start_ip), int(end_ip) + 1)]
+    elif "/" in subnet:
+        net = ipaddress.IPv4Network(subnet, strict=False)
+        ips = [str(ip) for ip in net.hosts()]
+    else:
+        ips = [subnet.strip()]
+
+    discovered: list[dict[str, Any]] = []
+    for ip in ips:
+        try:
+            result = subprocess.run(
+                ["ping", "-c", "1", "-W", str(timeout), ip],
+                capture_output=True, text=True, timeout=timeout + 2,
+            )
+            if result.returncode == 0:
+                discovered.append({"ip": ip, "hostname": "", "role": "Unknown"})
+        except Exception:
+            pass
+    return discovered
+
+
+def _quick_ssh_check(ip: str, user: str, key: str, port: int, timeout: int) -> tuple[bool, str]:
+    """Run ``hostname`` via SSH. Returns (ok, hostname)."""
+    cmd = [
+        "ssh",
+        "-i", str(Path(key).expanduser()),
+        "-p", str(port),
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "ConnectTimeout=3",
+        "-o", "BatchMode=yes",
+        f"{user}@{ip}",
+        "hostname",
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        if result.returncode == 0:
+            return True, result.stdout.strip()
+        return False, ""
+    except Exception:
+        return False, ""

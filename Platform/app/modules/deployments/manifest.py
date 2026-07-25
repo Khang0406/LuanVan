@@ -13,6 +13,7 @@ def _yaml_value(value: str) -> str:
 
 def build_manifest(application: dict[str, Any]) -> str:
     namespace = application["namespace"]
+    github_url = application.get("github_url", "")
     documents: list[str] = [
         f"""apiVersion: v1
 kind: Namespace
@@ -42,27 +43,58 @@ metadata:
               cpu: {service.get("cpu_limit", "500m")}
               memory: {service.get("memory_limit", "512Mi")}"""
 
-        # Build volume mounts and volumes if hostPath is configured
+        # Build volumes — use initContainer (git clone) instead of hostPath
         host_path = service.get("host_path", "")
         container_mount = service.get("container_mount", "")
         node_name = service.get("node_name", "")
         node_name_yaml = ""
+        init_container_yaml = ""
         volume_mount_yaml = ""
         volumes_yaml = ""
 
         if host_path and container_mount:
+            mount_path = container_mount
+            use_init = True
+            base_dir = container_mount
+        elif github_url:
+            mount_path = container_mount or "/var/www/html"
+            use_init = True
+            base_dir = mount_path
+        else:
+            use_init = False
+
+        if use_init:
+            init_container_yaml = f"""
+      initContainers:
+        - name: git-clone
+          image: alpine/git
+          command: [sh, -c]
+          args:
+            - |
+              if [ -n "{github_url}" ]; then
+                git clone --depth=1 {github_url} /tmp/repo
+                cp -a /tmp/repo/. {base_dir}/
+                rm -rf /tmp/repo
+              fi
+              sed -i \"s|\\\\\\$host = .*|\\\\\\$host = '{namespace}-mysql';|\" {base_dir}/backend/db.php 2>/dev/null || true
+              sed -i \"s|\\\\\\$password = .*|\\\\\\$password = 'luanvan123';|\" {base_dir}/backend/db.php 2>/dev/null || true
+              if [ ! -f {base_dir}/index.php ] && [ -d {base_dir}/frontend ]; then
+                printf '<?php header("Location: frontend/index.php");' > {base_dir}/index.php
+              fi
+              chown -R 33:33 {base_dir}
+          volumeMounts:
+            - name: app-code
+              mountPath: {base_dir}"""
             volume_mount_yaml = f"""
           volumeMounts:
             - name: app-code
-              mountPath: {container_mount}"""
-            volumes_yaml = f"""
+              mountPath: {mount_path}"""
+            volumes_yaml = """
       volumes:
         - name: app-code
-          hostPath:
-            path: {host_path}
-            type: Directory"""
+          emptyDir: {}"""
 
-        if node_name:
+        if node_name and not host_path:
             node_name_yaml = f"""
       nodeName: {node_name}"""
 
@@ -86,18 +118,24 @@ spec:
       labels:
         app.kubernetes.io/name: {app_name}
         app.kubernetes.io/part-of: {application["id"]}
-    spec:{node_name_yaml}
+    spec:{node_name_yaml}{init_container_yaml}
       containers:
         - name: {service["name"]}
           image: {service["image"]}
           imagePullPolicy: IfNotPresent
+          command: [sh, -c]
+          args:
+            - |
+              rm -rf /usr/src/php/ext/mysqli/.libs /usr/src/php/ext/mysqli/*.lo 2>/dev/null
+              docker-php-ext-install mysqli 2>/dev/null
+              apache2-foreground
           ports:
             - containerPort: {int(service.get("container_port", 80))}{env_yaml}{resources_yaml}{volume_mount_yaml}{volumes_yaml}
 """
         )
 
         node_port = service.get("node_port", "")
-        node_port_yaml = f"\n    nodePort: {node_port}" if service.get("service_type") == "NodePort" and node_port else ""
+        node_port_yaml = f"\n      nodePort: {node_port}" if service.get("service_type") == "NodePort" and node_port else ""
 
         documents.append(
             f"""apiVersion: v1

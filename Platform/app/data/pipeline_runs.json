@@ -1,1 +1,1698 @@
-[]
+[
+  {
+    "id": "run-map-20260725160534",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25160534",
+        "started_at": "2026-07-25 16:05:34",
+        "finished_at": "2026-07-25 16:05:36"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-160536",
+        "started_at": "2026-07-25 16:05:36",
+        "finished_at": "2026-07-25 16:05:39"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 16:05:39",
+        "finished_at": "2026-07-25 16:05:43"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 16:05:43",
+        "finished_at": "2026-07-25 16:05:44"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-25 16:05:44",
+        "finished_at": "2026-07-25 16:06:41"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-25 16:06:42",
+        "finished_at": "2026-07-25 16:06:42"
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 16:05:34",
+    "updated_at": "2026-07-25 16:06:42"
+  },
+  {
+    "id": "run-map-20260725155851",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25155851",
+        "started_at": "2026-07-25 15:58:51",
+        "finished_at": "2026-07-25 15:58:53"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-155853",
+        "started_at": "2026-07-25 15:58:53",
+        "finished_at": "2026-07-25 15:58:59"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 15:58:59",
+        "finished_at": "2026-07-25 15:59:03"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 15:59:03",
+        "finished_at": "2026-07-25 15:59:05"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map configured\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-25 15:59:05",
+        "finished_at": "2026-07-25 16:00:20"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-25 16:00:21",
+        "finished_at": "2026-07-25 16:00:21"
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 15:58:51",
+    "updated_at": "2026-07-25 16:00:21"
+  },
+  {
+    "id": "run-map-20260725154810",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25154810",
+        "started_at": "2026-07-25 15:48:10",
+        "finished_at": "2026-07-25 15:48:12"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-154812",
+        "started_at": "2026-07-25 15:48:12",
+        "finished_at": "2026-07-25 15:48:14"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 15:48:14",
+        "finished_at": "2026-07-25 15:48:18"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 15:48:18",
+        "finished_at": "2026-07-25 15:48:19"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-25 15:48:19",
+        "finished_at": "2026-07-25 15:49:21"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-25 15:49:22",
+        "finished_at": "2026-07-25 15:49:22"
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 15:48:10",
+    "updated_at": "2026-07-25 15:49:22"
+  },
+  {
+    "id": "run-map-20260725154241",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Failed",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25154241",
+        "started_at": "2026-07-25 15:42:41",
+        "finished_at": "2026-07-25 15:42:43"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-154243",
+        "started_at": "2026-07-25 15:42:43",
+        "finished_at": "2026-07-25 15:42:47"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 15:42:47",
+        "finished_at": "2026-07-25 15:42:52"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 15:42:52",
+        "finished_at": "2026-07-25 15:43:56"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Failed",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did ",
+        "started_at": "2026-07-25 15:43:56",
+        "finished_at": "2026-07-25 15:44:08"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 15:42:41",
+    "updated_at": "2026-07-25 15:44:08"
+  },
+  {
+    "id": "run-map-20260725153908",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Failed",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25153908",
+        "started_at": "2026-07-25 15:39:08",
+        "finished_at": "2026-07-25 15:39:09"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-153909",
+        "started_at": "2026-07-25 15:39:09",
+        "finished_at": "2026-07-25 15:39:11"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 15:39:11",
+        "finished_at": "2026-07-25 15:39:15"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 15:39:15",
+        "finished_at": "2026-07-25 15:40:19"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Failed",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did ",
+        "started_at": "2026-07-25 15:40:19",
+        "finished_at": "2026-07-25 15:40:31"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 15:39:08",
+    "updated_at": "2026-07-25 15:40:31"
+  },
+  {
+    "id": "run-map-20260725153009",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Failed",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25153009",
+        "started_at": "2026-07-25 15:30:09",
+        "finished_at": "2026-07-25 15:30:11"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-153011",
+        "started_at": "2026-07-25 15:30:11",
+        "finished_at": "2026-07-25 15:30:14"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 15:30:14",
+        "finished_at": "2026-07-25 15:30:19"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 15:30:19",
+        "finished_at": "2026-07-25 15:31:22"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Failed",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did ",
+        "started_at": "2026-07-25 15:31:22",
+        "finished_at": "2026-07-25 15:31:35"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 15:30:09",
+    "updated_at": "2026-07-25 15:31:35"
+  },
+  {
+    "id": "run-map-20260725151406",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Failed",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25151406",
+        "started_at": "2026-07-25 15:14:06",
+        "finished_at": "2026-07-25 15:14:08"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-151408",
+        "started_at": "2026-07-25 15:14:08",
+        "finished_at": "2026-07-25 15:14:11"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 15:14:11",
+        "finished_at": "2026-07-25 15:14:15"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 15:14:15",
+        "finished_at": "2026-07-25 15:15:18"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Failed",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did ",
+        "started_at": "2026-07-25 15:15:18",
+        "finished_at": "2026-07-25 15:15:30"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 15:14:06",
+    "updated_at": "2026-07-25 15:15:30"
+  },
+  {
+    "id": "run-map-20260725151054",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Failed",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25151054",
+        "started_at": "2026-07-25 15:10:54",
+        "finished_at": "2026-07-25 15:10:56"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-151056",
+        "started_at": "2026-07-25 15:10:56",
+        "finished_at": "2026-07-25 15:11:01"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 15:11:01",
+        "finished_at": "2026-07-25 15:11:06"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 15:11:06",
+        "finished_at": "2026-07-25 15:12:09"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Failed",
+        "message": "namespace/map configured\ndeployment.apps/map-web created\nerror: error parsing /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/map.yaml: error converting YAML to JSON: yaml: line 17: did",
+        "started_at": "2026-07-25 15:12:10",
+        "finished_at": "2026-07-25 15:12:54"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 15:10:54",
+    "updated_at": "2026-07-25 15:12:54"
+  },
+  {
+    "id": "run-map-20260725144746",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25144746",
+        "started_at": "2026-07-25 14:47:46",
+        "finished_at": "2026-07-25 14:47:48"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-144748",
+        "started_at": "2026-07-25 14:47:48",
+        "finished_at": "2026-07-25 14:47:50"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 14:47:50",
+        "finished_at": "2026-07-25 14:47:54"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 14:47:54",
+        "finished_at": "2026-07-25 14:48:57"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-25 14:48:57",
+        "finished_at": "2026-07-25 14:50:23"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-25 14:50:23",
+        "finished_at": "2026-07-25 14:50:23"
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 14:47:46",
+    "updated_at": "2026-07-25 14:50:23"
+  },
+  {
+    "id": "run-demo-nginx-20260725144713",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-25 14:47:13",
+        "finished_at": "2026-07-25 14:47:13"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-25 14:47:13"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-25 14:47:13",
+        "finished_at": "2026-07-25 14:47:14"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-25 14:47:14"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx unchanged\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-25 14:47:14",
+        "finished_at": "2026-07-25 14:47:24"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-25 14:47:25",
+        "finished_at": "2026-07-25 14:47:25"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-25 14:47:13",
+    "updated_at": "2026-07-25 14:47:25"
+  },
+  {
+    "id": "run-map-20260725141507",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25141507",
+        "started_at": "2026-07-25 14:15:07",
+        "finished_at": "2026-07-25 14:15:09"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-141509",
+        "started_at": "2026-07-25 14:15:09",
+        "finished_at": "2026-07-25 14:15:11"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 14:15:11",
+        "finished_at": "2026-07-25 14:15:15"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 14:15:15",
+        "finished_at": "2026-07-25 14:16:18"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-25 14:16:18",
+        "finished_at": "2026-07-25 14:17:39"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-25 14:17:39",
+        "finished_at": "2026-07-25 14:17:40"
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 14:15:07",
+    "updated_at": "2026-07-25 14:17:40"
+  },
+  {
+    "id": "run-demo-nginx-20260725141132",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-25 14:11:32",
+        "finished_at": "2026-07-25 14:11:32"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-25 14:11:32"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-25 14:11:32",
+        "finished_at": "2026-07-25 14:11:33"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-25 14:11:33"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx unchanged\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-25 14:11:33",
+        "finished_at": "2026-07-25 14:11:45"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-25 14:11:47",
+        "finished_at": "2026-07-25 14:11:48"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-25 14:11:32",
+    "updated_at": "2026-07-25 14:11:48"
+  },
+  {
+    "id": "run-map-20260725134427",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25134427",
+        "started_at": "2026-07-25 13:44:27",
+        "finished_at": "2026-07-25 13:44:28"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-134428",
+        "started_at": "2026-07-25 13:44:28",
+        "finished_at": "2026-07-25 13:44:30"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 13:44:30",
+        "finished_at": "2026-07-25 13:44:34"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 13:44:34",
+        "finished_at": "2026-07-25 13:45:36"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map unchanged\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-25 13:45:36",
+        "finished_at": "2026-07-25 13:47:02"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-25 13:47:02",
+        "finished_at": "2026-07-25 13:47:03"
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-25 13:44:27",
+    "updated_at": "2026-07-25 13:47:03"
+  },
+  {
+    "id": "run-map-20260725132601",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Running",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25132601",
+        "started_at": "2026-07-25 13:26:01",
+        "finished_at": "2026-07-25 13:26:03"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-132603",
+        "started_at": "2026-07-25 13:26:03",
+        "finished_at": "2026-07-25 13:26:05"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 13:26:05",
+        "finished_at": "2026-07-25 13:26:09"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 13:26:09",
+        "finished_at": "2026-07-25 13:27:11"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Running",
+        "message": "Patching db.php configuration...",
+        "started_at": "2026-07-25 13:27:11",
+        "finished_at": ""
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-25 13:26:01",
+    "updated_at": "2026-07-25 13:28:17"
+  },
+  {
+    "id": "run-map-20260725130538",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Running",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25130538",
+        "started_at": "2026-07-25 13:05:38",
+        "finished_at": "2026-07-25 13:05:39"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-130539",
+        "started_at": "2026-07-25 13:05:39",
+        "finished_at": "2026-07-25 13:05:42"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 13:05:42",
+        "finished_at": "2026-07-25 13:05:46"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 13:05:46",
+        "finished_at": "2026-07-25 13:06:48"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Running",
+        "message": "Patching db.php configuration...",
+        "started_at": "2026-07-25 13:06:48",
+        "finished_at": ""
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-25 13:05:38",
+    "updated_at": "2026-07-25 13:09:47"
+  },
+  {
+    "id": "run-map-20260725124743",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Running",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25124743",
+        "started_at": "2026-07-25 12:47:43",
+        "finished_at": "2026-07-25 12:47:45"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-124745",
+        "started_at": "2026-07-25 12:47:45",
+        "finished_at": "2026-07-25 12:47:47"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 12:47:47",
+        "finished_at": "2026-07-25 12:47:51"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 12:47:51",
+        "finished_at": "2026-07-25 12:48:55"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Running",
+        "message": "Patching db.php configuration...",
+        "started_at": "2026-07-25 12:48:55",
+        "finished_at": ""
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-25 12:47:43",
+    "updated_at": "2026-07-25 12:50:07"
+  },
+  {
+    "id": "run-map-20260725121938",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Running",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-25121938",
+        "started_at": "2026-07-25 12:19:38",
+        "finished_at": "2026-07-25 12:19:40"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260725-121940",
+        "started_at": "2026-07-25 12:19:40",
+        "finished_at": "2026-07-25 12:19:42"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-25 12:19:43",
+        "finished_at": "2026-07-25 12:19:46"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-25 12:19:46",
+        "finished_at": "2026-07-25 12:20:49"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Running",
+        "message": "Patching db.php configuration...",
+        "started_at": "2026-07-25 12:20:49",
+        "finished_at": ""
+      },
+      {
+        "name": "VERIFY",
+        "status": "Waiting",
+        "message": "",
+        "started_at": "",
+        "finished_at": ""
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-25 12:19:38",
+    "updated_at": "2026-07-25 12:23:19"
+  },
+  {
+    "id": "run-demo-nginx-20260724230605",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-24 23:06:05",
+        "finished_at": "2026-07-24 23:06:05"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-24 23:06:05"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-24 23:06:05",
+        "finished_at": "2026-07-24 23:06:07"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-24 23:06:07"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx configured\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-24 23:06:07",
+        "finished_at": "2026-07-24 23:06:18"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-24 23:06:19",
+        "finished_at": "2026-07-24 23:06:26"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-24 23:06:05",
+    "updated_at": "2026-07-24 23:06:26"
+  },
+  {
+    "id": "run-demo-nginx-20260724110803",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-24 11:08:03",
+        "finished_at": "2026-07-24 11:08:04"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-24 11:08:04"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-24 11:08:04",
+        "finished_at": "2026-07-24 11:08:07"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-24 11:08:07"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx created\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-24 11:08:07",
+        "finished_at": "2026-07-24 11:08:18"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-24 11:08:18",
+        "finished_at": "2026-07-24 11:08:27"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-24 11:08:03",
+    "updated_at": "2026-07-24 11:08:27"
+  },
+  {
+    "id": "run-map-20260723194305",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-23194305",
+        "started_at": "2026-07-23 19:43:05",
+        "finished_at": "2026-07-23 19:43:07"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260723-194307",
+        "started_at": "2026-07-23 19:43:07",
+        "finished_at": "2026-07-23 19:43:08"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-23 19:43:08",
+        "finished_at": "2026-07-23 19:43:12"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-23 19:43:12",
+        "finished_at": "2026-07-23 19:44:20"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map created\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-23 19:44:20",
+        "finished_at": "2026-07-23 19:46:54"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-23 19:46:55",
+        "finished_at": "2026-07-23 19:46:55"
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-23 19:43:05",
+    "updated_at": "2026-07-23 19:46:55"
+  },
+  {
+    "id": "run-demo-nginx-20260723194220",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-23 19:42:20",
+        "finished_at": "2026-07-23 19:42:20"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-23 19:42:20"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-23 19:42:20",
+        "finished_at": "2026-07-23 19:42:21"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-23 19:42:21"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx created\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-23 19:42:21",
+        "finished_at": "2026-07-23 19:42:30"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-23 19:42:30",
+        "finished_at": "2026-07-23 19:42:40"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-23 19:42:20",
+    "updated_at": "2026-07-23 19:42:40"
+  },
+  {
+    "id": "run-map-20260721104606",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-21104606",
+        "started_at": "2026-07-21 10:46:06",
+        "finished_at": "2026-07-21 10:46:08"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260721-104608",
+        "started_at": "2026-07-21 10:46:08",
+        "finished_at": "2026-07-21 10:46:10"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-21 10:46:10",
+        "finished_at": "2026-07-21 10:46:13"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-21 10:46:13",
+        "finished_at": "2026-07-21 10:47:21"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map created\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-21 10:47:21",
+        "finished_at": "2026-07-21 10:49:22"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-21 10:49:23",
+        "finished_at": "2026-07-21 10:49:23"
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-21 10:46:06",
+    "updated_at": "2026-07-21 10:49:23"
+  },
+  {
+    "id": "run-demo-nginx-20260721104357",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-21 10:43:57",
+        "finished_at": "2026-07-21 10:43:57"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-21 10:43:57"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-21 10:43:57",
+        "finished_at": "2026-07-21 10:43:58"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-21 10:43:58"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx created\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-21 10:43:58",
+        "finished_at": "2026-07-21 10:44:34"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-21 10:44:34",
+        "finished_at": "2026-07-21 10:44:44"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-21 10:43:57",
+    "updated_at": "2026-07-21 10:44:44"
+  },
+  {
+    "id": "run-map-20260721081419",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-21081419",
+        "started_at": "2026-07-21 08:14:19",
+        "finished_at": "2026-07-21 08:14:20"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260721-081420",
+        "started_at": "2026-07-21 08:14:20",
+        "finished_at": "2026-07-21 08:14:22"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-21 08:14:22",
+        "finished_at": "2026-07-21 08:14:26"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-21 08:14:26",
+        "finished_at": "2026-07-21 08:15:34"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map configured\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-21 08:15:34",
+        "finished_at": "2026-07-21 08:19:18"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-21 08:19:18",
+        "finished_at": "2026-07-21 08:19:18"
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-21 08:14:19",
+    "updated_at": "2026-07-21 08:19:18"
+  },
+  {
+    "id": "run-demo-nginx-20260721081026",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-21 08:10:26",
+        "finished_at": "2026-07-21 08:10:27"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-21 08:10:27"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-21 08:10:27",
+        "finished_at": "2026-07-21 08:10:28"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-21 08:10:28"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx unchanged\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-21 08:10:28",
+        "finished_at": "2026-07-21 08:10:35"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-21 08:10:36",
+        "finished_at": "2026-07-21 08:10:37"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-21 08:10:26",
+    "updated_at": "2026-07-21 08:10:37"
+  },
+  {
+    "id": "run-map-20260708190857",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-08190857",
+        "started_at": "2026-07-08 19:08:57",
+        "finished_at": "2026-07-08 19:08:58"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker not available — using public image with hostPath",
+        "started_at": "2026-07-08 19:08:58",
+        "finished_at": "2026-07-08 19:08:59"
+      },
+      {
+        "name": "TEST",
+        "status": "Skipped",
+        "message": "Docker not available — skip test",
+        "started_at": "",
+        "finished_at": "2026-07-08 19:08:59"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker not available — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-08 19:08:59"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map configured\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-08 19:08:59",
+        "finished_at": "2026-07-08 19:13:21"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-08 19:13:21",
+        "finished_at": "2026-07-08 19:13:21"
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-08 19:08:57",
+    "updated_at": "2026-07-08 19:13:21"
+  },
+  {
+    "id": "run-map-20260708173447",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-08173447",
+        "started_at": "2026-07-08 17:34:47",
+        "finished_at": "2026-07-08 17:34:48"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260708-173448",
+        "started_at": "2026-07-08 17:34:48",
+        "finished_at": "2026-07-08 17:34:50"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-08 17:34:50",
+        "finished_at": "2026-07-08 17:34:56"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-08 17:34:56",
+        "finished_at": "2026-07-08 17:36:07"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map configured\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-08 17:36:07",
+        "finished_at": "2026-07-08 17:39:54"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-08 17:39:54",
+        "finished_at": "2026-07-08 17:39:55"
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-08 17:34:47",
+    "updated_at": "2026-07-08 17:39:55"
+  },
+  {
+    "id": "run-map-20260708171941",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-08171941",
+        "started_at": "2026-07-08 17:19:41",
+        "finished_at": "2026-07-08 17:19:42"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260708-171942",
+        "started_at": "2026-07-08 17:19:42",
+        "finished_at": "2026-07-08 17:19:44"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-08 17:19:44",
+        "finished_at": "2026-07-08 17:19:47"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-08 17:19:47",
+        "finished_at": "2026-07-08 17:20:52"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map created\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-08 17:20:52",
+        "finished_at": "2026-07-08 17:22:15"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-08 17:22:15",
+        "finished_at": "2026-07-08 17:22:15"
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-08 17:19:41",
+    "updated_at": "2026-07-08 17:22:15"
+  },
+  {
+    "id": "run-demo-nginx-20260708171756",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-08 17:17:56",
+        "finished_at": "2026-07-08 17:17:57"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-08 17:17:57"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-08 17:17:57",
+        "finished_at": "2026-07-08 17:17:58"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-08 17:17:58"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx unchanged\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-08 17:17:58",
+        "finished_at": "2026-07-08 17:18:04"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-08 17:18:04",
+        "finished_at": "2026-07-08 17:18:11"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-08 17:17:56",
+    "updated_at": "2026-07-08 17:18:11"
+  },
+  {
+    "id": "run-demo-nginx-20260708171115",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Failed",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-08 17:11:16",
+        "finished_at": "2026-07-08 17:11:16"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-08 17:11:16"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-08 17:11:16",
+        "finished_at": "2026-07-08 17:11:17"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-08 17:11:17"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx created\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-08 17:11:17",
+        "finished_at": "2026-07-08 17:11:24"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Failed",
+        "message": "0 running pods after deploy; last status: 0/1 pod(s) running (waiting...)",
+        "started_at": "2026-07-08 17:11:24",
+        "finished_at": "2026-07-08 17:11:29"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-08 17:11:15",
+    "updated_at": "2026-07-08 17:11:29"
+  },
+  {
+    "id": "run-demo-nginx-20260708170501",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-08 17:05:01",
+        "finished_at": "2026-07-08 17:05:04"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-08 17:05:04"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-08 17:05:04",
+        "finished_at": "2026-07-08 17:05:05"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-08 17:05:05"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/demo-nginx unchanged\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-08 17:05:05",
+        "finished_at": "2026-07-08 17:05:12"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "1/1 pod(s) running",
+        "started_at": "2026-07-08 17:05:12",
+        "finished_at": "2026-07-08 17:05:15"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-08 17:05:01",
+    "updated_at": "2026-07-08 17:05:15"
+  },
+  {
+    "id": "run-map-20260708153801",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Cloned https://github.com/Khang0406/map-project.git → /home/vpkhang-b2204938/projects/LuanVan/Platform/app/data/builds/map-08153801",
+        "started_at": "2026-07-08 15:38:01",
+        "finished_at": "2026-07-08 15:38:02"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): Khang0406/map-web:build-20260708-153802",
+        "started_at": "2026-07-08 15:38:02",
+        "finished_at": "2026-07-08 15:38:04"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: ✓ running",
+        "started_at": "2026-07-08 15:38:04",
+        "finished_at": "2026-07-08 15:38:08"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Push failed — using public image fallback: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --p",
+        "started_at": "2026-07-08 15:38:08",
+        "finished_at": "2026-07-08 15:39:15"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "namespace/map configured\ndeployment.apps/map-web created\nservice/map-web created",
+        "started_at": "2026-07-08 15:39:15",
+        "finished_at": "2026-07-08 15:42:19"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "2/2 pod(s) running",
+        "started_at": "2026-07-08 15:42:19",
+        "finished_at": "2026-07-08 15:42:19"
+      }
+    ],
+    "image": "php:8.2-apache",
+    "created_at": "2026-07-08 15:38:01",
+    "updated_at": "2026-07-08 15:42:19"
+  }
+]
