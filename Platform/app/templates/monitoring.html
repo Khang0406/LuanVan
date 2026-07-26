@@ -461,8 +461,8 @@
   }
 
   // ==================== POLLING ====================
-  var POLL_METRICS = 10000;   // 10s
-  var POLL_CHARTS  = 30000;   // 30s (charts are heavier)
+  var POLL_METRICS = 30000;   // 30s
+  var POLL_CHARTS  = 60000;   // 60s (charts are heavier)
 
   function fetchMetrics() {
     fetch("{{ url_for('ui.monitoring_api_metrics') }}")

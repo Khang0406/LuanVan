@@ -763,8 +763,6 @@ def monitoring_proxy_grafana(rest=""):
 
 @ui_bp.route("/grafana/", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 @ui_bp.route("/grafana/<path:rest>", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
-@login_required
-@role_required("Admin")
 def monitoring_grafana_static_proxy(rest=""):
     target_path = f"/grafana/{rest}" if rest else "/grafana/"
     return _proxy_to_grafana(target_path)
