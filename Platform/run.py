@@ -11,4 +11,5 @@ if __name__ == "__main__":
         port=int(app.config.get("PLATFORM_PORT", 8000)),
         debug=False,
         use_reloader=False,
+        threaded=True,
     )
