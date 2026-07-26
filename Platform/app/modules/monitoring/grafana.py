@@ -402,11 +402,12 @@ class GrafanaClient:
         org_id: int = 1,
         theme: str = "light",
         refresh: str = "30s",
-        kiosk: str = "kiosk",
+        kiosk: str = "",
     ) -> str:
         """Return proxy-based iframe URL so browser reaches Grafana through Flask."""
         import time
-        return f"/monitoring/proxy/grafana/d/{dashboard_uid}?orgId={org_id}&refresh={refresh}&theme={theme}&kiosk&_t={int(time.time())}"
+        kiosk_param = "&kiosk" if kiosk else ""
+        return f"/monitoring/proxy/grafana/d/{dashboard_uid}?orgId={org_id}&refresh={refresh}&theme={theme}{kiosk_param}&_t={int(time.time())}"
 
     def ensure_cluster_overview(self) -> str | None:
         """Import the built-in cluster dashboard & return its iframe URL.

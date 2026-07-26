@@ -697,37 +697,57 @@ def monitoring_proxy_prometheus(rest=""):
         return Response(json.dumps({"status": "error", "error": str(e)}), status=502, content_type="application/json")
 
 
+def _proxy_to_grafana(target_path: str) -> Any:
+    """Forward a request to Grafana and return a Flask Response.
+
+    Handles headers, cookies, binary content, and redirects.
+    """
+    from flask import Response
+
+    import requests as _requests
+
+    from app.modules.monitoring.grafana import resolve_grafana_url
+
+    graf_url = resolve_grafana_url()
+    qs = request.query_string.decode()
+    target = f"{graf_url}{target_path}"
+    if qs:
+        target = f"{target}?{qs}"
+
+    forward_headers = {
+        k: v for k, v in request.headers.items()
+        if k.lower() in ("accept", "accept-encoding", "accept-language",
+                         "content-type", "origin", "referer", "user-agent",
+                         "x-requested-with", "cookie")
+    }
+
+    try:
+        resp = _requests.request(
+            method=request.method,
+            url=target,
+            headers=forward_headers,
+            data=request.get_data() or None,
+            allow_redirects=True,
+            timeout=30,
+        )
+        ct = resp.headers.get("Content-Type", "text/html")
+        response = Response(resp.content, status=resp.status_code, content_type=ct)
+        for key, val in resp.headers.items():
+            if key.lower() in ("set-cookie",):
+                response.headers[key] = val
+        return response
+    except _requests.RequestException as e:
+        current_app.logger.error("Grafana proxy error: %s", e)
+        return Response(f"Grafana proxy error: {e}", status=502)
+
+
 @ui_bp.route("/monitoring/proxy/grafana/", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 @ui_bp.route("/monitoring/proxy/grafana/<path:rest>", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 @login_required
 @role_required("Admin")
 def monitoring_proxy_grafana(rest=""):
-    """Proxy requests to Grafana, rewriting path prefix for sub-path serving."""
-    from flask import Response
-    import urllib.request
-    import urllib.error
-
-    from app.modules.monitoring.grafana import resolve_grafana_url
-
-    graf_url = resolve_grafana_url()
     target_path = f"/grafana/{rest}" if rest else "/grafana/"
-    qs = request.query_string.decode()
-    target = f"{graf_url}{target_path}"
-    if qs:
-        target = f"{target}?{qs}"
-    try:
-        body = request.get_data()
-        req = urllib.request.Request(target, data=body if body else None, method=request.method)
-        for key in ("Content-Type", "Accept", "Authorization"):
-            if key in request.headers:
-                req.add_header(key, request.headers[key])
-        resp = urllib.request.urlopen(req, timeout=30)
-        ct = resp.headers.get("Content-Type", "text/html")
-        return Response(resp.read(), status=resp.status, content_type=ct)
-    except urllib.error.HTTPError as e:
-        return Response(e.read(), status=e.code, content_type=e.headers.get("Content-Type", "text/html"))
-    except Exception as e:
-        return Response(str(e), status=502)
+    return _proxy_to_grafana(target_path)
 
 
 @ui_bp.route("/grafana/", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
@@ -735,36 +755,8 @@ def monitoring_proxy_grafana(rest=""):
 @login_required
 @role_required("Admin")
 def monitoring_grafana_static_proxy(rest=""):
-    """Proxy Grafana static assets (JS/CSS/fonts) referenced by Grafana's HTML.
-
-    Grafana's sub-path mode generates absolute URLs under ``/grafana/``.
-    This route catches those requests and proxies them to the real Grafana.
-    """
-    from flask import Response
-    import urllib.request
-    import urllib.error
-
-    from app.modules.monitoring.grafana import resolve_grafana_url
-
-    graf_url = resolve_grafana_url()
     target_path = f"/grafana/{rest}" if rest else "/grafana/"
-    qs = request.query_string.decode()
-    target = f"{graf_url}{target_path}"
-    if qs:
-        target = f"{target}?{qs}"
-    try:
-        body = request.get_data()
-        req = urllib.request.Request(target, data=body if body else None, method=request.method)
-        for key in ("Content-Type", "Accept"):
-            if key in request.headers:
-                req.add_header(key, request.headers[key])
-        resp = urllib.request.urlopen(req, timeout=30)
-        ct = resp.headers.get("Content-Type", "application/octet-stream")
-        return Response(resp.read(), status=resp.status, content_type=ct)
-    except urllib.error.HTTPError as e:
-        return Response(e.read(), status=e.code, content_type=e.headers.get("Content-Type", "application/octet-stream"))
-    except Exception as e:
-        return Response(str(e), status=502)
+    return _proxy_to_grafana(target_path)
 
 
 @ui_bp.route("/monitoring/alerts")
