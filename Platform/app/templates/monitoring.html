@@ -28,6 +28,10 @@
     </a>
     {% if grafana_embed %}
     <a class="btn btn-outline-info btn-sm me-2" href="{{ grafana_embed }}" target="_blank">📊 Mở Grafana</a>
+    {% else %}
+    <form method="POST" action="{{ url_for('ui.monitoring_install_stack') }}" style="display:inline;">
+      <button type="submit" class="btn btn-success btn-sm me-2" onclick="return confirm('Deploy Prometheus + Grafana + Node Exporter + Alertmanager lên cluster?')">⚡ Cài đặt Monitoring Stack</button>
+    </form>
     {% endif %}
   </div>
 </div>
