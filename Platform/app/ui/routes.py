@@ -697,7 +697,7 @@ def monitoring_proxy_prometheus(rest=""):
         return Response(json.dumps({"status": "error", "error": str(e)}), status=502, content_type="application/json")
 
 
-def _proxy_to_grafana(target_path: str) -> Any:
+def _proxy_to_grafana(target_path: str, _redirects: int = 0) -> Any:
     """Forward a request to Grafana and return a Flask Response.
 
     Handles headers, cookies, binary content, and redirects.
@@ -707,6 +707,9 @@ def _proxy_to_grafana(target_path: str) -> Any:
     import requests as _requests
 
     from app.modules.monitoring.grafana import resolve_grafana_url
+
+    if _redirects > 5:
+        return Response("Too many Grafana redirects", status=502)
 
     graf_url = resolve_grafana_url()
     qs = request.query_string.decode()
@@ -727,9 +730,17 @@ def _proxy_to_grafana(target_path: str) -> Any:
             url=target,
             headers=forward_headers,
             data=request.get_data() or None,
-            allow_redirects=True,
+            allow_redirects=False,
             timeout=30,
         )
+        if resp.status_code in (301, 302, 303, 307, 308):
+            loc = resp.headers.get("Location", "")
+            if "localhost:3000" in loc:
+                idx = loc.find("/d/")
+                if idx >= 0:
+                    return _proxy_to_grafana(f"/grafana{loc[idx:]}", _redirects + 1)
+            if loc.startswith("/"):
+                return _proxy_to_grafana(loc, _redirects + 1)
         ct = resp.headers.get("Content-Type", "text/html")
         response = Response(resp.content, status=resp.status_code, content_type=ct)
         for key, val in resp.headers.items():
