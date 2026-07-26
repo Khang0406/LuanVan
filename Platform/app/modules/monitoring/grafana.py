@@ -28,45 +28,63 @@ from app.config import BASE_DIR, Config
 _CLUSTERS_FILE_GF = BASE_DIR / "app" / "data" / "clusters.json"
 _DEFAULT_GRAFANA_PORT = 30300
 
+_cached_grafana_url: str = ""
+_cached_grafana_ts: float = 0.0
+
 
 def resolve_grafana_url() -> str:
-    """Return the Grafana URL by reading the active cluster's master IP.
+    """Return a reachable Grafana URL from active clusters (newest first).
 
-    Looks up ``app/data/clusters.json``, finds the first cluster with
-    ``status == "active"``, and builds ``http://<master_ip>:30300``.
+    Tries each active cluster in ``clusters.json`` (most recent first)
+    and returns the URL of the first one whose ``/api/health`` responds.
+    Results are cached for 60 seconds.
 
-    Falls back to ``Config.GRAFANA_URL`` when:
-      - No clusters.json exists
-      - No active cluster found
-      - master_ip is missing or invalid
+    Falls back to ``Config.GRAFANA_URL`` when no active cluster is reachable.
     """
     import json
+    import time
 
-    if not _CLUSTERS_FILE_GF.exists():
-        return Config.GRAFANA_URL
+    global _cached_grafana_url, _cached_grafana_ts
+    now = time.monotonic()
+    if _cached_grafana_url and now - _cached_grafana_ts < 60:
+        return _cached_grafana_url
 
-    try:
-        clusters = json.loads(_CLUSTERS_FILE_GF.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return Config.GRAFANA_URL
+    candidates: list[str] = []
 
-    if not isinstance(clusters, list):
-        return Config.GRAFANA_URL
+    if _CLUSTERS_FILE_GF.exists():
+        try:
+            clusters = json.loads(_CLUSTERS_FILE_GF.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            clusters = []
+        if isinstance(clusters, list):
+            for cluster in reversed(clusters):
+                if cluster.get("status") != "active":
+                    continue
+                master_ip = cluster.get("master_ip", "").strip()
+                if not master_ip:
+                    continue
+                if master_ip.startswith("http://") or master_ip.startswith("https://"):
+                    if ":" not in master_ip.split("/")[2]:
+                        candidates.append(f"{master_ip}:{_DEFAULT_GRAFANA_PORT}")
+                    else:
+                        candidates.append(master_ip)
+                else:
+                    candidates.append(f"http://{master_ip}:{_DEFAULT_GRAFANA_PORT}")
 
-    for cluster in clusters:
-        if cluster.get("status") != "active":
+    candidates.append(Config.GRAFANA_URL)
+
+    for url in candidates:
+        try:
+            resp = requests.get(f"{url}/api/health", timeout=2)
+            if resp.status_code == 200:
+                _cached_grafana_url = url
+                _cached_grafana_ts = now
+                return url
+        except Exception:
             continue
-        master_ip = cluster.get("master_ip", "").strip()
-        if not master_ip:
-            continue
-        # Already a full URL? Use as-is
-        if master_ip.startswith("http://") or master_ip.startswith("https://"):
-            if ":" not in master_ip.split("/")[2]:
-                return f"{master_ip}:{_DEFAULT_GRAFANA_PORT}"
-            return master_ip
-        # Plain IP – build URL
-        return f"http://{master_ip}:{_DEFAULT_GRAFANA_PORT}"
 
+    _cached_grafana_url = Config.GRAFANA_URL
+    _cached_grafana_ts = now
     return Config.GRAFANA_URL
 
 # ---------------------------------------------------------------------------

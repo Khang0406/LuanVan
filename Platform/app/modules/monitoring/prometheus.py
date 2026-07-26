@@ -265,44 +265,62 @@ class PrometheusClient:
 _CLUSTERS_FILE = BASE_DIR / "app" / "data" / "clusters.json"
 _DEFAULT_PROMETHEUS_PORT = 30900
 
+_cached_prometheus_url: str = ""
+_cached_prometheus_ts: float = 0.0
+
 
 def resolve_prometheus_url() -> str:
-    """Return the Prometheus URL by reading the active cluster's master IP.
+    """Return a reachable Prometheus URL from active clusters (newest first).
 
-    Looks up ``app/data/clusters.json``, finds the first cluster with
-    ``status == "active"``, and builds ``http://<master_ip>:30900``.
+    Tries each active cluster in ``clusters.json`` (most recent first)
+    and returns the URL of the first one whose ``/-/healthy`` responds.
+    Results are cached for 60 seconds.
 
-    Falls back to ``Config.PROMETHEUS_URL`` when:
-      - No clusters.json exists
-      - No active cluster found
-      - master_ip is missing or invalid
+    Falls back to ``Config.PROMETHEUS_URL`` when no active cluster is reachable.
     """
-    if not _CLUSTERS_FILE.exists():
-        return Config.PROMETHEUS_URL
+    import time
 
-    try:
-        clusters = json.loads(_CLUSTERS_FILE.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return Config.PROMETHEUS_URL
+    global _cached_prometheus_url, _cached_prometheus_ts
+    now = time.monotonic()
+    if _cached_prometheus_url and now - _cached_prometheus_ts < 60:
+        return _cached_prometheus_url
 
-    if not isinstance(clusters, list):
-        return Config.PROMETHEUS_URL
+    candidates: list[str] = []
 
-    for cluster in clusters:
-        if cluster.get("status") != "active":
+    if _CLUSTERS_FILE.exists():
+        try:
+            clusters = json.loads(_CLUSTERS_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            clusters = []
+        if isinstance(clusters, list):
+            for cluster in reversed(clusters):
+                if cluster.get("status") != "active":
+                    continue
+                master_ip = cluster.get("master_ip", "").strip()
+                if not master_ip:
+                    continue
+                if master_ip.startswith("http://") or master_ip.startswith("https://"):
+                    if ":" not in master_ip.split("/")[2]:
+                        candidates.append(f"{master_ip}:{_DEFAULT_PROMETHEUS_PORT}")
+                    else:
+                        candidates.append(master_ip)
+                else:
+                    candidates.append(f"http://{master_ip}:{_DEFAULT_PROMETHEUS_PORT}")
+
+    candidates.append(Config.PROMETHEUS_URL)
+
+    for url in candidates:
+        try:
+            resp = requests.get(f"{url}/-/healthy", timeout=2)
+            if resp.status_code == 200:
+                _cached_prometheus_url = url
+                _cached_prometheus_ts = now
+                return url
+        except Exception:
             continue
-        master_ip = cluster.get("master_ip", "").strip()
-        if not master_ip:
-            continue
-        # Already a full URL? Use as-is
-        if master_ip.startswith("http://") or master_ip.startswith("https://"):
-            # Replace port if it's a raw IP (no path)
-            if ":" not in master_ip.split("/")[2]:
-                return f"{master_ip}:{_DEFAULT_PROMETHEUS_PORT}"
-            return master_ip
-        # Plain IP – build URL
-        return f"http://{master_ip}:{_DEFAULT_PROMETHEUS_PORT}"
 
+    _cached_prometheus_url = Config.PROMETHEUS_URL
+    _cached_prometheus_ts = now
     return Config.PROMETHEUS_URL
 
 
