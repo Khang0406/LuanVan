@@ -404,10 +404,9 @@ class GrafanaClient:
         refresh: str = "30s",
         kiosk: str = "kiosk",
     ) -> str:
-        """Return direct Grafana embed URL (no proxy — browser reaches cluster IP directly)."""
+        """Return proxy-based iframe URL so browser reaches Grafana through Flask."""
         import time
-        grafana_url = resolve_grafana_url()
-        return f"{grafana_url}/grafana/d/{dashboard_uid}?orgId={org_id}&refresh={refresh}&theme={theme}&kiosk&_t={int(time.time())}"
+        return f"/monitoring/proxy/grafana/d/{dashboard_uid}?orgId={org_id}&refresh={refresh}&theme={theme}&kiosk&_t={int(time.time())}"
 
     def ensure_cluster_overview(self) -> str | None:
         """Import the built-in cluster dashboard & return its iframe URL.
