@@ -2,6 +2,7 @@ import json
 from typing import Any
 
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import login_required
 
 from app.modules.applications.service import (
     build_pipeline_steps,
@@ -60,6 +61,7 @@ from app.modules.monitoring.alerting import (
 )
 from app.modules.monitoring.grafana import get_grafana_embed_url
 from app.modules.monitoring.k8s_manifests import deploy_monitoring_stack
+from app.modules.auth.routes import role_required
 
 from .mock_data import AUDIT_LOGS, INSTALL_STEPS
 
@@ -67,11 +69,15 @@ ui_bp = Blueprint("ui", __name__)
 
 
 @ui_bp.route("/servers")
+@login_required
+@role_required("Admin")
 def servers():
     return render_template("servers/list.html", servers=load_servers())
 
 
 @ui_bp.route("/servers/<server_id>")
+@login_required
+@role_required("Admin")
 def server_detail(server_id):
     server = find_server(server_id)
     if not server:
@@ -80,6 +86,8 @@ def server_detail(server_id):
 
 
 @ui_bp.route("/servers/new", methods=["GET", "POST"])
+@login_required
+@role_required("Admin")
 def server_form():
     if request.method == "POST":
         required_fields = ["name", "ip", "ssh_user", "role"]
@@ -96,6 +104,8 @@ def server_form():
 
 
 @ui_bp.post("/servers/<server_id>/test-ssh")
+@login_required
+@role_required("Admin")
 def server_test_ssh(server_id):
     success, message = test_ssh(server_id)
     flash(message, "success" if success else "danger")
@@ -103,6 +113,8 @@ def server_test_ssh(server_id):
 
 
 @ui_bp.post("/servers/<server_id>/test-ansible")
+@login_required
+@role_required("Admin")
 def server_test_ansible(server_id):
     success, message = test_ansible_ping(server_id)
     flash(message, "success" if success else "danger")
@@ -110,6 +122,8 @@ def server_test_ansible(server_id):
 
 
 @ui_bp.post("/servers/<server_id>/bootstrap-sudo")
+@login_required
+@role_required("Admin")
 def server_bootstrap_sudo(server_id):
     sudo_password = request.form.get("sudo_password", "")
     success, message = bootstrap_sudo_nopasswd(server_id, sudo_password)
@@ -118,6 +132,8 @@ def server_bootstrap_sudo(server_id):
 
 
 @ui_bp.post("/servers/<server_id>/test-sudo")
+@login_required
+@role_required("Admin")
 def server_test_sudo(server_id):
     success, message = test_sudo_nopasswd(server_id)
     flash(message, "success" if success else "danger")
@@ -125,6 +141,8 @@ def server_test_sudo(server_id):
 
 
 @ui_bp.post("/servers/bulk-test")
+@login_required
+@role_required("Admin")
 def servers_bulk_test():
     server_ids = request.form.getlist("server_ids")
     test_type = request.form.get("test_type", "ansible")
@@ -134,6 +152,8 @@ def servers_bulk_test():
 
 
 @ui_bp.post("/servers/bulk-bootstrap-sudo")
+@login_required
+@role_required("Admin")
 def servers_bulk_bootstrap_sudo():
     server_ids = request.form.getlist("server_ids")
     sudo_password = request.form.get("sudo_password", "")
@@ -143,6 +163,8 @@ def servers_bulk_bootstrap_sudo():
 
 
 @ui_bp.route("/clusters")
+@login_required
+@role_required("Admin")
 def clusters():
     return render_template("clusters/list.html", servers=load_servers(), steps=INSTALL_STEPS)
 
@@ -157,11 +179,15 @@ def _cluster_install_context(result_message: str = "", result_output: str = "") 
 
 
 @ui_bp.route("/clusters/install")
+@login_required
+@role_required("Admin")
 def cluster_install():
     return render_template("clusters/install.html", **_cluster_install_context())
 
 
 @ui_bp.post("/clusters/dry-run")
+@login_required
+@role_required("Admin")
 def cluster_dry_run():
     selected_nodes = [
         {"server_id": server_id, "role": request.form.get(f"role_{server_id}", "Worker")}
@@ -173,6 +199,8 @@ def cluster_dry_run():
 
 
 @ui_bp.post("/clusters/install")
+@login_required
+@role_required("Admin")
 def cluster_install_submit():
     selected_nodes = [
         {"server_id": server_id, "role": request.form.get(f"role_{server_id}", "Worker")}
@@ -185,17 +213,21 @@ def cluster_install_submit():
 
 
 @ui_bp.route("/clusters/detail")
+@login_required
+@role_required("Admin")
 def cluster_detail():
     return render_template("clusters/detail.html", servers=load_servers(), steps=INSTALL_STEPS)
 
 
 @ui_bp.route("/applications")
+@login_required
 def applications():
     apps = load_applications()
     return render_template("applications/list.html", applications=apps)
 
 
 @ui_bp.route("/applications/new", methods=["GET", "POST"])
+@login_required
 def application_form():
     if request.method == "POST":
         required_fields = ["name", "owner"]
@@ -230,6 +262,7 @@ def application_form():
 
 
 @ui_bp.route("/applications/<application_id>")
+@login_required
 def application_detail(application_id):
     application = find_application(application_id)
     if not application:
@@ -247,6 +280,7 @@ def application_detail(application_id):
 
 
 @ui_bp.post("/applications/<application_id>/deploy")
+@login_required
 def application_deploy(application_id):
     application = find_application(application_id)
     if not application:
@@ -257,6 +291,7 @@ def application_deploy(application_id):
 
 
 @ui_bp.post("/applications/<application_id>/restart")
+@login_required
 def application_restart(application_id):
     application = find_application(application_id)
     if not application:
@@ -267,6 +302,7 @@ def application_restart(application_id):
 
 
 @ui_bp.post("/applications/<application_id>/scale")
+@login_required
 def application_scale(application_id):
     application = find_application(application_id)
     if not application:
@@ -278,6 +314,7 @@ def application_scale(application_id):
 
 
 @ui_bp.post("/applications/<application_id>/delete-workloads")
+@login_required
 def application_delete_workloads(application_id):
     application = find_application(application_id)
     if not application:
@@ -288,6 +325,7 @@ def application_delete_workloads(application_id):
 
 
 @ui_bp.post("/applications/<application_id>/delete")
+@login_required
 def application_delete(application_id):
     """Xóa application khỏi hệ thống và dọn dẹp namespace K8s."""
     application = find_application(application_id)
@@ -302,6 +340,7 @@ def application_delete(application_id):
 
 
 @ui_bp.post("/applications/<application_id>/pipeline")
+@login_required
 def application_pipeline_trigger(application_id):
     """Trigger CI/CD pipeline for a specific application."""
     application = find_application(application_id)
@@ -316,6 +355,7 @@ def application_pipeline_trigger(application_id):
 
 
 @ui_bp.route("/applications/<application_id>/pipeline-history")
+@login_required
 def application_pipeline_history(application_id):
     """View pipeline run history for an application."""
     application = find_application(application_id)
@@ -326,6 +366,7 @@ def application_pipeline_history(application_id):
 
 
 @ui_bp.route("/applications/<application_id>/logs")
+@login_required
 def application_logs(application_id):
     application = find_application(application_id)
     if not application:
@@ -335,16 +376,19 @@ def application_logs(application_id):
 
 
 @ui_bp.route("/deployments/service-form")
+@login_required
 def service_form():
     return redirect(url_for("ui.application_form"))
 
 
 @ui_bp.route("/deployments/detail")
+@login_required
 def deployment_detail():
     return render_template("deployments/detail.html", applications=load_applications())
 
 
 @ui_bp.route("/deployments/logs")
+@login_required
 def deployment_logs():
     applications = load_applications()
     if applications:
@@ -354,11 +398,13 @@ def deployment_logs():
 
 
 @ui_bp.route("/jobs")
+@login_required
 def jobs():
     return render_template("jobs/detail.html", steps=INSTALL_STEPS)
 
 
 @ui_bp.route("/cicd")
+@login_required
 def cicd():
     events = load_all_pipeline_events()
     # fallback to mock if empty
@@ -458,6 +504,8 @@ def _get_monitoring_data() -> dict[str, Any]:
 
 
 @ui_bp.route("/monitoring")
+@login_required
+@role_required("Admin")
 def monitoring():
     data = _get_monitoring_data()
     return render_template(
@@ -474,6 +522,8 @@ def monitoring():
 
 
 @ui_bp.route("/monitoring/api/metrics")
+@login_required
+@role_required("Admin")
 def monitoring_api_metrics():
     """JSON endpoint for real-time AJAX polling. Always returns valid JSON."""
     try:
@@ -484,6 +534,8 @@ def monitoring_api_metrics():
 
 
 @ui_bp.route("/monitoring/api/charts")
+@login_required
+@role_required("Admin")
 def monitoring_api_charts():
     """JSON endpoint for chart time-series data (last 30 min).
 
@@ -578,6 +630,8 @@ def cp2chart(prom_result: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 @ui_bp.route("/monitoring/refresh")
+@login_required
+@role_required("Admin")
 def monitoring_refresh():
     """Force refresh metrics snapshot."""
     apps = load_applications()
@@ -588,6 +642,8 @@ def monitoring_refresh():
 
 
 @ui_bp.route("/monitoring/grafana")
+@login_required
+@role_required("Admin")
 def monitoring_grafana():
     """Render Grafana embedded iframe page."""
     data = _get_monitoring_data()
@@ -606,6 +662,8 @@ def monitoring_grafana():
 
 
 @ui_bp.route("/monitoring/install-stack", methods=["POST"])
+@login_required
+@role_required("Admin")
 def monitoring_install_stack():
     """Install Prometheus+Grafana monitoring stack on the K3s cluster."""
     result = deploy_monitoring_stack()
@@ -616,6 +674,8 @@ def monitoring_install_stack():
 
 @ui_bp.route("/monitoring/proxy/prometheus", defaults={"rest": ""}, methods=["GET", "POST"])
 @ui_bp.route("/monitoring/proxy/prometheus/<path:rest>", methods=["GET", "POST"])
+@login_required
+@role_required("Admin")
 def monitoring_proxy_prometheus(rest=""):
     """Proxy requests to Prometheus API (frontend query endpoint)."""
     from flask import Response
@@ -639,6 +699,8 @@ def monitoring_proxy_prometheus(rest=""):
 
 @ui_bp.route("/monitoring/proxy/grafana/", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 @ui_bp.route("/monitoring/proxy/grafana/<path:rest>", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+@login_required
+@role_required("Admin")
 def monitoring_proxy_grafana(rest=""):
     """Proxy requests to Grafana. Grafana has serve_from_sub_path=true with
     root_url path = /monitoring/proxy/grafana, so we forward the full path."""
@@ -671,6 +733,8 @@ def monitoring_proxy_grafana(rest=""):
 
 
 @ui_bp.route("/monitoring/alerts")
+@login_required
+@role_required("Admin")
 def monitoring_alerts():
     """View all alert history."""
     data = _get_monitoring_data()
@@ -680,6 +744,8 @@ def monitoring_alerts():
 
 
 @ui_bp.route("/monitoring/alerts/<int:alert_id>/ack")
+@login_required
+@role_required("Admin")
 def monitoring_ack_alert(alert_id):
     """Acknowledge an alert."""
     success = acknowledge_alert(alert_id)
@@ -691,6 +757,8 @@ def monitoring_ack_alert(alert_id):
 
 
 @ui_bp.route("/audit")
+@login_required
+@role_required("Admin")
 def audit():
     return render_template("audit.html", logs=AUDIT_LOGS)
 
@@ -700,6 +768,8 @@ def audit():
 # ---------------------------------------------------------------------------
 
 @ui_bp.route("/servers/scan", methods=["GET", "POST"])
+@login_required
+@role_required("Admin")
 def servers_scan():
     if request.method == "POST":
         subnet = request.form.get("subnet", "").strip()

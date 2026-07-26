@@ -16,22 +16,48 @@
     </div>
     <nav class="nav flex-column gap-1">
       <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+      {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="nav-link" href="{{ url_for('ui.servers') }}">Server Inventory</a>
       <a class="nav-link" href="{{ url_for('ui.clusters') }}">Kubernetes Setup</a>
+      {% endif %}
       <a class="nav-link" href="{{ url_for('ui.applications') }}">Applications</a>
       <a class="nav-link" href="{{ url_for('ui.deployment_detail') }}">Deployments</a>
       <a class="nav-link" href="{{ url_for('ui.cicd') }}">CI/CD</a>
+      {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="nav-link" href="{{ url_for('ui.monitoring') }}">Monitoring</a>
+      {% endif %}
       <a class="nav-link" href="{{ url_for('ui.jobs') }}">Job Logs</a>
+      {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="nav-link" href="{{ url_for('ui.audit') }}">Audit Log</a>
+      <a class="nav-link" href="{{ url_for('admin.user_list') }}">User Management</a>
+      {% endif %}
     </nav>
   </aside>
   <section class="main-content">
     <header class="topbar">
       <div class="topbar-title">Management Dashboard</div>
-      <div class="user-chip">admin</div>
+      <div class="user-chip">
+        {% if current_user.is_authenticated %}
+          {{ current_user.username }}
+          <span class="badge bg-secondary ms-1">{{ current_user.role }}</span>
+          <a href="{{ url_for('auth.change_password') }}" class="btn btn-sm btn-outline-secondary ms-1">Đổi MK</a>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger ms-1">Đăng xuất</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-primary">Đăng nhập</a>
+        {% endif %}
+      </div>
     </header>
     <main class="container-fluid py-4">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
       {% block content %}{% endblock %}
     </main>
     </section>

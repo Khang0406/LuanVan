@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}User Management - CICT Platform{% endblock %}
+{% block content %}
+<div class="page-header mb-4">
+  <h1>User Management</h1>
+  <p class="text-muted">Quản lý tài khoản người dùng. Reset mật khẩu cho Developer khi quên.</p>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Ngày tạo</th>
+          <th class="text-end">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ user.username }}</td>
+          <td>
+            <span class="badge {% if user.is_admin %}bg-primary{% else %}bg-secondary{% endif %}">
+              {{ user.role }}
+            </span>
+          </td>
+          <td>{{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at else '-' }}</td>
+          <td class="text-end">
+            {% if user.id != current_user.id %}
+            <form method="post" action="{{ url_for('admin.user_reset', user_id=user.id) }}" style="display:inline"
+                  onsubmit="return confirm('Reset mật khẩu của {{ user.username }}?')">
+              <button type="submit" class="btn btn-sm btn-warning">Reset MK</button>
+            </form>
+            {% else %}
+            <span class="text-muted small">Bạn</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
