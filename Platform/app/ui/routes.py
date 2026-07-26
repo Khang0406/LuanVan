@@ -702,8 +702,7 @@ def monitoring_proxy_prometheus(rest=""):
 @login_required
 @role_required("Admin")
 def monitoring_proxy_grafana(rest=""):
-    """Proxy requests to Grafana. Grafana has serve_from_sub_path=true with
-    root_url path = /monitoring/proxy/grafana, so we forward the full path."""
+    """Proxy requests to Grafana, rewriting path prefix for sub-path serving."""
     from flask import Response
     import urllib.request
     import urllib.error
@@ -711,9 +710,9 @@ def monitoring_proxy_grafana(rest=""):
     from app.modules.monitoring.grafana import resolve_grafana_url
 
     graf_url = resolve_grafana_url()
-    full_path = f"/monitoring/proxy/grafana/{rest}" if rest else "/monitoring/proxy/grafana/"
+    target_path = f"/grafana/{rest}" if rest else "/grafana/"
     qs = request.query_string.decode()
-    target = f"{graf_url}{full_path}"
+    target = f"{graf_url}{target_path}"
     if qs:
         target = f"{target}?{qs}"
     try:

@@ -386,9 +386,10 @@ class GrafanaClient:
         refresh: str = "30s",
         kiosk: str = "kiosk",
     ) -> str:
-        """Return direct Grafana embed URL (no proxy — browser reaches cloud IP)."""
+        """Return direct Grafana embed URL (no proxy — browser reaches cluster IP directly)."""
         import time
-        return f"/monitoring/proxy/grafana/d/{dashboard_uid}?orgId={org_id}&refresh={refresh}&theme={theme}&kiosk&_t={int(time.time())}"
+        grafana_url = resolve_grafana_url()
+        return f"{grafana_url}/grafana/d/{dashboard_uid}?orgId={org_id}&refresh={refresh}&theme={theme}&kiosk&_t={int(time.time())}"
 
     def ensure_cluster_overview(self) -> str | None:
         """Import the built-in cluster dashboard & return its iframe URL.
@@ -428,9 +429,12 @@ def get_grafana_client() -> GrafanaClient:
 # ---------------------------------------------------------------------------
 
 def get_grafana_embed_url() -> str | None:
-    """Return an iframe-ready Grafana URL for the cluster dashboard, or None if Grafana is not ready."""
+    """Return iframe-ready Grafana URL, or None if Grafana is not reachable.
+
+    Does NOT require API key — dashboard is provisioned via ConfigMap
+    at deploy time (see ``k8s_manifests.grafana_deployment()``).
+    """
     client = get_grafana_client()
     if not client.is_available():
         return None
-    # Try to import the cluster overview; if successful return iframe URL
-    return client.ensure_cluster_overview()
+    return client.proxy_embed_url("cluster-overview")

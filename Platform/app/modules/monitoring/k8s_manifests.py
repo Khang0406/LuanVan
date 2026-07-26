@@ -30,12 +30,14 @@ Usage:
 from __future__ import annotations
 
 import base64
+import json
 import textwrap
 from typing import Any
 
 import yaml
 
 from app.modules.deployments.kubectl import run_kubectl
+from app.modules.monitoring.grafana import CLUSTER_OVERVIEW_DASHBOARD
 
 # ---------------------------------------------------------------------------
 # constants
@@ -819,6 +821,44 @@ def grafana_deployment(storage_size: str = "5Gi") -> str:
     # Datasource ConfigMap
     manifests.append(yaml.safe_load(grafana_config_maps()))
 
+    # Dashboard provider ConfigMap
+    manifests.append({
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {
+            "name": "grafana-dashboards-provider",
+            "namespace": MONITORING_NAMESPACE,
+        },
+        "data": {
+            "provider.yaml": yaml.dump({
+                "apiVersion": 1,
+                "providers": [{
+                    "name": "default",
+                    "orgId": 1,
+                    "folder": "",
+                    "type": "file",
+                    "disableDeletion": False,
+                    "editable": True,
+                    "options": {"path": "/etc/grafana/provisioning/dashboards"},
+                }],
+            }, default_flow_style=False),
+        },
+    })
+
+    # Dashboard JSON ConfigMap (cluster-overview)
+    manifests.append({
+        "apiVersion": "v1",
+        "kind": "ConfigMap",
+        "metadata": {
+            "name": "grafana-dashboard-cluster-overview",
+            "namespace": MONITORING_NAMESPACE,
+            "labels": {"grafana_dashboard": "1"},
+        },
+        "data": {
+            "cluster-overview.json": json.dumps(CLUSTER_OVERVIEW_DASHBOARD["dashboard"]),
+        },
+    })
+
     # Deployment
     manifests.append({
         "apiVersion": "apps/v1",
@@ -844,12 +884,15 @@ def grafana_deployment(storage_size: str = "5Gi") -> str:
                                 {"name": "GF_SECURITY_ADMIN_PASSWORD", "value": "admin"},
                                 {"name": "GF_AUTH_ANONYMOUS_ENABLED", "value": "true"},
                                 {"name": "GF_AUTH_ANONYMOUS_ORG_ROLE", "value": "Viewer"},
+                                {"name": "GF_SECURITY_ALLOW_EMBEDDING", "value": "true"},
                                 {"name": "GF_SERVER_ROOT_URL", "value": "%(protocol)s://%(domain)s:%(http_port)s/grafana"},
                                 {"name": "GF_SERVER_SERVE_FROM_SUB_PATH", "value": "true"},
                             ],
                             "volumeMounts": [
                                 {"name": "data", "mountPath": "/var/lib/grafana"},
                                 {"name": "datasources", "mountPath": "/etc/grafana/provisioning/datasources"},
+                                {"name": "dashboards-provider", "mountPath": "/etc/grafana/provisioning/dashboards/provider.yaml", "subPath": "provider.yaml"},
+                                {"name": "dashboard-cluster-overview", "mountPath": "/etc/grafana/provisioning/dashboards/cluster-overview.json", "subPath": "cluster-overview.json"},
                             ],
                             "resources": {
                                 "requests": {"cpu": "100m", "memory": "256Mi"},
@@ -865,6 +908,14 @@ def grafana_deployment(storage_size: str = "5Gi") -> str:
                         {
                             "name": "datasources",
                             "configMap": {"name": "grafana-datasources"},
+                        },
+                        {
+                            "name": "dashboards-provider",
+                            "configMap": {"name": "grafana-dashboards-provider"},
+                        },
+                        {
+                            "name": "dashboard-cluster-overview",
+                            "configMap": {"name": "grafana-dashboard-cluster-overview"},
                         },
                     ],
                 },
