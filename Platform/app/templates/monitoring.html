@@ -462,7 +462,7 @@
 
   // ==================== POLLING ====================
   var POLL_METRICS = 30000;   // 30s
-  var POLL_CHARTS  = 60000;   // 60s (charts are heavier)
+  var POLL_CHARTS  = 120000;  // 2min
 
   function fetchMetrics() {
     fetch("{{ url_for('ui.monitoring_api_metrics') }}")
@@ -483,10 +483,13 @@
 
   // ==================== INIT ====================
   initCharts();
-  fetchMetrics();   // immediate
-  fetchCharts();    // immediate
-  setInterval(fetchMetrics, POLL_METRICS);
-  setInterval(fetchCharts, POLL_CHARTS);
+  // Delay first fetch to let Grafana iframe load its assets first
+  setTimeout(function () {
+    fetchMetrics();
+    fetchCharts();
+    setInterval(fetchMetrics, POLL_METRICS);
+    setInterval(fetchCharts, POLL_CHARTS);
+  }, 5000);
 })();
 </script>
 {% endblock %}
