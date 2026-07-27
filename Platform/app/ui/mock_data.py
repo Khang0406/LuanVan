@@ -1,20 +1,30 @@
+from app.modules.applications.service import load_accessible_applications
 from app.modules.servers.service import load_servers
 
 
-def dashboard_stats():
-    servers = load_servers()
+def dashboard_stats(user):
+    applications = load_accessible_applications(user)
+    servers = load_servers() if user.is_admin else []
     master_count = sum(1 for server in servers if server.get("role") == "Master")
     worker_count = sum(1 for server in servers if server.get("role") == "Worker")
+
+    from app.modules.pipeline.engine import load_pipeline_runs
+
+    application_ids = {app["id"] for app in applications}
+    running_jobs = sum(
+        1
+        for run in load_pipeline_runs()
+        if run.get("application_id") in application_ids and run.get("status") == "Running"
+    )
 
     return {
         "servers": len(servers),
         "clusters": 1 if servers else 0,
-        "nodes_ready": f"{master_count} master / {worker_count} worker{'s' if worker_count != 1 else ''}",
-        "applications": 6,
-        "deployments": 18,
-        "jobs_running": 2,
+        "nodes_ready": f"{master_count} master / {worker_count} worker",
+        "applications": len(applications),
+        "deployments": sum(1 for app in applications if app.get("status") in {"Running", "Deployed"}),
+        "jobs_running": running_jobs,
     }
-
 
 SERVERS = [
     {"name": "mgmt-web", "ip": "172.30.122.42", "role": "Management", "status": "Online", "cpu": "22%", "ram": "3.1/8 GB"},

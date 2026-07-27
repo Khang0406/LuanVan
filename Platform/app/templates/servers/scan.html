@@ -3,6 +3,7 @@
 <p class="text-muted">Tự động tìm server trong dãy IP.</p>
 
 <form method="POST" class="row g-3 mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <div class="col-md-3">
     <label class="form-label">Chế độ quét</label>
     <select name="mode" class="form-select" onchange="document.querySelectorAll('.ssh-field').forEach(e=>e.style.display=this.value==='ssh'?'':'none')">
@@ -37,6 +38,7 @@
   <div class="card-body">
     <h6>Tìm thấy {{ servers|length }} server</h6>
     <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="subnet" value="{{ subnet }}">
       <input type="hidden" name="mode" value="{{ mode }}">
       <input type="hidden" name="ssh_user" value="{{ ssh_user }}">

@@ -22,6 +22,12 @@ class Config:
         "sqlite:///" + str(BASE_DIR / "instance" / "app.db"),
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+    REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
 
     # Prometheus & Grafana — monitoring stack URLs
     PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:30900")

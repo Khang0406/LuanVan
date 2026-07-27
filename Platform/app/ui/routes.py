@@ -2,13 +2,14 @@ import json
 from typing import Any
 
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 
 from app.modules.applications.service import (
     build_pipeline_steps,
     create_application,
     delete_application,
-    find_application,
+    find_accessible_application,
+    load_accessible_applications,
     load_applications,
     summarize_runtime,
 )
@@ -66,6 +67,13 @@ from app.modules.auth.routes import role_required
 from .mock_data import AUDIT_LOGS, INSTALL_STEPS
 
 ui_bp = Blueprint("ui", __name__)
+
+
+def _get_authorized_application(application_id: str) -> dict[str, Any]:
+    application = find_accessible_application(application_id, current_user)
+    if not application:
+        abort(404)
+    return application
 
 
 @ui_bp.route("/servers")
@@ -222,7 +230,7 @@ def cluster_detail():
 @ui_bp.route("/applications")
 @login_required
 def applications():
-    apps = load_applications()
+    apps = load_accessible_applications(current_user)
     return render_template("applications/list.html", applications=apps)
 
 
@@ -254,7 +262,11 @@ def application_form():
             flash("Vui lòng nhập đủ thông tin application/source/runtime.", "danger")
             return render_template("applications/form.html", form=request.form)
 
-        application = create_application(request.form)
+        try:
+            application = create_application(request.form, current_user)
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return render_template("applications/form.html", form=request.form), 409
         flash(f"Đã tạo application {application['name']}.", "success")
         return redirect(url_for("ui.application_detail", application_id=application["id"]))
 
@@ -264,9 +276,7 @@ def application_form():
 @ui_bp.route("/applications/<application_id>")
 @login_required
 def application_detail(application_id):
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     runtime = summarize_runtime(application)
     pipeline_steps = build_pipeline_steps(application)
     cluster_status = get_application_status(application)
@@ -282,9 +292,7 @@ def application_detail(application_id):
 @ui_bp.post("/applications/<application_id>/deploy")
 @login_required
 def application_deploy(application_id):
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     success, output = deploy_application(application)
     flash(("Deploy thành công. " if success else "Deploy thất bại. ") + output, "success" if success else "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
@@ -293,9 +301,7 @@ def application_deploy(application_id):
 @ui_bp.post("/applications/<application_id>/restart")
 @login_required
 def application_restart(application_id):
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     success, output = restart_application(application)
     flash(("Restart thành công. " if success else "Restart thất bại. ") + output, "success" if success else "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
@@ -304,9 +310,7 @@ def application_restart(application_id):
 @ui_bp.post("/applications/<application_id>/scale")
 @login_required
 def application_scale(application_id):
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     replicas = int(request.form.get("replicas") or 1)
     success, output = scale_application(application, replicas)
     flash(("Scale thành công. " if success else "Scale thất bại. ") + output, "success" if success else "danger")
@@ -316,9 +320,7 @@ def application_scale(application_id):
 @ui_bp.post("/applications/<application_id>/delete-workloads")
 @login_required
 def application_delete_workloads(application_id):
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     success, output = delete_application_workloads(application)
     flash(output if not success else "Đã xóa workloads.", "success" if success else "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
@@ -328,9 +330,7 @@ def application_delete_workloads(application_id):
 @login_required
 def application_delete(application_id):
     """Xóa application khỏi hệ thống và dọn dẹp namespace K8s."""
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     success = delete_application(application_id)
     if success:
         flash(f"Đã xóa application '{application['name']}'.", "success")
@@ -343,9 +343,7 @@ def application_delete(application_id):
 @login_required
 def application_pipeline_trigger(application_id):
     """Trigger CI/CD pipeline for a specific application."""
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     try:
         pipeline_run = trigger_pipeline(application_id)
         flash(f"Pipeline {pipeline_run['id']} đã được khởi động (6 stages). Đang chạy ngầm...", "info")
@@ -358,9 +356,7 @@ def application_pipeline_trigger(application_id):
 @login_required
 def application_pipeline_history(application_id):
     """View pipeline run history for an application."""
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     runs = load_pipeline_runs(application_id)
     return render_template("applications/pipeline.html", app=application, runs=runs)
 
@@ -368,9 +364,7 @@ def application_pipeline_history(application_id):
 @ui_bp.route("/applications/<application_id>/logs")
 @login_required
 def application_logs(application_id):
-    application = find_application(application_id)
-    if not application:
-        abort(404)
+    application = _get_authorized_application(application_id)
     success, logs = get_application_logs(application)
     return render_template("deployments/logs.html", app=application, logs=logs, success=success)
 
@@ -384,13 +378,13 @@ def service_form():
 @ui_bp.route("/deployments/detail")
 @login_required
 def deployment_detail():
-    return render_template("deployments/detail.html", applications=load_applications())
+    return render_template("deployments/detail.html", applications=load_accessible_applications(current_user))
 
 
 @ui_bp.route("/deployments/logs")
 @login_required
 def deployment_logs():
-    applications = load_applications()
+    applications = load_accessible_applications(current_user)
     if applications:
         return redirect(url_for("ui.application_logs", application_id=applications[0]["id"]))
     flash("Chưa có application để xem logs.", "warning")
@@ -406,11 +400,12 @@ def jobs():
 @ui_bp.route("/cicd")
 @login_required
 def cicd():
-    events = load_all_pipeline_events()
+    application_ids = {app["id"] for app in load_accessible_applications(current_user)}
+    events = load_all_pipeline_events(application_ids)
     # fallback to mock if empty
     from .mock_data import PIPELINE_EVENTS as MOCK_EVENTS
 
-    if not events:
+    if not events and current_user.is_admin:
         events = MOCK_EVENTS
     return render_template("cicd.html", events=events)
 
@@ -629,7 +624,7 @@ def cp2chart(prom_result: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return series
 
 
-@ui_bp.route("/monitoring/refresh")
+@ui_bp.post("/monitoring/refresh")
 @login_required
 @role_required("Admin")
 def monitoring_refresh():
@@ -763,6 +758,8 @@ def monitoring_proxy_grafana(rest=""):
 
 @ui_bp.route("/grafana/", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 @ui_bp.route("/grafana/<path:rest>", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+@login_required
+@role_required("Admin")
 def monitoring_grafana_static_proxy(rest=""):
     target_path = f"/grafana/{rest}" if rest else "/grafana/"
     return _proxy_to_grafana(target_path)
@@ -779,7 +776,7 @@ def monitoring_alerts():
                            summary=data["summary"], alerts=data["alerts"], alert_counts=data["alert_counts"])
 
 
-@ui_bp.route("/monitoring/alerts/<int:alert_id>/ack")
+@ui_bp.post("/monitoring/alerts/<int:alert_id>/ack")
 @login_required
 @role_required("Admin")
 def monitoring_ack_alert(alert_id):

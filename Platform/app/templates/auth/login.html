@@ -60,6 +60,7 @@
         {% endwith %}
 
         <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
             <label for="username" class="form-label">Tên đăng nhập</label>
             <input type="text" class="form-control" id="username" name="username" placeholder="admin hoặc dev" required autofocus>
@@ -76,13 +77,6 @@
       </div>
     </div>
 
-    <div class="text-center mt-3">
-      <small class="text-muted">
-        Tài khoản mặc định: <strong>admin</strong> / <strong>admin123</strong>
-        &nbsp;|&nbsp;
-        <strong>dev</strong> / <strong>dev123</strong>
-      </small>
-    </div>
 
     <div class="text-center mt-2">
       <small>

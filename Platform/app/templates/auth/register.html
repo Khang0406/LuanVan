@@ -60,6 +60,7 @@
         {% endwith %}
 
         <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
             <label for="username" class="form-label">Tên đăng nhập</label>
             <input type="text" class="form-control" id="username" name="username"
@@ -68,7 +69,7 @@
           <div class="mb-3">
             <label for="password" class="form-label">Mật khẩu</label>
             <input type="password" class="form-control" id="password" name="password"
-                   placeholder="Ít nhất 4 ký tự" required minlength="4">
+                   placeholder="Ít nhất 8 ký tự" required minlength="8">
           </div>
           <div class="mb-3">
             <label for="confirm_password" class="form-label">Xác nhận mật khẩu</label>

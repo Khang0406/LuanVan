@@ -1,12 +1,22 @@
 from functools import wraps
+from urllib.parse import urlsplit
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.db import db
 from app.models import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+
+def _safe_next_url(target: str | None) -> str | None:
+    if not target:
+        return None
+    parsed = urlsplit(target)
+    if parsed.scheme or parsed.netloc or not target.startswith("/") or target.startswith("//"):
+        return None
+    return target
 
 
 def role_required(role: str):
@@ -35,8 +45,9 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and user.check_password(password):
+            session.clear()
             login_user(user, remember=True)
-            next_page = request.args.get("next")
+            next_page = _safe_next_url(request.args.get("next"))
             flash(f"Đăng nhập thành công. Xin chào {user.username} ({user.role}).", "success")
             return redirect(next_page or url_for("dashboard"))
 
@@ -45,7 +56,7 @@ def login():
     return render_template("auth/login.html")
 
 
-@auth_bp.route("/logout")
+@auth_bp.post("/logout")
 @login_required
 def logout():
     logout_user()
@@ -70,8 +81,8 @@ def change_password():
 
         if not current_user.check_password(current_pw):
             flash("Mật khẩu hiện tại không đúng.", "danger")
-        elif len(new_pw) < 4:
-            flash("Mật khẩu mới phải có ít nhất 4 ký tự.", "danger")
+        elif len(new_pw) < 8:
+            flash("Mật khẩu mới phải có ít nhất 8 ký tự.", "danger")
         elif new_pw != confirm_pw:
             flash("Mật khẩu xác nhận không khớp.", "danger")
         else:
@@ -97,8 +108,8 @@ def register():
             flash("Tên đăng nhập phải có ít nhất 3 ký tự.", "danger")
         elif User.query.filter_by(username=username).first():
             flash("Tên đăng nhập đã tồn tại.", "danger")
-        elif len(password) < 4:
-            flash("Mật khẩu phải có ít nhất 4 ký tự.", "danger")
+        elif len(password) < 8:
+            flash("Mật khẩu phải có ít nhất 8 ký tự.", "danger")
         elif password != confirm:
             flash("Mật khẩu xác nhận không khớp.", "danger")
         else:

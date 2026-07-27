@@ -1,9 +1,10 @@
 from flask import Flask, redirect, render_template, url_for
-from flask_login import LoginManager, login_required
+from flask_login import LoginManager, current_user, login_required
 
 from .config import Config
 from .db import db
 from .models import User
+from .security import generate_csrf_token, validate_csrf
 from .modules.auth.admin import admin_bp
 from .modules.auth.routes import auth_bp
 from .ui.mock_data import dashboard_stats
@@ -21,6 +22,8 @@ def create_app(config_class=Config):
 
     db.init_app(app)
     login_manager.init_app(app)
+    app.before_request(validate_csrf)
+    app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
     app.register_blueprint(ui_bp)
     app.register_blueprint(auth_bp)
@@ -45,7 +48,7 @@ def create_app(config_class=Config):
     @app.route("/dashboard")
     @login_required
     def dashboard():
-        return render_template("dashboard.html", stats=dashboard_stats())
+        return render_template("dashboard.html", stats=dashboard_stats(current_user))
 
     return app
 

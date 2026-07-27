@@ -46,10 +46,12 @@
         <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-outline-primary btn-sm" href="{{ url_for('ui.application_detail', application_id=app.id) }}">Chi tiết</a>
           <form method="post" action="{{ url_for('ui.application_deploy', application_id=app.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-primary btn-sm" type="submit">Deploy</button>
           </form>
           <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.application_logs', application_id=app.id) }}">Logs</a>
           <form method="post" action="{{ url_for('ui.application_delete', application_id=app.id) }}" onsubmit="return confirm('Xóa application {{ app.name }}? Hành động này sẽ xóa namespace K8s và toàn bộ dữ liệu liên quan.');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-outline-danger btn-sm" type="submit">Xóa</button>
           </form>
         </div>

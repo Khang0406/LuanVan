@@ -86,8 +86,26 @@ def save_applications(applications: list[dict[str, Any]]) -> None:
         json.dump(applications, file, ensure_ascii=False, indent=2)
 
 
+def can_access_application(application: dict[str, Any], user: Any) -> bool:
+    """Admin can access every app; Developers only apps assigned to their user id."""
+    if getattr(user, "is_admin", False):
+        return True
+    return application.get("user_id") == getattr(user, "id", None)
+
+
+def load_accessible_applications(user: Any) -> list[dict[str, Any]]:
+    return [app for app in load_applications() if can_access_application(app, user)]
+
+
 def find_application(application_id: str) -> dict[str, Any] | None:
     return next((app for app in load_applications() if app["id"] == application_id), None)
+
+
+def find_accessible_application(application_id: str, user: Any) -> dict[str, Any] | None:
+    application = find_application(application_id)
+    if application and can_access_application(application, user):
+        return application
+    return None
 
 
 def save_application(updated_application: dict[str, Any]) -> None:
@@ -199,9 +217,14 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
     return services
 
 
-def create_application(form: dict[str, Any]) -> dict[str, Any]:
+def create_application(form: dict[str, Any], user: Any) -> dict[str, Any]:
     name = form.get("name", "").strip()
-    namespace = form.get("namespace", "").strip() or slugify(name)
+    application_id = slugify(name)
+    requested_namespace = form.get("namespace", "").strip()
+    if getattr(user, "is_admin", False):
+        namespace = requested_namespace or application_id
+    else:
+        namespace = f"user-{user.id}-{application_id}"
     owner = form.get("owner", "").strip() or "developer"
     source_type = form.get("source_type", "docker").strip()
     docker_image = form.get("docker_image", "").strip()
@@ -222,10 +245,17 @@ def create_application(form: dict[str, Any]) -> dict[str, Any]:
             "password": registry_password,
         }
 
+    applications = load_applications()
+    if any(app.get("id") == application_id for app in applications):
+        raise ValueError(f"Application '{application_id}' đã tồn tại.")
+    if any(app.get("namespace") == namespace for app in applications):
+        raise ValueError(f"Namespace '{namespace}' đã được application khác sử dụng.")
+
     application = {
-        "id": slugify(name),
+        "id": application_id,
         "name": name,
         "owner": owner,
+        "user_id": user.id,
         "namespace": namespace,
         "source_type": source_type,
         "docker_image": docker_image,
@@ -249,7 +279,6 @@ def create_application(form: dict[str, Any]) -> dict[str, Any]:
     else:
         add_activity(application, "CREATE", f"Tạo application từ Docker image {image}.", "Ready")
 
-    applications = [app for app in load_applications() if app["id"] != application["id"]]
     applications.append(application)
     save_applications(applications)
     return application

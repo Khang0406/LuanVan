@@ -22,7 +22,10 @@
     </p>
   </div>
   <div>
-    <a class="btn btn-outline-primary btn-sm me-2" href="{{ url_for('ui.monitoring_refresh') }}">🔄 Làm mới snapshot</a>
+    <form method="post" action="{{ url_for('ui.monitoring_refresh') }}" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-primary btn-sm me-2" type="submit">🔄 Làm mới snapshot</button>
+    </form>
     <a class="btn btn-outline-warning btn-sm me-2" href="{{ url_for('ui.monitoring_alerts') }}">
       🔔 Alerts (<span id="alert-count">{{ alert_counts.active }}</span>)
     </a>
@@ -30,6 +33,7 @@
     <a class="btn btn-outline-info btn-sm me-2" href="{{ grafana_embed }}" target="_blank">📊 Mở Grafana</a>
     {% else %}
     <form method="POST" action="{{ url_for('ui.monitoring_install_stack') }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-success btn-sm me-2" onclick="return confirm('Deploy Prometheus + Grafana + Node Exporter + Alertmanager lên cluster?')">⚡ Cài đặt Monitoring Stack</button>
     </form>
     {% endif %}
@@ -214,7 +218,7 @@
             <td><small>{{ alert.time }}</small></td>
             <td><span class="badge {{ 'bg-danger' if alert.severity == 'CRITICAL' else 'bg-warning text-dark' }}">{{ alert.severity }}</span></td>
             <td>{{ alert.message }}</td>
-            <td><a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.monitoring_ack_alert', alert_id=loop.index0) }}">Ack</a></td>
+            <td><form method="post" action="{{ url_for('ui.monitoring_ack_alert', alert_id=loop.index0) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-secondary btn-sm" type="submit">Ack</button></form></td>
           </tr>
           {% endif %}
           {% endfor %}
@@ -444,7 +448,7 @@
             '<td><small>' + al.time + '</small></td>' +
             '<td><span class="badge ' + sevClass + '">' + al.severity + '</span></td>' +
             '<td>' + al.message + '</td>' +
-            '<td><a class="btn btn-outline-secondary btn-sm" href="/monitoring/alerts/' + m + '/ack">Ack</a></td>' +
+            '<td><form method="post" action="/monitoring/alerts/' + m + '/ack"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-secondary btn-sm" type="submit">Ack</button></form></td>' +
             '</tr>';
         }
         alertsContainer.innerHTML = '<table class="table table-sm"><thead><tr><th>Time</th><th>Severity</th><th>Message</th><th></th></tr></thead><tbody>' + alertRows + '</tbody></table>';

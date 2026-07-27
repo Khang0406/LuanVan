@@ -33,6 +33,7 @@
             {% if user.id != current_user.id %}
             <form method="post" action="{{ url_for('admin.user_reset', user_id=user.id) }}" style="display:inline"
                   onsubmit="return confirm('Reset mật khẩu của {{ user.username }}?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-sm btn-warning">Reset MK</button>
             </form>
             {% else %}

@@ -17,6 +17,7 @@
     <div class="card soft-card">
       <div class="card-body p-4 mock-form">
         <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <h4>1. Chọn máy chủ</h4>
           <table class="table align-middle">
             <thead>

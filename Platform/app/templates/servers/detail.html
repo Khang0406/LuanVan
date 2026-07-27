@@ -44,18 +44,22 @@
         <h6 class="mb-2">Test kết nối</h6>
         <div class="d-flex flex-wrap gap-2 mb-3">
           <form method="post" action="{{ url_for('ui.server_test_ssh', server_id=server.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-outline-primary btn-sm" type="submit">Test SSH</button>
           </form>
           <form method="post" action="{{ url_for('ui.server_test_ansible', server_id=server.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-primary btn-sm" type="submit">Test Ansible</button>
           </form>
           <form method="post" action="{{ url_for('ui.server_test_sudo', server_id=server.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-outline-success btn-sm" type="submit">Test sudo</button>
           </form>
         </div>
 
         <h6 class="mb-2">Bootstrap sudo NOPASSWD</h6>
         <form method="post" action="{{ url_for('ui.server_bootstrap_sudo', server_id=server.id) }}" class="d-flex gap-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input
             class="form-control form-control-sm"
             style="max-width: 200px;"

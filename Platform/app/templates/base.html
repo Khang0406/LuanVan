@@ -41,7 +41,10 @@
           {{ current_user.username }}
           <span class="badge bg-secondary ms-1">{{ current_user.role }}</span>
           <a href="{{ url_for('auth.change_password') }}" class="btn btn-sm btn-outline-secondary ms-1">Đổi MK</a>
-          <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger ms-1">Đăng xuất</a>
+          <form method="post" action="{{ url_for('auth.logout') }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger ms-1">Đăng xuất</button>
+          </form>
         {% else %}
           <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-outline-primary">Đăng nhập</a>
         {% endif %}

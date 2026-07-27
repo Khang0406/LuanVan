@@ -28,10 +28,12 @@
     </div>
     <div class="d-flex flex-column gap-2">
       <form id="bulk-test-form" method="post" action="{{ url_for('ui.servers_bulk_test') }}" class="d-flex flex-wrap gap-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-outline-primary" type="submit" name="test_type" value="ssh">Test SSH</button>
         <button class="btn btn-primary" type="submit" name="test_type" value="ansible">Test Ansible</button>
       </form>
       <form method="post" action="{{ url_for('ui.servers_bulk_bootstrap_sudo') }}" class="d-flex flex-wrap gap-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% for s in servers %}
           <input type="hidden" name="server_ids" value="{{ s.id }}">
         {% endfor %}
@@ -95,9 +97,11 @@
             <div class="d-flex flex-wrap gap-2">
               <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('ui.server_detail', server_id=s.id) }}">Chi tiết</a>
               <form method="post" action="{{ url_for('ui.server_test_ssh', server_id=s.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-outline-primary" type="submit">Test SSH</button>
               </form>
               <form method="post" action="{{ url_for('ui.server_test_ansible', server_id=s.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-primary" type="submit">Test Ansible</button>
               </form>
             </div>

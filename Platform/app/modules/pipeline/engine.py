@@ -971,11 +971,13 @@ def get_latest_pipeline_run(application_id: str) -> dict[str, Any] | None:
     return runs[0] if runs else None
 
 
-def load_all_pipeline_events() -> list[dict[str, Any]]:
+def load_all_pipeline_events(application_ids: set[str] | None = None) -> list[dict[str, Any]]:
     """Return flat list of pipeline events for CI/CD overview page."""
     runs = load_pipeline_runs()
     events: list[dict[str, Any]] = []
     for run in runs:
+        if application_ids is not None and run["application_id"] not in application_ids:
+            continue
         for stage in run["stages"]:
             if stage["status"] in ("Done", "Failed", "Running"):
                 events.append({

@@ -5,6 +5,7 @@
 <div class="card soft-card">
   <div class="card-body p-4">
     <form method="post" class="row g-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="col-md-6">
         <label class="form-label">Tên máy</label>
         <input name="name" class="form-control" value="{{ form.get('name', '') }}" placeholder="b2204938-virtualbox" required>

@@ -5,10 +5,13 @@
     <h1 class="page-title mb-2">Dashboard</h1>
     <p class="page-subtitle mb-0">Tổng quan hệ thống quản lý hạ tầng và triển khai ứng dụng.</p>
   </div>
+  {% if current_user.is_admin %}
   <a class="btn btn-primary" href="{{ url_for('ui.clusters') }}">Thiết lập Kubernetes</a>
+  {% endif %}
 </div>
 
 <div class="row g-3 mb-4">
+  {% if current_user.is_admin %}
   <div class="col-md-6 col-xl-3">
     <div class="card stat-card">
       <div class="card-body">
@@ -25,11 +28,20 @@
       </div>
     </div>
   </div>
+  {% endif %}
   <div class="col-md-6 col-xl-3">
     <div class="card stat-card">
       <div class="card-body">
         <div class="stat-label">Applications</div>
         <div class="stat-value">{{ stats.applications }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card stat-card">
+      <div class="card-body">
+        <div class="stat-label">Deployments</div>
+        <div class="stat-value">{{ stats.deployments }}</div>
       </div>
     </div>
   </div>
