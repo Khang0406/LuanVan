@@ -1,9 +1,10 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Pod Logs</h1><pre class="log-panel">[09:14:01] Starting container web-frontend
-[09:14:03] Listening on port 80
-[09:14:04] Health check passed
-[09:15:10] GET / 200 14ms
-[09:15:11] GET /api/profile 200 31ms
-
-UI prototype: dữ liệu logs thật sẽ lấy từ kubectl logs sau khi backend được bổ sung.</pre>
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1>Pod Logs</h1>
+    {% if app %}<p class="text-muted mb-0">Runtime logs thật từ Kubernetes cho {{ app.name }}.</p>{% endif %}
+  </div>
+  {% if success is defined %}<span class="badge text-bg-{{ 'success' if success else 'danger' }}">{{ 'OK' if success else 'FAILED' }}</span>{% endif %}
+</div>
+<pre class="log-panel">{{ logs or 'Chưa lấy được log từ Kubernetes.' }}</pre>
 {% endblock %}

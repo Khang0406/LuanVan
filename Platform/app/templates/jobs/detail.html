@@ -1,9 +1,70 @@
 {% extends 'base.html' %}{% block content %}
-<h1>Ansible Job Logs</h1><p class="text-muted">Màn hình mô phỏng log khi website chạy playbook cài Kubernetes.</p>
-<div class="row g-4"><div class="col-lg-4"><div class="card soft-card"><div class="card-body p-4"><h4>Job #1024</h4><p><span class="badge text-bg-primary">RUNNING</span></p>{% for step in steps %}<div class="mb-3"><strong>{{ step.step }}</strong><br><span class="text-muted">{{ step.status }} - {{ step.note }}</span></div>{% endfor %}</div></div></div><div class="col-lg-8"><pre class="log-panel">$ ansible-playbook -i generated/lab-cluster.ini install_k3s_cluster.yml
-TASK [Ping hosts] ******************************* ok: [k8s-master-01]
-TASK [Install prerequisites] ******************** changed: [k8s-worker-01]
-TASK [Install K3s server] *********************** running...
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1>Job Logs</h1>
+    <p class="text-muted mb-0">Lịch sử job thật từ SSH, Ansible, K3s, Kubectl và CI/CD pipeline.</p>
+  </div>
+  <span class="badge text-bg-light">{{ jobs|length }} job(s)</span>
+</div>
 
-UI prototype: backend runner sẽ bổ sung sau.</pre></div></div>
+{% if not jobs %}
+<div class="alert alert-info">Chưa có job nào. Hãy chạy Test SSH, Test Ansible, Install K3s, Deploy hoặc Pipeline để hệ thống ghi log.</div>
+{% else %}
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card soft-card">
+      <div class="card-body p-3">
+        <div class="list-group list-group-flush">
+          {% for job in jobs %}
+          <a class="list-group-item list-group-item-action {% if selected_job and selected_job.id == job.id %}active{% endif %}" href="{{ url_for('ui.jobs', job=job.id) }}">
+            <div class="d-flex justify-content-between gap-2">
+              <strong class="small">{{ job.title }}</strong>
+              <span class="badge text-bg-{{ 'success' if job.status == 'Success' else ('danger' if job.status == 'Failed' else 'info') }}">{{ job.status }}</span>
+            </div>
+            <div class="small {% if selected_job and selected_job.id == job.id %}text-white-50{% else %}text-muted{% endif %}">
+              {{ job.type }} · {{ job.target or '-' }} · {{ job.created_at }}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card soft-card mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <h4 class="mb-1">{{ selected_job.title }}</h4>
+            <p class="text-muted mb-0">{{ selected_job.id }} · {{ selected_job.actor }} · {{ selected_job.created_at }}</p>
+          </div>
+          <span class="badge text-bg-{{ 'success' if selected_job.status == 'Success' else ('danger' if selected_job.status == 'Failed' else 'info') }}">{{ selected_job.status }}</span>
+        </div>
+
+        {% if selected_job.steps %}
+        <div class="table-responsive mb-3">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Step</th><th>Status</th><th>Message</th><th>Time</th></tr></thead>
+            <tbody>
+              {% for step in selected_job.steps %}
+              <tr>
+                <td><strong>{{ step.name or step.step }}</strong></td>
+                <td><span class="badge text-bg-{{ 'success' if step.status in ['Done','Success'] else ('danger' if step.status == 'Failed' else ('warning' if step.status in ['Waiting','Skipped'] else 'info')) }}">{{ step.status }}</span></td>
+                <td class="small">{{ step.message or step.note }}</td>
+                <td class="small text-muted">{{ step.started_at or '' }}{% if step.finished_at %} → {{ step.finished_at }}{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if selected_job.command %}<div class="small text-muted mb-2">$ {{ selected_job.command }}</div>{% endif %}
+        <pre class="log-panel">{{ selected_job.output or selected_job.message or 'Job chưa có output.' }}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -63,8 +63,10 @@ from app.modules.monitoring.alerting import (
 from app.modules.monitoring.grafana import get_grafana_embed_url
 from app.modules.monitoring.k8s_manifests import deploy_monitoring_stack
 from app.modules.auth.routes import role_required
+from app.modules.audit.service import load_audit_logs, record_audit
+from app.modules.jobs.service import load_accessible_jobs, pipeline_run_to_job, record_completed_job
 
-from .mock_data import AUDIT_LOGS, INSTALL_STEPS
+from .mock_data import INSTALL_STEPS
 
 ui_bp = Blueprint("ui", __name__)
 
@@ -74,6 +76,15 @@ def _get_authorized_application(application_id: str) -> dict[str, Any]:
     if not application:
         abort(404)
     return application
+
+
+def _result_label(success: bool) -> str:
+    return "SUCCESS" if success else "FAILED"
+
+
+def _server_output(server_id: str, fallback: str = "") -> str:
+    server = find_server(server_id)
+    return (server or {}).get("last_output", "") or fallback
 
 
 @ui_bp.route("/servers")
@@ -105,6 +116,7 @@ def server_form():
             return render_template("servers/form.html", form=request.form)
 
         server = add_server(request.form)
+        record_audit("SERVER_CREATE", server["id"], "SUCCESS", f"Đã thêm server {server['name']} ({server['ip']}).")
         flash(f"Đã lưu server {server['name']} ({server['ip']}).", "success")
         return redirect(url_for("ui.server_detail", server_id=server["id"]))
 
@@ -116,6 +128,10 @@ def server_form():
 @role_required("Admin")
 def server_test_ssh(server_id):
     success, message = test_ssh(server_id)
+    server = find_server(server_id)
+    target = server.get("name", server_id) if server else server_id
+    record_completed_job("SSH", "Kiểm tra SSH", target, success, _server_output(server_id, message), command="ssh hostname")
+    record_audit("SERVER_TEST_SSH", target, _result_label(success), message)
     flash(message, "success" if success else "danger")
     return redirect(request.referrer or url_for("ui.server_detail", server_id=server_id))
 
@@ -125,6 +141,10 @@ def server_test_ssh(server_id):
 @role_required("Admin")
 def server_test_ansible(server_id):
     success, message = test_ansible_ping(server_id)
+    server = find_server(server_id)
+    target = server.get("name", server_id) if server else server_id
+    record_completed_job("Ansible", "Kiểm tra Ansible ping", target, success, _server_output(server_id, message), command="ansible target -m ping")
+    record_audit("SERVER_TEST_ANSIBLE", target, _result_label(success), message)
     flash(message, "success" if success else "danger")
     return redirect(request.referrer or url_for("ui.server_detail", server_id=server_id))
 
@@ -135,6 +155,10 @@ def server_test_ansible(server_id):
 def server_bootstrap_sudo(server_id):
     sudo_password = request.form.get("sudo_password", "")
     success, message = bootstrap_sudo_nopasswd(server_id, sudo_password)
+    server = find_server(server_id)
+    target = server.get("name", server_id) if server else server_id
+    record_completed_job("Ansible", "Bootstrap sudo NOPASSWD", target, success, _server_output(server_id, message), command="ansible target -b -m shell")
+    record_audit("SERVER_BOOTSTRAP_SUDO", target, _result_label(success), message)
     flash(message, "success" if success else "danger")
     return redirect(request.referrer or url_for("ui.server_detail", server_id=server_id))
 
@@ -144,6 +168,10 @@ def server_bootstrap_sudo(server_id):
 @role_required("Admin")
 def server_test_sudo(server_id):
     success, message = test_sudo_nopasswd(server_id)
+    server = find_server(server_id)
+    target = server.get("name", server_id) if server else server_id
+    record_completed_job("Ansible", "Kiểm tra sudo NOPASSWD", target, success, _server_output(server_id, message), command="ansible target -b -m command -a whoami")
+    record_audit("SERVER_TEST_SUDO", target, _result_label(success), message)
     flash(message, "success" if success else "danger")
     return redirect(request.referrer or url_for("ui.server_detail", server_id=server_id))
 
@@ -155,6 +183,8 @@ def servers_bulk_test():
     server_ids = request.form.getlist("server_ids")
     test_type = request.form.get("test_type", "ansible")
     success, message = test_multiple_servers(server_ids, test_type)
+    record_completed_job("Ansible" if test_type != "ssh" else "SSH", f"Bulk {test_type} test", f"{len(server_ids)} server(s)", success, message, command=f"bulk {test_type} test")
+    record_audit("SERVER_BULK_TEST", f"{len(server_ids)} server(s)", _result_label(success), message, metadata={"server_ids": server_ids, "test_type": test_type})
     flash(message, "success" if success else "danger")
     return redirect(url_for("ui.servers"))
 
@@ -166,6 +196,8 @@ def servers_bulk_bootstrap_sudo():
     server_ids = request.form.getlist("server_ids")
     sudo_password = request.form.get("sudo_password", "")
     success, message = bootstrap_multiple_servers(server_ids, sudo_password)
+    record_completed_job("Ansible", "Bulk bootstrap sudo", f"{len(server_ids)} server(s)", success, message, command="bulk ansible bootstrap sudo")
+    record_audit("SERVER_BULK_BOOTSTRAP_SUDO", f"{len(server_ids)} server(s)", _result_label(success), message, metadata={"server_ids": server_ids})
     flash(message, "success" if success else "danger")
     return redirect(url_for("ui.servers"))
 
@@ -202,6 +234,8 @@ def cluster_dry_run():
         for server_id in request.form.getlist("server_ids")
     ]
     success, message, output = build_cluster_inventory(selected_nodes)
+    record_completed_job("Ansible", "Sinh inventory K3s", "cluster inventory", success, output or message, command="generate cluster.ini")
+    record_audit("CLUSTER_DRY_RUN", "cluster inventory", _result_label(success), message, metadata={"nodes": selected_nodes})
     flash(message, "success" if success else "danger")
     return render_template("clusters/install.html", **_cluster_install_context(message, output))
 
@@ -216,6 +250,13 @@ def cluster_install_submit():
     ]
     sudo_password = request.form.get("sudo_password", "")
     success, message, output = install_kubernetes(selected_nodes, sudo_password)
+    steps = [
+        {"name": "INVENTORY", "status": "Done", "message": "Sinh inventory cluster", "started_at": "", "finished_at": ""},
+        {"name": "ANSIBLE", "status": "Done" if success else "Failed", "message": message, "started_at": "", "finished_at": ""},
+        {"name": "KUBECONFIG", "status": "Done" if success else "Skipped", "message": "Sync kubeconfig sau khi cài thành công", "started_at": "", "finished_at": ""},
+    ]
+    record_completed_job("K3s", "Cài Kubernetes/K3s bằng Ansible", "cluster", success, output or message, command="ansible-playbook install_k3s_cluster.yml", steps=steps)
+    record_audit("CLUSTER_INSTALL", "cluster", _result_label(success), message, metadata={"nodes": selected_nodes})
     flash(message, "success" if success else "danger")
     return render_template("clusters/install.html", **_cluster_install_context(message, output))
 
@@ -265,8 +306,10 @@ def application_form():
         try:
             application = create_application(request.form, current_user)
         except ValueError as exc:
+            record_audit("APPLICATION_CREATE", request.form.get("name", ""), "FAILED", str(exc))
             flash(str(exc), "danger")
             return render_template("applications/form.html", form=request.form), 409
+        record_audit("APPLICATION_CREATE", application["id"], "SUCCESS", f"Đã tạo application {application['name']}.")
         flash(f"Đã tạo application {application['name']}.", "success")
         return redirect(url_for("ui.application_detail", application_id=application["id"]))
 
@@ -294,6 +337,8 @@ def application_detail(application_id):
 def application_deploy(application_id):
     application = _get_authorized_application(application_id)
     success, output = deploy_application(application)
+    record_completed_job("Kubectl", "Deploy application", application["name"], success, output, command="kubectl apply --validate=false")
+    record_audit("APPLICATION_DEPLOY", application["id"], _result_label(success), output[:500])
     flash(("Deploy thành công. " if success else "Deploy thất bại. ") + output, "success" if success else "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
 
@@ -303,6 +348,8 @@ def application_deploy(application_id):
 def application_restart(application_id):
     application = _get_authorized_application(application_id)
     success, output = restart_application(application)
+    record_completed_job("Kubectl", "Restart application", application["name"], success, output, command="kubectl rollout restart")
+    record_audit("APPLICATION_RESTART", application["id"], _result_label(success), output[:500])
     flash(("Restart thành công. " if success else "Restart thất bại. ") + output, "success" if success else "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
 
@@ -313,6 +360,8 @@ def application_scale(application_id):
     application = _get_authorized_application(application_id)
     replicas = int(request.form.get("replicas") or 1)
     success, output = scale_application(application, replicas)
+    record_completed_job("Kubectl", f"Scale application lên {replicas}", application["name"], success, output, command=f"kubectl scale --replicas={replicas}")
+    record_audit("APPLICATION_SCALE", application["id"], _result_label(success), output[:500], metadata={"replicas": replicas})
     flash(("Scale thành công. " if success else "Scale thất bại. ") + output, "success" if success else "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
 
@@ -322,6 +371,8 @@ def application_scale(application_id):
 def application_delete_workloads(application_id):
     application = _get_authorized_application(application_id)
     success, output = delete_application_workloads(application)
+    record_completed_job("Kubectl", "Xóa workloads application", application["name"], success, output, command="kubectl delete workloads")
+    record_audit("APPLICATION_DELETE_WORKLOADS", application["id"], _result_label(success), output[:500])
     flash(output if not success else "Đã xóa workloads.", "success" if success else "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
 
@@ -333,8 +384,10 @@ def application_delete(application_id):
     application = _get_authorized_application(application_id)
     success = delete_application(application_id)
     if success:
+        record_audit("APPLICATION_DELETE", application_id, "SUCCESS", f"Đã xóa application '{application['name']}'.")
         flash(f"Đã xóa application '{application['name']}'.", "success")
     else:
+        record_audit("APPLICATION_DELETE", application_id, "FAILED", f"Không tìm thấy application '{application_id}'.")
         flash(f"Không tìm thấy application '{application_id}'.", "danger")
     return redirect(url_for("ui.applications"))
 
@@ -345,9 +398,11 @@ def application_pipeline_trigger(application_id):
     """Trigger CI/CD pipeline for a specific application."""
     application = _get_authorized_application(application_id)
     try:
-        pipeline_run = trigger_pipeline(application_id)
+        pipeline_run = trigger_pipeline(application_id, actor=current_user)
+        record_audit("PIPELINE_TRIGGER", application["id"], "SUCCESS", f"Pipeline {pipeline_run['id']} đã được khởi động.")
         flash(f"Pipeline {pipeline_run['id']} đã được khởi động (6 stages). Đang chạy ngầm...", "info")
     except Exception as exc:
+        record_audit("PIPELINE_TRIGGER", application["id"], "FAILED", str(exc))
         flash(f"Không thể khởi động pipeline: {exc}", "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
 
@@ -366,6 +421,8 @@ def application_pipeline_history(application_id):
 def application_logs(application_id):
     application = _get_authorized_application(application_id)
     success, logs = get_application_logs(application)
+    record_completed_job("Kubectl", "Lấy pod logs", application["name"], success, logs, command="kubectl logs")
+    record_audit("APPLICATION_LOGS_VIEW", application["id"], _result_label(success), "Người dùng truy vấn pod logs.")
     return render_template("deployments/logs.html", app=application, logs=logs, success=success)
 
 
@@ -394,7 +451,16 @@ def deployment_logs():
 @ui_bp.route("/jobs")
 @login_required
 def jobs():
-    return render_template("jobs/detail.html", steps=INSTALL_STEPS)
+    application_ids = {app["id"] for app in load_accessible_applications(current_user)}
+    pipeline_jobs = [pipeline_run_to_job(run) for run in load_pipeline_runs()]
+    if not current_user.is_admin:
+        pipeline_jobs = [job for job in pipeline_jobs if job.get("metadata", {}).get("application_id") in application_ids]
+    jobs_data = load_accessible_jobs(current_user, limit=None) + pipeline_jobs
+    jobs_data = sorted(jobs_data, key=lambda item: item.get("created_at", ""), reverse=True)
+    selected_id = request.args.get("job")
+    selected_job = next((job for job in jobs_data if job.get("id") == selected_id), None) if selected_id else None
+    selected_job = selected_job or (jobs_data[0] if jobs_data else None)
+    return render_template("jobs/detail.html", jobs=jobs_data, selected_job=selected_job)
 
 
 @ui_bp.route("/cicd")
@@ -632,6 +698,7 @@ def monitoring_refresh():
     apps = load_applications()
     save_snapshot(apps)
     collect_and_persist(apps)
+    record_audit("MONITORING_REFRESH", "monitoring", "SUCCESS", "Đã làm mới metrics.")
     flash("Đã làm mới metrics thành công.", "success")
     return redirect(url_for("ui.monitoring"))
 
@@ -663,6 +730,8 @@ def monitoring_install_stack():
     """Install Prometheus+Grafana monitoring stack on the K3s cluster."""
     result = deploy_monitoring_stack()
     success_all = all(result.values())
+    record_completed_job("Kubectl", "Deploy monitoring stack", "monitoring", success_all, json.dumps(result, ensure_ascii=False, indent=2), command="kubectl apply monitoring manifests")
+    record_audit("MONITORING_INSTALL_STACK", "monitoring", _result_label(success_all), json.dumps(result, ensure_ascii=False))
     flash(f"Deploy monitoring stack: {'✅ tất cả thành công' if success_all else '⚠ có lỗi - kiểm tra log'} — {result}", "success" if success_all else "warning")
     return redirect(url_for("ui.monitoring"))
 
@@ -783,8 +852,10 @@ def monitoring_ack_alert(alert_id):
     """Acknowledge an alert."""
     success = acknowledge_alert(alert_id)
     if success:
+        record_audit("ALERT_ACK", f"alert-{alert_id}", "SUCCESS", "Đã acknowledge alert.")
         flash("Đã acknowledge alert.", "success")
     else:
+        record_audit("ALERT_ACK", f"alert-{alert_id}", "FAILED", "Alert không tồn tại.")
         flash("Alert không tồn tại.", "warning")
     return redirect(url_for("ui.monitoring"))
 
@@ -793,7 +864,7 @@ def monitoring_ack_alert(alert_id):
 @login_required
 @role_required("Admin")
 def audit():
-    return render_template("audit.html", logs=AUDIT_LOGS)
+    return render_template("audit.html", logs=load_audit_logs())
 
 
 # ---------------------------------------------------------------------------
@@ -846,6 +917,7 @@ def servers_scan():
                     }
                     add_server(form_data)
                     added += 1
+            record_audit("SERVER_SCAN_ADD", subnet, "SUCCESS", f"Đã thêm {added} server mới vào hệ thống.", metadata={"mode": mode, "selected_ips": selected})
             flash(f"Đã thêm {added} server mới vào hệ thống.", "success")
             return redirect(url_for("ui.servers"))
 
@@ -853,6 +925,8 @@ def servers_scan():
             flash(f"Không tìm thấy server nào trong dãy {subnet}.", "warning")
         else:
             flash(f"Tìm thấy {len(discovered)} server trong dãy {subnet}. Chọn server muốn thêm.", "info")
+        record_completed_job("Network", f"Scan network ({mode})", subnet, True, json.dumps(discovered, ensure_ascii=False, indent=2), command=f"{mode} scan {subnet}")
+        record_audit("SERVER_SCAN", subnet, "SUCCESS", f"Tìm thấy {len(discovered)} server.", metadata={"mode": mode})
 
         return render_template("servers/scan.html", servers=discovered, subnet=subnet, mode=mode,
                                ssh_user=ssh_user, ssh_key=ssh_key, ssh_port=ssh_port)

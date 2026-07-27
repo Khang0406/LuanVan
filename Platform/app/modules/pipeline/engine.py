@@ -926,7 +926,7 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
     save_application(application)
 
 
-def trigger_pipeline(application_id: str) -> dict[str, Any]:
+def trigger_pipeline(application_id: str, actor: Any | None = None) -> dict[str, Any]:
     """Create a pipeline run and start execution in background thread."""
     application = find_application(application_id)
     if not application:
@@ -955,6 +955,10 @@ def trigger_pipeline(application_id: str) -> dict[str, Any]:
         "created_at": now,
         "updated_at": now,
     }
+    if actor and getattr(actor, "is_authenticated", False):
+        pipeline_run["actor"] = getattr(actor, "username", "unknown")
+        pipeline_run["actor_id"] = getattr(actor, "id", None)
+        pipeline_run["actor_role"] = getattr(actor, "role", "")
 
     _save_pipeline_run(pipeline_run)
     add_activity(application, "PIPELINE", f"Pipeline {run_id} started (6 stages)", "Running")

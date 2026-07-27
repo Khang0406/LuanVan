@@ -6,6 +6,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from app.db import db
 from app.models import User
+from app.modules.audit.service import record_audit
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -25,6 +26,7 @@ def role_required(role: str):
         @login_required
         def decorated_function(*args, **kwargs):
             if current_user.role != role:
+                record_audit("ACCESS_DENIED", request.path, "FAILED", f"Yêu cầu role {role}, user role {current_user.role}.")
                 flash("Bạn không có quyền truy cập trang này.", "danger")
                 return redirect(url_for("dashboard"))
             return f(*args, **kwargs)
@@ -47,10 +49,12 @@ def login():
         if user and user.check_password(password):
             session.clear()
             login_user(user, remember=True)
+            record_audit("AUTH_LOGIN", user.username, "SUCCESS", f"User {user.username} đăng nhập thành công.", user=user)
             next_page = _safe_next_url(request.args.get("next"))
             flash(f"Đăng nhập thành công. Xin chào {user.username} ({user.role}).", "success")
             return redirect(next_page or url_for("dashboard"))
 
+        record_audit("AUTH_LOGIN", username or "unknown", "FAILED", "Tên đăng nhập hoặc mật khẩu không đúng.", user=username or "anonymous")
         flash("Tên đăng nhập hoặc mật khẩu không đúng.", "danger")
 
     return render_template("auth/login.html")
@@ -59,6 +63,8 @@ def login():
 @auth_bp.post("/logout")
 @login_required
 def logout():
+    username = current_user.username
+    record_audit("AUTH_LOGOUT", username, "SUCCESS", f"User {username} đăng xuất.")
     logout_user()
     flash("Đã đăng xuất.", "info")
     return redirect(url_for("auth.login"))
@@ -88,6 +94,7 @@ def change_password():
         else:
             current_user.set_password(new_pw)
             db.session.commit()
+            record_audit("AUTH_CHANGE_PASSWORD", current_user.username, "SUCCESS", "User đổi mật khẩu.")
             flash("Đổi mật khẩu thành công.", "success")
             return redirect(url_for("dashboard"))
 
@@ -117,6 +124,7 @@ def register():
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
+            record_audit("AUTH_REGISTER", username, "SUCCESS", f"Tài khoản {username} (Developer) đã được tạo.", user=username)
             flash(f"Đăng ký thành công! Tài khoản {username} (Developer) đã được tạo.", "success")
             return redirect(url_for("auth.login"))
 

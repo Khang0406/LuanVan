@@ -8,14 +8,17 @@ def dashboard_stats(user):
     master_count = sum(1 for server in servers if server.get("role") == "Master")
     worker_count = sum(1 for server in servers if server.get("role") == "Worker")
 
+    from app.modules.jobs.service import load_accessible_jobs
     from app.modules.pipeline.engine import load_pipeline_runs
 
     application_ids = {app["id"] for app in applications}
-    running_jobs = sum(
+    running_pipeline_jobs = sum(
         1
         for run in load_pipeline_runs()
         if run.get("application_id") in application_ids and run.get("status") == "Running"
     )
+    running_infra_jobs = sum(1 for job in load_accessible_jobs(user, limit=None) if job.get("status") == "Running")
+    running_jobs = running_pipeline_jobs + running_infra_jobs
 
     return {
         "servers": len(servers),
