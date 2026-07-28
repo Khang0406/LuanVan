@@ -1,4 +1,3 @@
-import json
 import re
 import subprocess
 from datetime import datetime
@@ -6,6 +5,11 @@ from pathlib import Path
 from typing import Any
 
 from app.config import BASE_DIR
+from app.delivery_store import list_applications as list_applications_from_db
+from app.delivery_store import migrate_default_json_state, replace_applications
+from app.json_store import is_list_of_dicts, mask_secrets, read_json, write_json
+from app.registry_credentials import save_registry_credential
+from app.webhook_secrets import save_webhook_secret
 
 DATA_DIR = BASE_DIR / "app" / "data"
 APPLICATIONS_FILE = DATA_DIR / "applications.json"
@@ -75,15 +79,16 @@ def ensure_applications_file() -> None:
 
 
 def load_applications() -> list[dict[str, Any]]:
-    ensure_applications_file()
-    with APPLICATIONS_FILE.open("r", encoding="utf-8") as file:
-        return json.load(file)
+    migrate_default_json_state()
+    applications = list_applications_from_db()
+    return applications or _default_applications()
 
 
 def save_applications(applications: list[dict[str, Any]]) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with APPLICATIONS_FILE.open("w", encoding="utf-8") as file:
-        json.dump(applications, file, ensure_ascii=False, indent=2)
+    if not is_list_of_dicts(applications):
+        raise ValueError("applications must be a list of objects")
+    migrate_default_json_state()
+    replace_applications(applications)
 
 
 def can_access_application(application: dict[str, Any], user: Any) -> bool:
@@ -130,6 +135,17 @@ def parse_env_lines(raw_env: str) -> list[dict[str, str]]:
         env.append({"name": key.strip(), "value": value.strip()})
     return env
 
+def _bounded_int(value: Any, field: str, default: int, minimum: int, maximum: int) -> int:
+    raw = default if value in (None, "") else value
+    try:
+        parsed = int(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field} phải là số nguyên.") from exc
+    if not minimum <= parsed <= maximum:
+        raise ValueError(f"{field} phải nằm trong khoảng {minimum}-{maximum}.")
+    return parsed
+
+
 
 def add_activity(application: dict[str, Any], event_type: str, message: str, status: str = "Done") -> None:
     application.setdefault("activity_logs", []).insert(
@@ -137,7 +153,7 @@ def add_activity(application: dict[str, Any], event_type: str, message: str, sta
         {
             "time": _now(),
             "type": event_type,
-            "message": message,
+            "message": mask_secrets(message),
             "status": status,
         },
     )
@@ -161,8 +177,8 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
             {
                 "name": slugify(form.get("service_name", "web").strip() or "web"),
                 "image": image,
-                "container_port": int(form.get("container_port") or 80),
-                "replicas": int(form.get("replicas") or 1),
+                "container_port": _bounded_int(form.get("container_port"), "Container port", 80, 1, 65535),
+                "replicas": _bounded_int(form.get("replicas"), "Replicas", 1, 1, 100),
                 "service_type": form.get("service_type", "NodePort").strip(),
                 "node_port": form.get("node_port", "").strip(),
                 "env": parse_env_lines(form.get("env", "")),
@@ -170,10 +186,10 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
                 "cpu_limit": form.get("cpu_limit", "500m").strip() or "500m",
                 "memory_request": form.get("memory_request", "128Mi").strip() or "128Mi",
                 "memory_limit": form.get("memory_limit", "512Mi").strip() or "512Mi",
-                "min_replicas": int(form.get("min_replicas") or 1),
-                "max_replicas": int(form.get("max_replicas") or 3),
+                "min_replicas": _bounded_int(form.get("min_replicas"), "Min replicas", 1, 1, 100),
+                "max_replicas": _bounded_int(form.get("max_replicas"), "Max replicas", 3, 1, 100),
                 "autoscaling": form.get("autoscaling") == "on",
-                "cpu_threshold": int(form.get("cpu_threshold") or 70),
+                "cpu_threshold": _bounded_int(form.get("cpu_threshold"), "CPU threshold", 70, 1, 100),
             }
         ]
 
@@ -191,8 +207,8 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
         if not image:
             default_img = form.get("docker_image", "").strip()
             image = default_img or f"{slugify(form.get('owner', '').strip())}/{slugify(form.get('name', '').strip())}:latest"
-        port = int(ports[i]) if i < len(ports) and ports[i] else 80
-        replicas = int(replicas_list[i]) if i < len(replicas_list) and replicas_list[i] else 1
+        port = _bounded_int(ports[i] if i < len(ports) else None, f"Service {i + 1} port", 80, 1, 65535)
+        replicas = _bounded_int(replicas_list[i] if i < len(replicas_list) else None, f"Service {i + 1} replicas", 1, 1, 100)
         svc_type = types[i].strip() if i < len(types) and types[i] else "NodePort"
         node_port = node_ports[i].strip() if i < len(node_ports) else ""
         env_raw = envs[i].strip() if i < len(envs) else ""
@@ -208,10 +224,10 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
             "cpu_limit": form.get("cpu_limit", "500m").strip() or "500m",
             "memory_request": form.get("memory_request", "128Mi").strip() or "128Mi",
             "memory_limit": form.get("memory_limit", "512Mi").strip() or "512Mi",
-            "min_replicas": int(form.get("min_replicas") or max(replicas, 1)),
-            "max_replicas": int(form.get("max_replicas") or max(replicas, 3)),
+            "min_replicas": _bounded_int(form.get("min_replicas"), "Min replicas", max(replicas, 1), 1, 100),
+            "max_replicas": _bounded_int(form.get("max_replicas"), "Max replicas", max(replicas, 3), 1, 100),
             "autoscaling": form.get("autoscaling") == "on",
-            "cpu_threshold": int(form.get("cpu_threshold") or 70),
+            "cpu_threshold": _bounded_int(form.get("cpu_threshold"), "CPU threshold", 70, 1, 100),
         })
 
     return services
@@ -229,21 +245,51 @@ def create_application(form: dict[str, Any], user: Any) -> dict[str, Any]:
     source_type = form.get("source_type", "docker").strip()
     docker_image = form.get("docker_image", "").strip()
     github_url = form.get("github_url", "").strip()
+    if not name:
+        raise ValueError("Tên application không được để trống.")
+    if source_type not in {"docker", "github"}:
+        raise ValueError("Source type chỉ có thể là docker hoặc github.")
+    if source_type == "github":
+        from app.modules.pipeline.build import (
+            validate_git_ref,
+            validate_repository_path,
+            validate_repository_url,
+        )
+
+        github_url = validate_repository_url(github_url)
+        validate_git_ref(form.get("default_branch", "main"), "Default branch")
+        if form.get("requested_ref", "").strip():
+            validate_git_ref(form.get("requested_ref", ""), "Commit/ref")
+        validate_repository_path(form.get("build_context", "."), "Build context")
+        validate_repository_path(form.get("dockerfile_path", "Dockerfile"), "Dockerfile path")
 
     services = _parse_services_from_form(form)
+    if not services:
+        raise ValueError("Application phải có ít nhất một service.")
+    for service in services:
+        if service["min_replicas"] > service["max_replicas"]:
+            raise ValueError("Min replicas không được lớn hơn max replicas.")
+        if service.get("node_port"):
+            _bounded_int(service["node_port"], "NodePort", 30000, 30000, 32767)
     image = docker_image or services[0]["image"]
 
     # Registry config for GitHub source builds
-    registry: dict[str, str] = {}
+    # GitHub builds inherit the Platform-managed registry credential by
+    # default. Legacy form fields remain accepted as an explicit override.
+    registry: dict[str, Any] = {"inherit_platform": True}
     registry_url = form.get("registry_url", "").strip()
     registry_username = form.get("registry_username", "").strip()
     registry_password = form.get("registry_password", "").strip()
     if registry_url or registry_username or registry_password:
         registry = {
-            "url": registry_url,
+            "url": registry_url or "docker.io",
             "username": registry_username,
-            "password": registry_password,
+            "inherit_platform": False,
         }
+        if registry_password:
+            registry["credential_ref"] = save_registry_credential(
+                f"user:{user.id}", registry_username, registry_password, registry_url or "docker.io"
+            )
 
     applications = load_applications()
     if any(app.get("id") == application_id for app in applications):
@@ -260,6 +306,12 @@ def create_application(form: dict[str, Any], user: Any) -> dict[str, Any]:
         "source_type": source_type,
         "docker_image": docker_image,
         "github_url": github_url,
+        "default_branch": form.get("default_branch", "main").strip() or "main",
+        "requested_ref": form.get("requested_ref", "").strip(),
+        "build_context": form.get("build_context", ".").strip() or ".",
+        "dockerfile_path": form.get("dockerfile_path", "Dockerfile").strip() or "Dockerfile",
+        "deployment_mode": form.get("deployment_mode", "production").strip() or "production",
+        "development_fallback_enabled": form.get("development_fallback_enabled") == "on",
         "registry": registry,
         "description": form.get("description", "").strip(),
         "services": services,
@@ -270,6 +322,9 @@ def create_application(form: dict[str, Any], user: Any) -> dict[str, Any]:
         "updated_at": _now(),
         "activity_logs": [],
     }
+    webhook_secret = form.get("webhook_secret", "").strip()
+    if source_type == "github" and webhook_secret:
+        application["webhook_secret_ref"] = save_webhook_secret(application_id, webhook_secret)
 
     if source_type == "github":
         add_activity(application, "CREATE", f"Tạo application từ GitHub repository {github_url}.", "Ready")

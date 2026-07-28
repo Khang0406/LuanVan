@@ -1,0 +1,11 @@
+---
+# Public half of the key mounted into the Platform pod. Never put the private
+# key or registry credentials in this repository.
+platform_builder_public_key: "ssh-ed25519 REPLACE_WITH_PUBLIC_KEY platform"
+
+# Dedicated account used only by Docker CLI over SSH.
+platform_builder_user: platform-builder
+
+# Docker daemon settings keep logs bounded. Set this to the private CIDR used
+# by the K3s nodes if host firewall rules are managed separately.
+platform_cluster_private_cidr: 10.0.0.0/24

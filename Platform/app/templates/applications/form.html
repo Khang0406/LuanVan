@@ -58,27 +58,55 @@
             <label class="form-label">GitHub repository</label>
             <input class="form-control" name="github_url" value="{{ form.github_url or '' }}" placeholder="https://github.com/org/repo">
           </div>
+          <div class="col-md-3 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+            <label class="form-label">Default branch</label>
+            <input class="form-control" name="default_branch" value="{{ form.default_branch or 'main' }}" placeholder="main">
+          </div>
+          <div class="col-md-3 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+            <label class="form-label">Commit/ref (tuỳ chọn)</label>
+            <input class="form-control" name="requested_ref" value="{{ form.requested_ref or '' }}" placeholder="v1.2.0 hoặc SHA">
+          </div>
+          <div class="col-md-3 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+            <label class="form-label">Build context</label>
+            <input class="form-control" name="build_context" value="{{ form.build_context or '.' }}" placeholder=".">
+          </div>
+          <div class="col-md-3 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+            <label class="form-label">Dockerfile path</label>
+            <input class="form-control" name="dockerfile_path" value="{{ form.dockerfile_path or 'Dockerfile' }}" placeholder="Dockerfile">
+          </div>
+          <div class="col-md-4 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+            <label class="form-label">Deployment mode</label>
+            <select class="form-select" name="deployment_mode">
+              <option value="production" {{ 'selected' if form.deployment_mode != 'development' else '' }}>Production</option>
+              <option value="development" {{ 'selected' if form.deployment_mode == 'development' else '' }}>Development</option>
+            </select>
+          </div>
+          <div class="col-md-4 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+            <label class="form-label">GitHub webhook secret</label>
+            <input class="form-control" type="password" name="webhook_secret" value="" autocomplete="new-password">
+            <div class="form-text">Lưu ngoài application/pipeline logs; endpoint: /webhooks/github/&lt;application-id&gt;</div>
+          </div>
+          <div class="col-md-8 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" name="development_fallback_enabled" id="development-fallback"
+                     {{ 'checked' if form.development_fallback_enabled else '' }}>
+              <label class="form-check-label" for="development-fallback">
+                Cho phép <strong>Development fallback</strong> (không phải production, không rollback bằng image)
+              </label>
+            </div>
+          </div>
           <div class="col-md-6">
             <label class="form-label">Mô tả</label>
             <textarea class="form-control" name="description" rows="2" placeholder="Mô tả chức năng application">{{ form.description or '' }}</textarea>
           </div>
         </div>
-        <!-- Docker Registry config (visible for GitHub source) -->
+        <!-- Docker Registry is managed once by the Platform administrator. -->
         <div class="row g-3 mt-1 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
-          <div class="col-12"><h6 class="text-muted mb-0">Docker Registry (dùng để push image sau build)</h6></div>
-          <div class="col-md-4">
-            <label class="form-label">Registry URL</label>
-            <input class="form-control" name="registry_url" value="{{ form.registry_url or '' }}" placeholder="docker.io (mặc định)">
-            <div class="form-text">Để trống → docker.io</div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Username</label>
-            <input class="form-control" name="registry_username" value="{{ form.registry_username or '' }}" placeholder="dockerhub username">
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Password / Token</label>
-            <input class="form-control" type="password" name="registry_password" value="{{ form.registry_password or '' }}" placeholder="PAT hoặc password">
-            <div class="form-text">Personal Access Token khuyến nghị</div>
+          <div class="col-12">
+            <div class="alert alert-info mb-0">
+              Docker Registry được Admin cấu hình một lần ở trang CI/CD.
+              Application mới sẽ tự động kế thừa; developer không cần nhập Docker token.
+            </div>
           </div>
         </div>
       </div>

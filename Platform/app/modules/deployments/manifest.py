@@ -13,7 +13,12 @@ def _yaml_value(value: str) -> str:
 
 def build_manifest(application: dict[str, Any]) -> str:
     namespace = application["namespace"]
-    github_url = application.get("github_url", "")
+    development_fallback = (
+        application.get("deployment_mode") == "development"
+        and application.get("development_fallback_enabled") is True
+    )
+    github_url = application.get("github_url", "") if development_fallback else ""
+    image_pull_secret = application.get("image_pull_secret", "")
     documents: list[str] = [
         f"""apiVersion: v1
 kind: Namespace
@@ -98,6 +103,10 @@ metadata:
             node_name_yaml = f"""
       nodeName: {node_name}"""
 
+        pull_secret_yaml = (
+            f"\n      imagePullSecrets:\n        - name: {image_pull_secret}"
+            if image_pull_secret else ""
+        )
         documents.append(
             f"""apiVersion: apps/v1
 kind: Deployment
@@ -118,17 +127,11 @@ spec:
       labels:
         app.kubernetes.io/name: {app_name}
         app.kubernetes.io/part-of: {application["id"]}
-    spec:{node_name_yaml}{init_container_yaml}
+    spec:{node_name_yaml}{pull_secret_yaml}{init_container_yaml}
       containers:
         - name: {service["name"]}
           image: {service["image"]}
           imagePullPolicy: IfNotPresent
-          command: [sh, -c]
-          args:
-            - |
-              rm -rf /usr/src/php/ext/mysqli/.libs /usr/src/php/ext/mysqli/*.lo 2>/dev/null
-              docker-php-ext-install mysqli 2>/dev/null
-              apache2-foreground
           ports:
             - containerPort: {int(service.get("container_port", 80))}{env_yaml}{resources_yaml}{volume_mount_yaml}{volumes_yaml}
 """

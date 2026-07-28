@@ -4,3 +4,4 @@ pyyaml>=6.0
 python-dotenv>=1.0,<2.0
 Flask-SQLAlchemy>=3.1,<4.0
 Flask-Login>=0.6,<1.0
+gunicorn>=22.0,<24.0

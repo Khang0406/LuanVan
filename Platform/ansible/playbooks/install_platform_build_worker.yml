@@ -1,0 +1,97 @@
+---
+- name: Configure isolated Docker Build Worker
+  hosts: platform_builders
+  become: true
+  vars:
+    platform_builder_user: platform-builder
+    platform_builder_public_key: ""
+  pre_tasks:
+    - name: Require the Platform SSH public key
+      ansible.builtin.assert:
+        that:
+          - platform_builder_public_key | length > 40
+          - "'REPLACE_WITH' not in platform_builder_public_key"
+        fail_msg: >-
+          Set platform_builder_public_key in an encrypted vars file or pass it
+          with --extra-vars. Never pass the private key to Ansible.
+
+  tasks:
+    - name: Install Docker Engine and SSH packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - docker.io
+          - git
+          - openssh-server
+        state: present
+        update_cache: true
+
+    - name: Create dedicated builder account
+      ansible.builtin.user:
+        name: "{{ platform_builder_user }}"
+        groups: docker
+        append: true
+        create_home: true
+        shell: /bin/bash
+
+    - name: Authorize only the Platform SSH key
+      ansible.posix.authorized_key:
+        user: "{{ platform_builder_user }}"
+        key: "{{ platform_builder_public_key }}"
+        state: present
+        exclusive: true
+
+    - name: Bound Docker logs and enable BuildKit
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          {
+            "features": {"buildkit": true},
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "3"
+            },
+            "max-concurrent-downloads": 3,
+            "max-concurrent-uploads": 3
+          }
+      notify: Restart Docker
+
+    - name: Restrict the builder SSH account
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/90-platform-builder.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          Match User {{ platform_builder_user }}
+              PasswordAuthentication no
+              KbdInteractiveAuthentication no
+              X11Forwarding no
+              AllowAgentForwarding no
+              AllowTcpForwarding no
+              PermitTunnel no
+      notify: Restart SSH
+
+    - name: Ensure Docker and SSH are enabled
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - docker
+        - ssh
+
+  handlers:
+    - name: Restart Docker
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted

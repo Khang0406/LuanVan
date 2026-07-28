@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from app.config import BASE_DIR
+from app.json_store import is_list_of_dicts, read_json, write_json
 
 from .collector import application_metrics as kubectl_app_metrics
 from .collector import node_metrics as kubectl_node_metrics
@@ -29,16 +29,13 @@ def _now() -> str:
 
 
 def load_alerts() -> list[dict[str, Any]]:
-    if not ALERTS_FILE.exists():
-        return []
-    with ALERTS_FILE.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return read_json(ALERTS_FILE, [], is_list_of_dicts)
 
 
 def save_alerts(alerts: list[dict[str, Any]]) -> None:
-    ALERTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with ALERTS_FILE.open("w", encoding="utf-8") as f:
-        json.dump(alerts, f, ensure_ascii=False, indent=2)
+    if not is_list_of_dicts(alerts):
+        raise ValueError("alerts must be a list of objects")
+    write_json(ALERTS_FILE, alerts)
 
 
 def get_prometheus_node_metrics() -> list[dict[str, Any]]:

@@ -12,6 +12,7 @@ from typing import Any
 import threading
 import time
 from collections import deque
+from app.json_store import write_json
 
 from app.config import BASE_DIR
 
@@ -304,8 +305,7 @@ def save_snapshot(applications: list[dict[str, Any]]) -> None:
         "apps": application_metrics(applications),
         "summary": cluster_summary(applications),
     }
-    with DATA_FILE.open("w", encoding="utf-8") as f:
-        json.dump(snapshot, f, ensure_ascii=False, indent=2)
+    write_json(DATA_FILE, snapshot)
 
 
 # ---------------------------------------------------------------------------

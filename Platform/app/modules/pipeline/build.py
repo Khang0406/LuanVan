@@ -5,14 +5,19 @@ registry configuration. Falls back gracefully when credentials are missing.
 """
 
 import os
+import re
 import shutil
 import subprocess
+import tempfile
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from app.config import BASE_DIR
+from app.json_store import mask_secrets
+from app.registry_credentials import resolve_registry_credential
 
 BUILD_DIR = BASE_DIR / "app" / "data" / "builds"
 DEFAULT_REGISTRY = "docker.io"
@@ -27,7 +32,14 @@ def _ensure_build_dir() -> Path:
     return BUILD_DIR
 
 
-def _run_command(args: list[str], cwd: Path | None = None, timeout: int = 300) -> tuple[bool, str]:
+def _run_command(
+    args: list[str],
+    cwd: Path | None = None,
+    timeout: int = 300,
+    *,
+    stdin: str | None = None,
+    env: dict[str, str] | None = None,
+) -> tuple[bool, str]:
     """Run a shell command and return (success, output)."""
     try:
         result = subprocess.run(
@@ -37,8 +49,10 @@ def _run_command(args: list[str], cwd: Path | None = None, timeout: int = 300) -
             timeout=timeout,
             check=False,
             cwd=str(cwd) if cwd else None,
+            input=stdin,
+            env=env,
         )
-        output = (result.stdout + result.stderr).strip()
+        output = mask_secrets((result.stdout + result.stderr).strip())
         return result.returncode == 0, output
     except subprocess.TimeoutExpired:
         return False, f"Command timed out after {timeout}s: {' '.join(args)}"
@@ -50,17 +64,19 @@ def _get_registry_config(application: dict[str, Any]) -> dict[str, str]:
     """Extract registry configuration from application or environment variables.
 
     Priority:
-    1. Application-level registry config (per-app credentials)
-    2. Environment variables (global platform config)
-    3. Docker Hub anonymous (no push)
+    1. Shared Platform credential (default for every application)
+    2. Explicit application override (only when inherit_platform=false)
+    3. Environment variables
+    4. Docker Hub anonymous (no push)
     """
-    registry = application.get("registry", {})
-
+    registry = application.get("registry") or {}
+    stored, credential_source = resolve_registry_credential(application)
     config = {
-        "registry": registry.get("url") or os.getenv("DOCKER_REGISTRY", DEFAULT_REGISTRY),
-        "username": registry.get("username") or os.getenv("DOCKER_USERNAME", ""),
-        "password": registry.get("password") or os.getenv("DOCKER_PASSWORD", ""),
-        "token": registry.get("token") or os.getenv("DOCKER_TOKEN", ""),
+        "registry": stored.get("registry") or registry.get("url") or os.getenv("DOCKER_REGISTRY", DEFAULT_REGISTRY),
+        "username": stored.get("username") or registry.get("username") or os.getenv("DOCKER_USERNAME", ""),
+        "password": stored.get("credential") or os.getenv("DOCKER_PASSWORD", ""),
+        "token": os.getenv("DOCKER_TOKEN", ""),
+        "credential_source": credential_source,
     }
 
     # If no explicit registry config, try to parse from docker_image if already prefixed
@@ -88,7 +104,7 @@ def _has_valid_registry_credentials(registry_config: dict[str, str]) -> bool:
         return False
 
     credential = password or token
-    if not credential:
+    if not credential or credential == "***":
         return False
 
     # Password looks like a description (long Vietnamese text with spaces) → not real
@@ -102,30 +118,78 @@ def _has_valid_registry_credentials(registry_config: dict[str, str]) -> bool:
     return True
 
 
-def _image_tag(application: dict[str, Any], service_name: str, registry_config: dict[str, str]) -> str:
+def _image_tag(
+    application: dict[str, Any],
+    service_name: str,
+    registry_config: dict[str, str],
+    commit_sha: str,
+) -> str:
     """Generate full image tag for the built image.
 
-    Format: {registry}/{owner-or-username}/{app_name}-{service_name}:build-{timestamp}
+    Format: {registry}/{username}/{app_name}-{service_name}:{commit-sha}
     """
-    registry = registry_config["registry"]
-    owner = application.get("owner", "developer")
+    registry = (registry_config["registry"] or DEFAULT_REGISTRY).removeprefix("https://").removeprefix("http://").rstrip("/")
+    owner = (registry_config.get("username") or application.get("owner", "developer")).lower()
     app_name = application["id"]
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    immutable_tag = commit_sha.lower()
+    if not re.fullmatch(r"[0-9a-f]{7,64}", immutable_tag):
+        raise ValueError("Commit SHA must contain 7-64 hexadecimal characters.")
 
     # Remove docker.io/ prefix for consistency with Docker Hub conventions
     if not registry or registry == DEFAULT_REGISTRY:
         # Docker Hub: use username/app-name format
-        username = registry_config["username"] or owner
-        return f"{username}/{app_name}-{service_name}:build-{timestamp}"
+        return f"{owner}/{app_name}-{service_name}:{immutable_tag}"
     else:
-        return f"{registry}/{owner}/{app_name}-{service_name}:build-{timestamp}"
+        return f"{registry}/{owner}/{app_name}-{service_name}:{immutable_tag}"
 
 
-def clone_repository(github_url: str, work_dir: Path) -> tuple[bool, str]:
+GITHUB_URL = re.compile(
+    r"^(?:https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?|"
+    r"git@github\.com:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?)$"
+)
+GIT_REF = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$")
+
+
+def validate_repository_url(value: str) -> str:
+    url = value.strip()
+    if not GITHUB_URL.fullmatch(url) or any(part in url for part in ("..", " ", "\n", "\r")):
+        raise ValueError("GitHub repository URL không hợp lệ.")
+    return url
+
+
+def validate_git_ref(value: str, field: str = "Git ref") -> str:
+    ref = value.strip()
+    if not ref or not GIT_REF.fullmatch(ref) or ref.startswith(("-", ".")) or ".." in ref:
+        raise ValueError(f"{field} không hợp lệ.")
+    return ref
+
+
+def validate_repository_path(value: str, field: str) -> str:
+    raw = (value or ".").strip()
+    candidate = Path(raw)
+    if candidate.is_absolute() or ".." in candidate.parts or "\x00" in raw:
+        raise ValueError(f"{field} phải là đường dẫn tương đối bên trong repository.")
+    normalized = candidate.as_posix()
+    return normalized or "."
+
+
+def clone_repository(
+    github_url: str,
+    work_dir: Path,
+    branch: str = "main",
+    requested_ref: str = "",
+) -> tuple[bool, str, str]:
     """Clone GitHub repository to work_dir.
 
     Returns (success, message).
     """
+    try:
+        github_url = validate_repository_url(github_url)
+        branch = validate_git_ref(branch, "Branch")
+        if requested_ref:
+            validate_git_ref(requested_ref, "Commit/ref")
+    except ValueError as exc:
+        return False, str(exc), ""
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # Remove existing contents if any
@@ -137,22 +201,28 @@ def clone_repository(github_url: str, work_dir: Path) -> tuple[bool, str]:
 
     # Clone the repository
     success, output = _run_command(
-        ["git", "clone", "--depth", "1", github_url, "."],
+        ["git", "clone", "--depth", "1", "--branch", branch, "--single-branch", github_url, "."],
         cwd=work_dir,
         timeout=180,
     )
 
     if not success:
-        # Try with https:// prefix if missing
-        if not github_url.startswith("http"):
-            github_url = f"https://github.com/{github_url}"
-            success, output = _run_command(
-                ["git", "clone", "--depth", "1", github_url, "."],
-                cwd=work_dir,
-                timeout=180,
+        return False, output, ""
+    if requested_ref:
+        success, checkout_output = _run_command(
+            ["git", "fetch", "--depth", "1", "origin", requested_ref], cwd=work_dir, timeout=180
+        )
+        if success:
+            success, checkout_output = _run_command(
+                ["git", "checkout", "--detach", "FETCH_HEAD"], cwd=work_dir, timeout=60
             )
-
-    return success, output
+        output = f"{output}\n{checkout_output}".strip()
+        if not success:
+            return False, output, ""
+    sha_ok, commit_sha = _run_command(["git", "rev-parse", "HEAD"], cwd=work_dir, timeout=30)
+    if not sha_ok or not re.fullmatch(r"[0-9a-fA-F]{40}", commit_sha.strip()):
+        return False, f"Không lấy được commit SHA: {commit_sha}", ""
+    return True, output, commit_sha.strip().lower()
 
 
 def find_dockerfile(work_dir: Path) -> Path | None:
@@ -438,6 +508,8 @@ def build_docker_image(
     work_dir: Path,
     image_tag: str,
     dockerfile: Path | None = None,
+    build_context: Path | None = None,
+    timeout: int = 600,
 ) -> tuple[bool, str]:
     """Build Docker image from work_dir.
 
@@ -455,9 +527,10 @@ def build_docker_image(
     if dockerfile and dockerfile.exists():
         args.extend(["-f", str(dockerfile)])
 
-    args.extend(["-t", image_tag, "."])
+    context = build_context or work_dir
+    args.extend(["-t", image_tag, str(context)])
 
-    success, output = _run_command(args, cwd=work_dir, timeout=600)
+    success, output = _run_command(args, cwd=work_dir, timeout=timeout)
     return success, output
 
 
@@ -478,6 +551,8 @@ def push_docker_image(
     password = registry_config.get("password", "") or registry_config.get("token", "")
     registry = registry_config.get("registry", DEFAULT_REGISTRY)
 
+    docker_config_dir = tempfile.mkdtemp(prefix="platform-docker-config-")
+    docker_env = {**os.environ, "DOCKER_CONFIG": docker_config_dir}
     if username and password:
         login_success, login_output = _run_command(
             [
@@ -486,29 +561,93 @@ def push_docker_image(
                 "--password-stdin",
             ],
             timeout=60,
-            # Can't use --password-stdin without piping, use --password
+            stdin=password,
+            env=docker_env,
         )
-        # Retry with --password flag
         if not login_success:
-            login_success, login_output = _run_command(
-                [
-                    "docker", "login", registry,
-                    "--username", username,
-                    "--password", password,
-                ],
-                timeout=60,
-            )
-        if not login_success:
+            shutil.rmtree(docker_config_dir, ignore_errors=True)
             return False, f"Docker login failed: {login_output}"
 
     # Push image
-    success, output = _run_command(["docker", "push", image_tag], timeout=300)
+    success, output = _run_command(["docker", "push", image_tag], timeout=300, env=docker_env)
 
-    # Logout for security
-    if username:
-        _run_command(["docker", "logout", registry], timeout=10)
+    shutil.rmtree(docker_config_dir, ignore_errors=True)
 
     return success, output
+
+
+def test_docker_image(
+    application: dict[str, Any],
+    service: dict[str, Any],
+    image_tag: str,
+) -> tuple[bool, str]:
+    """Start, inspect and optionally health-check an image; always remove it."""
+    if not _docker_available():
+        return False, "Docker is not available — container test cannot run"
+    container_name = (
+        f"test-{application['id']}-{service['name']}-{uuid.uuid4().hex[:10]}"
+    )
+    try:
+        # Tests run on the isolated Build Worker, but still receive hard limits
+        # so an untrusted image cannot exhaust the worker host.
+        memory_limit = os.getenv("TEST_CONTAINER_MEMORY_LIMIT", "512m")
+        cpu_limit = os.getenv("TEST_CONTAINER_CPU_LIMIT", "1.0")
+        pids_limit = os.getenv("TEST_CONTAINER_PIDS_LIMIT", "256")
+        started, start_output = _run_command(
+            [
+                "docker", "run",
+                "--name", container_name,
+                "--detach",
+                "--memory", memory_limit,
+                "--cpus", cpu_limit,
+                "--pids-limit", pids_limit,
+                "--security-opt", "no-new-privileges",
+                image_tag,
+            ],
+            timeout=90,
+        )
+        if not started:
+            return False, f"Container failed to start: {start_output}"
+        time.sleep(float(application.get("test_startup_delay_seconds", 2)))
+        inspected, inspect_output = _run_command(
+            ["docker", "inspect", container_name, "--format", "{{.State.Status}}"],
+            timeout=15,
+        )
+        if not inspected or inspect_output.strip().lower() != "running":
+            logs_ok, logs_output = _run_command(
+                ["docker", "logs", container_name], timeout=15
+            )
+            return False, (
+                f"Container is not running (status={inspect_output}). "
+                f"Logs: {logs_output if logs_ok else 'unavailable'}"
+            )
+        health_path = service.get("health_path", "")
+        if health_path:
+            port = int(service.get("container_port", 80))
+            health_timeout = int(service.get("health_timeout_seconds", 15))
+            probe_image = os.getenv(
+                "CONTAINER_HEALTH_PROBE_IMAGE",
+                "curlimages/curl:8.10.1",
+            )
+            health_ok, health_output = _run_command(
+                [
+                    "docker", "run", "--rm",
+                    "--network", f"container:{container_name}",
+                    probe_image,
+                    "--fail", "--silent", "--show-error",
+                    "--max-time", str(health_timeout),
+                    f"http://127.0.0.1:{port}/{health_path.lstrip('/')}",
+                ],
+                # Allow the isolated Build Worker to pull the small probe image
+                # on first use without weakening the HTTP request timeout.
+                timeout=health_timeout + 60,
+            )
+            if not health_ok:
+                return False, f"Health check {health_path} failed: {health_output}"
+            return True, f"running; health {health_path} passed"
+        return True, "running"
+    finally:
+        _run_command(["docker", "rm", "-f", container_name], timeout=20)
 
 
 def build_from_github(
@@ -525,13 +664,20 @@ def build_from_github(
     from app.modules.applications.service import add_activity, save_application
 
     github_url = application.get("github_url", "")
+    branch = application.get("default_branch", "main")
+    requested_ref = pipeline_run.get("requested_ref") or application.get("requested_ref", "")
     registry_config = _get_registry_config(application)
     build_id = f"{application['id']}-{pipeline_run['id'][-8:]}"
     work_dir = _ensure_build_dir() / build_id
 
     # === CLONE ================================================================
-    _update_stage(pipeline_run, "SOURCE", "Running", f"Cloning {github_url}...")
-    clone_success, clone_output = clone_repository(github_url, work_dir)
+    _update_stage(
+        pipeline_run, "SOURCE", "Running",
+        f"Cloning repository={github_url} branch={branch} ref={requested_ref or branch}...",
+    )
+    clone_success, clone_output, commit_sha = clone_repository(
+        github_url, work_dir, branch, requested_ref
+    )
 
     if not clone_success:
         _update_stage(pipeline_run, "SOURCE", "Failed", f"Git clone failed: {clone_output[:200]}")
@@ -539,8 +685,20 @@ def build_from_github(
         _save_pipeline_run(pipeline_run)
         return pipeline_run
 
-    _update_stage(pipeline_run, "SOURCE", "Done", f"Cloned {github_url} → {work_dir}")
-    add_activity(application, "PIPELINE", f"SOURCE: Đã clone {github_url}", "Done")
+    pipeline_run.update({
+        "repository": github_url,
+        "branch": branch,
+        "commit_sha": commit_sha,
+        "source_output": clone_output,
+    })
+    _update_stage(
+        pipeline_run, "SOURCE", "Done",
+        f"repository={github_url}\nbranch={branch}\ncommit={commit_sha}",
+    )
+    add_activity(
+        application, "PIPELINE",
+        f"SOURCE: repository={github_url}, branch={branch}, commit={commit_sha}", "Done",
+    )
 
     # === SCAN =================================================================
     _update_stage(pipeline_run, "BUILD", "Running", "Đang quét mã nguồn để phát hiện lỗi phổ biến...")
@@ -576,27 +734,70 @@ def build_from_github(
     # === BUILD ================================================================
     services = application.get("services", [])
     built_images: list[tuple[str, str]] = []  # [(service_name, image_tag)]
+    build_outputs: dict[str, str] = {}
 
     for service in services:
         service_name = service["name"]
-        image_tag = _image_tag(application, service_name, registry_config)
+        image_tag = _image_tag(application, service_name, registry_config, commit_sha)
 
         _update_stage(pipeline_run, "BUILD", "Running", f"Building {service_name} → {image_tag}...")
 
-        dockerfile = find_dockerfile(work_dir)
+        try:
+            context_value = validate_repository_path(
+                service.get("build_context", application.get("build_context", ".")),
+                f"Build context ({service_name})",
+            )
+            dockerfile_value = validate_repository_path(
+                service.get("dockerfile_path", application.get("dockerfile_path", "Dockerfile")),
+                f"Dockerfile path ({service_name})",
+            )
+        except ValueError as exc:
+            _update_stage(pipeline_run, "BUILD", "Failed", str(exc))
+            _save_pipeline_run(pipeline_run)
+            return pipeline_run
+
+        build_context = (work_dir / context_value).resolve()
+        repository_root = work_dir.resolve()
+        if repository_root not in (build_context, *build_context.parents) or not build_context.is_dir():
+            _update_stage(
+                pipeline_run, "BUILD", "Failed",
+                f"Build context không tồn tại hoặc nằm ngoài repository: {context_value}",
+            )
+            _save_pipeline_run(pipeline_run)
+            return pipeline_run
+
+        configured_dockerfile = (work_dir / dockerfile_value).resolve()
+        dockerfile = configured_dockerfile if configured_dockerfile.is_file() else None
+        if dockerfile is None and dockerfile_value == "Dockerfile":
+            dockerfile = find_dockerfile(work_dir)
         if not dockerfile:
+            explicit_path = service.get("dockerfile_path") or application.get("dockerfile_path")
+            if explicit_path and explicit_path != "Dockerfile":
+                _update_stage(
+                    pipeline_run, "BUILD", "Failed",
+                    f"Dockerfile được cấu hình không tồn tại: {dockerfile_value}",
+                )
+                _save_pipeline_run(pipeline_run)
+                return pipeline_run
             dockerfile = generate_default_dockerfile(work_dir, service)
             add_activity(
                 application,
                 "BUILD",
-                f"Không tìm thấy Dockerfile trong repo, đã tự động tạo Dockerfile cho {service_name}",
-                "Done",
+                f"Development fallback: không tìm thấy Dockerfile; đã auto-generate cho {service_name}",
+                "Warning",
             )
 
-        build_success, build_output = build_docker_image(work_dir, image_tag, dockerfile)
+        build_timeout = int(application.get("build_timeout_seconds", 600))
+        build_success, build_output = build_docker_image(
+            work_dir, image_tag, dockerfile, build_context, build_timeout
+        )
+        build_outputs[service_name] = build_output
         if not build_success:
-            _update_stage(pipeline_run, "BUILD", "Failed", f"Docker build failed for {service_name}: {build_output[:200]}")
-            add_activity(application, "PIPELINE", f"BUILD thất bại cho {service_name}: {build_output[:200]}", "Failed")
+            _update_stage(
+                pipeline_run, "BUILD", "Failed",
+                f"Docker build failed for {service_name}:\n{build_output}",
+            )
+            add_activity(application, "PIPELINE", f"BUILD thất bại cho {service_name}: {build_output[:500]}", "Failed")
             _save_pipeline_run(pipeline_run)
             return pipeline_run
 
@@ -607,66 +808,92 @@ def build_from_github(
         pipeline_run, "BUILD", "Done",
         f"Built {len(built_images)} image(s): {', '.join(tag for _, tag in built_images)}",
     )
+    pipeline_run["build_outputs"] = build_outputs
+    pipeline_run["service_images"] = [
+        {"service": service_name, "image": image_tag, "digest": ""}
+        for service_name, image_tag in built_images
+    ]
     add_activity(application, "PIPELINE", f"BUILD: Đã build {len(built_images)} image thành công", "Done")
 
     # === TEST =================================================================
     _update_stage(pipeline_run, "TEST", "Running", "Testing built images...")
     test_results: list[str] = []
+    all_tests_passed = True
     for service_name, image_tag in built_images:
-        # Quick smoke test: run container and check if it starts
-        test_container_name = f"test-{application['id']}-{service_name}-{int(time.time())}"
-        success, output = _run_command(
-            [
-                "docker", "run", "--rm", "--name", test_container_name,
-                "-d", image_tag,
-            ],
-            timeout=60,
-        )
-        if success:
-            # Container started, give it a moment then check
-            time.sleep(2)
-            check_success, check_output = _run_command(
-                ["docker", "inspect", test_container_name, "--format", "{{.State.Status}}"],
-                timeout=10,
-            )
-            if check_success and "running" in check_output.lower():
-                test_results.append(f"{service_name}: ✓ running")
-            else:
-                test_results.append(f"{service_name}: started but status={check_output[:50]}")
-            # Stop and remove test container
-            _run_command(["docker", "stop", test_container_name], timeout=10)
-        else:
-            test_results.append(f"{service_name}: ✗ failed to start — {output[:100]}")
+        service = next(item for item in services if item["name"] == service_name)
+        test_ok, test_output = test_docker_image(application, service, image_tag)
+        all_tests_passed = all_tests_passed and test_ok
+        test_results.append(f"{service_name}: {test_output}")
 
+    if not all_tests_passed:
+        _update_stage(pipeline_run, "TEST", "Failed", "; ".join(test_results))
+        add_activity(application, "PIPELINE", f"TEST: {'; '.join(test_results)}", "Failed")
+        _save_pipeline_run(pipeline_run)
+        return pipeline_run
     _update_stage(pipeline_run, "TEST", "Done", "; ".join(test_results))
-    add_activity(application, "PIPELINE", f"TEST: {', '.join(test_results)}", "Done" if all("✓" in r for r in test_results) else "Warning")
+    add_activity(application, "PIPELINE", f"TEST: {'; '.join(test_results)}", "Done")
 
     # === PUSH =================================================================
     # Check if registry credentials are valid before attempting push
     if not _has_valid_registry_credentials(registry_config):
-        _update_stage(pipeline_run, "PUSH", "Skipped",
-                      "No valid registry credentials — skip push (will use public image + hostPath fallback)")
-        add_activity(application, "PIPELINE", "PUSH: Không có credentials registry hợp lệ — bỏ qua push", "Done")
-        # Store work_dir for fallback in _run_pipeline
-        pipeline_run["_work_dir"] = str(work_dir)
+        fallback_allowed = (
+            application.get("deployment_mode") == "development"
+            and application.get("development_fallback_enabled") is True
+        )
+        if fallback_allowed:
+            _update_stage(
+                pipeline_run, "PUSH", "Skipped",
+                "Development fallback: registry credential unavailable; deployment is not production/versioned.",
+            )
+            pipeline_run["deployment_mode"] = "Development fallback"
+            pipeline_run["_work_dir"] = str(work_dir)
+            add_activity(
+                application, "PIPELINE",
+                "Development fallback: PUSH skipped; deployment cannot be rolled back by image.",
+                "Warning",
+            )
+        else:
+            _update_stage(
+                pipeline_run, "PUSH", "Failed",
+                "Production mode requires a valid registry credential.",
+            )
+            add_activity(
+                application, "PIPELINE",
+                "PUSH failed: production mode requires registry credentials.", "Failed",
+            )
         return pipeline_run
 
     _update_stage(pipeline_run, "PUSH", "Running", "Pushing images to registry...")
     push_results: list[str] = []
+    push_outputs: dict[str, str] = {}
     all_pushed = True
+    digests: dict[str, str] = {}
 
     for service_name, image_tag in built_images:
         push_success, push_output = push_docker_image(image_tag, registry_config)
+        push_outputs[service_name] = push_output
         if push_success:
-            push_results.append(f"{service_name}: ✓ pushed {image_tag}")
+            digest_match = re.search(r"\bdigest:\s*(sha256:[0-9a-f]{64})", push_output, re.IGNORECASE)
+            digest = digest_match.group(1).lower() if digest_match else ""
+            if not digest:
+                inspect_ok, inspect_output = _run_command(
+                    ["docker", "image", "inspect", image_tag, "--format", "{{index .RepoDigests 0}}"],
+                    timeout=30,
+                )
+                if inspect_ok and "@sha256:" in inspect_output:
+                    digest = inspect_output.rsplit("@", 1)[1].strip().lower()
+            digests[service_name] = digest
+            push_results.append(f"{service_name}: pushed {image_tag} digest={digest or 'unavailable'}")
         else:
-            push_results.append(f"{service_name}: ✗ push failed — {push_output[:100]}")
+            push_results.append(f"{service_name}: push failed — {push_output}")
             all_pushed = False
 
     if all_pushed:
         _update_stage(pipeline_run, "PUSH", "Done", "; ".join(push_results))
         add_activity(application, "PIPELINE", "PUSH: Đã push tất cả images thành công", "Done")
+        pipeline_run["push_outputs"] = push_outputs
     else:
+        pipeline_run["push_outputs"] = push_outputs
         _update_stage(pipeline_run, "PUSH", "Failed", "; ".join(push_results))
         add_activity(application, "PIPELINE", f"PUSH: Có image push thất bại: {'; '.join(push_results)}", "Failed")
         _save_pipeline_run(pipeline_run)
@@ -677,8 +904,14 @@ def build_from_github(
         for svc in application["services"]:
             if svc["name"] == service_name:
                 svc["image"] = image_tag
+                svc["image_digest"] = digests.get(service_name, "")
 
     pipeline_run["image"] = built_images[0][1] if built_images else ""
+    pipeline_run["deployment_mode"] = "Production"
+    pipeline_run["service_images"] = [
+        {"service": service_name, "image": image_tag, "digest": digests.get(service_name, "")}
+        for service_name, image_tag in built_images
+    ]
     application["docker_image"] = built_images[0][1] if built_images else application.get("docker_image", "")
     save_application(application)
 

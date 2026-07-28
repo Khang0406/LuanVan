@@ -1,18 +1,36 @@
-import json
 import threading
+import json
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from app.config import BASE_DIR
 from app.modules.applications.service import add_activity, find_application, save_application
-from app.modules.deployments.kubectl import deploy_application, delete_application_workloads
+from app.modules.deployments.kubectl import (
+    deploy_application,
+    delete_application_workloads,
+    verify_application,
+)
+from app.modules.deployments.manifest import build_manifest
+from app.modules.deployments.service import (
+    begin_pipeline_deployment,
+    finish_pipeline_deployment,
+)
+from app.delivery_store import (
+    list_pipeline_runs as list_pipeline_runs_from_db,
+    migrate_default_json_state,
+    reserve_pipeline_run,
+    upsert_pipeline_run,
+)
+from app.json_store import is_list_of_dicts, mask_secrets, normalize_status, read_json, update_json, write_json
 from app.modules.monitoring.k8s_manifests import deploy_servicemonitor
-from app.modules.pipeline.build import build_from_github
+from app.modules.pipeline.build import build_from_github, test_docker_image
 
 DATA_DIR = BASE_DIR / "app" / "data"
 PIPELINE_FILE = DATA_DIR / "pipeline_runs.json"
+DEFAULT_PIPELINE_FILE = PIPELINE_FILE
 
 PIPELINE_STAGES = [
     "SOURCE",
@@ -35,9 +53,10 @@ def _ensure_pipeline_file() -> None:
 
 
 def load_pipeline_runs(application_id: str | None = None) -> list[dict[str, Any]]:
-    _ensure_pipeline_file()
-    with PIPELINE_FILE.open("r", encoding="utf-8") as f:
-        runs = json.load(f)
+    if PIPELINE_FILE == DEFAULT_PIPELINE_FILE:
+        migrate_default_json_state()
+        return list_pipeline_runs_from_db(application_id)
+    runs = read_json(PIPELINE_FILE, [], is_list_of_dicts)
 
     if application_id:
         runs = [r for r in runs if r["application_id"] == application_id]
@@ -45,20 +64,35 @@ def load_pipeline_runs(application_id: str | None = None) -> list[dict[str, Any]
 
 
 def save_pipeline_runs(runs: list[dict[str, Any]]) -> None:
-    _ensure_pipeline_file()
-    with PIPELINE_FILE.open("w", encoding="utf-8") as f:
-        json.dump(runs, f, ensure_ascii=False, indent=2)
+    if not is_list_of_dicts(runs):
+        raise ValueError("pipeline runs must be a list of objects")
+    safe_runs = mask_secrets(runs)
+    if PIPELINE_FILE == DEFAULT_PIPELINE_FILE:
+        migrate_default_json_state()
+        for run in safe_runs:
+            upsert_pipeline_run(run)
+        return
+    write_json(PIPELINE_FILE, safe_runs)
 
 
 def _save_pipeline_run(run: dict[str, Any]) -> None:
-    runs = load_pipeline_runs()
-    for i, existing in enumerate(runs):
-        if existing["id"] == run["id"]:
-            runs[i] = run
-            save_pipeline_runs(runs)
-            return
-    runs.append(run)
-    save_pipeline_runs(runs)
+    safe_run = mask_secrets(run)
+
+    if PIPELINE_FILE == DEFAULT_PIPELINE_FILE:
+        migrate_default_json_state()
+        upsert_pipeline_run(safe_run)
+        return
+
+    def upsert(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        for index, existing in enumerate(runs):
+            if existing.get("id") == safe_run.get("id"):
+                runs[index] = safe_run
+                break
+        else:
+            runs.append(safe_run)
+        return runs
+
+    update_json(PIPELINE_FILE, [], upsert, is_list_of_dicts)
 
 
 def _update_stage(run: dict[str, Any], stage_name: str, status: str, message: str = "") -> dict[str, Any]:
@@ -66,7 +100,7 @@ def _update_stage(run: dict[str, Any], stage_name: str, status: str, message: st
     for stage in run["stages"]:
         if stage["name"] == stage_name:
             stage["status"] = status
-            stage["message"] = message
+            stage["message"] = mask_secrets(message)
             if status in ("Running",) and not stage["started_at"]:
                 stage["started_at"] = now
             if status in ("Done", "Failed", "Skipped"):
@@ -74,8 +108,124 @@ def _update_stage(run: dict[str, Any], stage_name: str, status: str, message: st
             break
     run["updated_at"] = now
     _save_pipeline_run(run)
+    if status in {"Done", "Failed", "Skipped"}:
+        try:
+            from app.modules.audit.service import record_audit
+
+            record_audit(
+                f"PIPELINE_{stage_name}",
+                run.get("application_id", ""),
+                "SUCCESS" if status in {"Done", "Skipped"} else "FAILED",
+                message,
+                user=run.get("actor", "system"),
+                metadata={"pipeline_run_id": run.get("id"), "stage_status": status},
+            )
+        except Exception:
+            pass
     return run
 
+
+def _finish_pipeline_job(pipeline_run: dict[str, Any]) -> None:
+    job_id = pipeline_run.get("job_id")
+    if not job_id:
+        return
+    try:
+        from app.modules.jobs.service import finish_job
+
+        output = "\n\n".join(
+            f"[{stage.get('status')}] {stage.get('name')}\n{stage.get('message', '')}"
+            for stage in pipeline_run.get("stages", [])
+        )
+        technical_sections = []
+        if pipeline_run.get("source_output"):
+            technical_sections.append(f"SOURCE OUTPUT\n{pipeline_run['source_output']}")
+        for name, value in pipeline_run.get("build_outputs", {}).items():
+            technical_sections.append(f"BUILD OUTPUT [{name}]\n{value}")
+        for name, value in pipeline_run.get("push_outputs", {}).items():
+            technical_sections.append(f"PUSH OUTPUT [{name}]\n{value}")
+        if technical_sections:
+            output = f"{output}\n\n" + "\n\n".join(technical_sections)
+        finish_job(
+            job_id,
+            pipeline_run.get("status") == "Success",
+            output,
+            pipeline_run.get("status", ""),
+            pipeline_run.get("stages", []),
+        )
+    except Exception:
+        pass
+
+
+def _stop_failed_pipeline(
+    pipeline_run: dict[str, Any], failed_stage: str, application: dict[str, Any]
+) -> None:
+    now = _now()
+    for stage in pipeline_run.get("stages", []):
+        if stage.get("status") == "Waiting":
+            stage["status"] = "Skipped"
+            stage["message"] = f"Skipped because {failed_stage} failed."
+            stage["finished_at"] = now
+    pipeline_run["status"] = "Failed"
+    pipeline_run["finished_at"] = now
+    pipeline_run["updated_at"] = now
+    _save_pipeline_run(pipeline_run)
+    add_activity(
+        application, "PIPELINE",
+        f"Pipeline {pipeline_run['id']} stopped because {failed_stage} failed.", "Failed",
+    )
+    save_application(application)
+    _finish_pipeline_job(pipeline_run)
+
+
+def recover_interrupted_pipeline_runs() -> int:
+    """Close runs left active by a previous process without re-deploying them."""
+    now = _now()
+    recovered = 0
+
+    if PIPELINE_FILE == DEFAULT_PIPELINE_FILE:
+        runs = load_pipeline_runs()
+        for run in runs:
+            if normalize_status(run.get("status"), "Running") != "Running":
+                continue
+            recovered += 1
+            run["status"] = "Interrupted"
+            run["updated_at"] = now
+            for stage in run.get("stages", []):
+                status = normalize_status(stage.get("status"))
+                if status == "Running":
+                    stage["status"] = "Interrupted"
+                    stage["message"] = "Pipeline interrupted by platform restart."
+                    stage["finished_at"] = now
+                elif status == "Waiting":
+                    stage["status"] = "Skipped"
+                    stage["message"] = "Skipped because the previous pipeline was interrupted."
+                    stage["finished_at"] = now
+            run["finished_at"] = now
+            _save_pipeline_run(run)
+        return recovered
+
+    def recover(runs: list[dict[str, Any]]) -> list[dict[str, Any]] | None:
+        nonlocal recovered
+        for run in runs:
+            if normalize_status(run.get("status"), "Running") != "Running":
+                continue
+            recovered += 1
+            run["status"] = "Interrupted"
+            run["updated_at"] = now
+            for stage in run.get("stages", []):
+                status = normalize_status(stage.get("status"))
+                if status == "Running":
+                    stage["status"] = "Interrupted"
+                    stage["message"] = "Pipeline interrupted by platform restart."
+                    stage["finished_at"] = now
+                elif status == "Waiting":
+                    stage["status"] = "Skipped"
+                    stage["message"] = "Skipped because the previous pipeline was interrupted."
+                    stage["finished_at"] = now
+        return runs if recovered else None
+
+    update_json(PIPELINE_FILE, [], recover, is_list_of_dicts)
+    return recovered
 
 def _deploy_mysql_if_needed(
     application: dict[str, Any],
@@ -304,7 +454,7 @@ $conn->set_charset('utf8mb4');
             all_ok = False
 
     if all_ok:
-        add_activity(application, "PIPELINE", f"Da patch tat ca db.php: host={mysql_name}, password={mysql_password}", "Done")
+        add_activity(application, "PIPELINE", f"Da patch tat ca db.php: host={mysql_name}, password=***", "Done")
 
     # NOTE: mysqli installation is handled in the main DEPLOY flow (after rollout),
     # using apt-get fast path + skip-if-already-loaded check.
@@ -365,7 +515,7 @@ $conn->set_charset('utf8mb4');
         subprocess.run(ssh_cleanup, shell=True, timeout=10)
 
         if all_ok:
-            add_activity(application, "PIPELINE", f"Da patch db.php tren worker: host={mysql_name}, password={mysql_password}", "Done")
+            add_activity(application, "PIPELINE", f"Da patch db.php tren worker: host={mysql_name}, password=***", "Done")
 
         # NOTE: mysqli installation is handled in the main deploy flow (rollout restart block)
         # to avoid a duplicate 300s install here that causes DEPLOY stage to appear hung.
@@ -381,56 +531,68 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
     application = find_application(pipeline_run["application_id"])
     if not application:
         _update_stage(pipeline_run, "SOURCE", "Failed", "Application not found")
+        pipeline_run["status"] = "Failed"
+        pipeline_run["finished_at"] = _now()
+        _save_pipeline_run(pipeline_run)
+        _finish_pipeline_job(pipeline_run)
         return
+    pipeline_run["status"] = "Running"
+    _save_pipeline_run(pipeline_run)
 
     # === STAGE 1: SOURCE ======================================================
-    _update_stage(pipeline_run, "SOURCE", "Running", "Checking source...")
-    time.sleep(0.5)  # simulate work
     source_type = application.get("source_type", "docker")
     if source_type == "docker":
+        _update_stage(pipeline_run, "SOURCE", "Running", "Validating Docker image source...")
         image = application["services"][0]["image"]
+        if not image or image.endswith(":latest"):
+            _update_stage(
+                pipeline_run, "SOURCE", "Failed",
+                "Docker image is missing or uses mutable :latest tag.",
+            )
+            _stop_failed_pipeline(pipeline_run, "SOURCE", application)
+            return
         _update_stage(
             pipeline_run, "SOURCE", "Done",
             f"Docker image: {image}"
         )
         pipeline_run["image"] = image
     elif source_type == "github":
-        github_url = application.get("github_url", "")
-        _update_stage(
-            pipeline_run, "SOURCE", "Done",
-            f"GitHub repository: {github_url}"
-        )
-        # Phase 4 will handle actual build; for now build stage is skip-aware
+        # SOURCE is executed by build_from_github and is only marked Done after
+        # clone, ref checkout and commit SHA extraction have completed.
+        pass
     else:
         _update_stage(pipeline_run, "SOURCE", "Failed", f"Unknown source type: {source_type}")
+        _stop_failed_pipeline(pipeline_run, "SOURCE", application)
         return
 
-    add_activity(application, "PIPELINE", f"Pipeline {pipeline_run['id']}: SOURCE stage completed", "Done")
+    if source_type == "docker":
+        add_activity(application, "PIPELINE", f"Pipeline {pipeline_run['id']}: SOURCE stage completed", "Done")
 
     # Flag for hostPath fallback deployment (set to True only inside fallback block)
     using_hostpath = False
 
     # === STAGES 2-4: BUILD/TEST/PUSH (docker vs github) =======================
     if source_type == "docker":
-        # ---- Docker image flow: skip build/push, quick test only ----
+        # ---- Docker image flow: skip build/push, run real container tests ----
         _update_stage(pipeline_run, "BUILD", "Skipped", "Docker image provided — skip build")
         add_activity(application, "PIPELINE", f"Pipeline {pipeline_run['id']}: BUILD stage completed", "Done")
 
         _update_stage(pipeline_run, "TEST", "Running", "Running container startup & health checks...")
-        time.sleep(1.0)
-        try:
-            import subprocess
-            image = pipeline_run.get("image", application["services"][0]["image"])
-            result = subprocess.run(
-                ["docker", "image", "inspect", image],
-                capture_output=True, text=True, timeout=30,
+        test_results = []
+        tests_ok = True
+        for service in application.get("services", []):
+            if not service.get("required", True):
+                continue
+            test_ok, test_output = test_docker_image(
+                application, service, service.get("image", "")
             )
-            if result.returncode == 0:
-                _update_stage(pipeline_run, "TEST", "Done", "Docker image exists locally")
-            else:
-                _update_stage(pipeline_run, "TEST", "Done", "Image not cached locally — will pull from registry")
-        except Exception:
-            _update_stage(pipeline_run, "TEST", "Done", "Docker not available — skipping test")
+            tests_ok = tests_ok and test_ok
+            test_results.append(f"{service['name']}: {test_output}")
+        if not tests_ok or not test_results:
+            _update_stage(pipeline_run, "TEST", "Failed", "; ".join(test_results) or "No required service to test.")
+            _stop_failed_pipeline(pipeline_run, "TEST", application)
+            return
+        _update_stage(pipeline_run, "TEST", "Done", "; ".join(test_results))
         add_activity(application, "PIPELINE", f"Pipeline {pipeline_run['id']}: TEST stage completed", "Done")
 
         _update_stage(pipeline_run, "PUSH", "Skipped", "Docker image from registry — skip push")
@@ -439,13 +601,27 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
         # ---- GitHub source: full clone → build → test → push ----
         pipeline_run = build_from_github(application, pipeline_run)
 
-        # Check if BUILD or PUSH needs fallback to public image + hostPath
+        # Stop immediately when a required source/build/test stage fails.
+        source_stage = next((s for s in pipeline_run["stages"] if s["name"] == "SOURCE"), None)
         build_stage = next((s for s in pipeline_run["stages"] if s["name"] == "BUILD"), None)
+        test_stage = next((s for s in pipeline_run["stages"] if s["name"] == "TEST"), None)
         push_stage = next((s for s in pipeline_run["stages"] if s["name"] == "PUSH"), None)
 
+        if source_stage and source_stage["status"] == "Failed":
+            _stop_failed_pipeline(pipeline_run, "SOURCE", application)
+            return
         build_failed = build_stage and build_stage["status"] == "Failed"
+        test_failed = test_stage and test_stage["status"] == "Failed"
         push_failed = push_stage and push_stage["status"] == "Failed"
         push_skipped = push_stage and push_stage["status"] == "Skipped"
+        fallback_allowed = (
+            application.get("deployment_mode") == "development"
+            and application.get("development_fallback_enabled") is True
+        )
+
+        if test_failed:
+            _stop_failed_pipeline(pipeline_run, "TEST", application)
+            return
 
         # Detect if BUILD failed due to Docker being unavailable (binary missing,
         # daemon not running, WSL 2 integration not enabled, etc.)
@@ -457,17 +633,18 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
             or "WSL 2 distro" in build_msg
             or "docker desktop" in build_msg.lower()
         )
-        build_non_docker = build_failed and not is_docker_unavailable
-
-        # Only hard-fail if BUILD failed for a non-Docker reason
-        if build_non_docker:
-            pipeline_run["status"] = "Failed"
-            _save_pipeline_run(pipeline_run)
-            save_application(application)
+        if build_failed and (not is_docker_unavailable or not fallback_allowed):
+            _stop_failed_pipeline(pipeline_run, "BUILD", application)
+            return
+        if push_failed and not fallback_allowed:
+            _stop_failed_pipeline(pipeline_run, "PUSH", application)
             return
 
         # Need fallback if: (a) BUILD/PUSH failed, or (b) PUSH skipped due to no valid credentials
-        need_fallback = build_failed or push_failed or (push_skipped and "No valid registry credentials" in push_stage.get("message", ""))
+        need_fallback = fallback_allowed and (
+            build_failed or push_failed or
+            (push_skipped and "Development fallback" in push_stage.get("message", ""))
+        )
         if need_fallback:
             if build_failed:
                 reason = "Docker không khả dụng"
@@ -477,12 +654,8 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                 reason = "Push registry thất bại (lỗi đăng nhập hoặc registry không khả dụng)"
             add_activity(application, "PIPELINE", f"{reason} — chuyển sang triển khai bằng image public + hostPath", "Warning")
             if build_failed:
-                _update_stage(pipeline_run, "BUILD", "Skipped", "Docker not available — using public image with hostPath")
                 _update_stage(pipeline_run, "TEST", "Skipped", "Docker not available — skip test")
                 _update_stage(pipeline_run, "PUSH", "Skipped", "Docker not available — skip push")
-            elif push_failed:
-                # PUSH failed but BUILD succeeded — mark as skipped with fallback
-                _update_stage(pipeline_run, "PUSH", "Skipped", f"Push failed — using public image fallback: {push_stage.get('message', '')[:100]}")
             # If push_skipped (no valid credentials): keep the "Skipped" message already set by build_from_github
 
             # ---- Fallback: detect project type, set public image, sync code to worker ----
@@ -729,6 +902,15 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                 db_name = "map-project"
                 mysql_password = "luanvan123"
                 namespace = application["namespace"]
+                application["managed_database"] = {
+                    "name": "mysql",
+                    "image": "mysql:8.0",
+                    "deployment_name": mysql_name,
+                    "required": True,
+                    "replicas": 1,
+                    "service_type": "ClusterIP",
+                    "container_port": 3306,
+                }
 
                 # Check if MySQL pod is already Running
                 try:
@@ -852,7 +1034,22 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
                     except Exception as ex:
                         add_activity(application, "PIPELINE", f"Lỗi trong quá trình cài mysqli: {ex}", "Warning")
 
-        _update_stage(pipeline_run, "DEPLOY", "Done", output[:200])
+        try:
+            deployment_record = begin_pipeline_deployment(
+                application, pipeline_run, build_manifest(application)
+            )
+        except Exception as exc:
+            _update_stage(
+                pipeline_run, "DEPLOY", "Failed",
+                f"Kubernetes apply succeeded but deployment record creation failed: {exc}",
+            )
+            _stop_failed_pipeline(pipeline_run, "DEPLOY", application)
+            return
+
+        _update_stage(
+            pipeline_run, "DEPLOY", "Done",
+            f"deployment=v{deployment_record['version']} id={deployment_record['id']}\n{output}",
+        )
         add_activity(application, "PIPELINE", "Deploy thành công lên K3s cluster", "Done")
 
         # Auto-create ServiceMonitor for Prometheus scraping
@@ -867,72 +1064,85 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
     else:
         _update_stage(pipeline_run, "DEPLOY", "Failed", output[:200])
         add_activity(application, "PIPELINE", f"Deploy thất bại: {output[:200]}", "Failed")
-        pipeline_run["status"] = "Failed"
-        _save_pipeline_run(pipeline_run)
-        save_application(application)
+        _stop_failed_pipeline(pipeline_run, "DEPLOY", application)
         return
 
     # === STAGE 6: VERIFY ======================================================
-    _update_stage(pipeline_run, "VERIFY", "Running", "Quick pod health check...")
-    namespace = application["namespace"]
-    app_id = application["id"]
+    verify_timeout = int(application.get("verify_timeout_seconds", 180))
+    _update_stage(
+        pipeline_run, "VERIFY", "Running",
+        f"Verifying rollout, replicas, pod/container readiness, Services and health (timeout={verify_timeout}s)...",
+    )
+    verify_ok, verify_message, verify_details = verify_application(
+        application, timeout_seconds=verify_timeout
+    )
+    finish_pipeline_deployment(
+        application, deployment_record, success=verify_ok,
+        verify_message=verify_message, verify_details=verify_details,
+    )
 
-    # Lightweight: single kubectl get pods -o json, parse phases in Python
-    # DEPLOY stage already waited for rollout, so pods should be ready immediately
-    pods_running = 0
-    total_pods = 0
-    verify_message = ""
-    import json as _json
-    for attempt in range(10):
-        try:
-            result = subprocess.run(
-                ["kubectl", "get", "pods", "-n", namespace,
-                 "-l", "app.kubernetes.io/part-of=" + app_id,
-                 "-o", "json"],
-                capture_output=True, text=True, timeout=15,
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                data = _json.loads(result.stdout)
-                items = data.get("items", [])
-                total_pods = len(items)
-                pods_running = sum(
-                    1 for item in items
-                    if item.get("status", {}).get("phase") == "Running"
-                )
-                if pods_running > 0:
-                    verify_message = f"{pods_running}/{total_pods} pod(s) running"
-                    break
-                verify_message = f"{pods_running}/{total_pods} pod(s) running (waiting...)"
-            else:
-                verify_message = f"kubectl returned error (attempt {attempt + 1}/10)"
-        except Exception:
-            verify_message = f"kubectl query failed (attempt {attempt + 1}/10)"
-        if attempt < 9:
-            _update_stage(pipeline_run, "VERIFY", "Running", verify_message)
-            time.sleep(3.0)
-
-    if pods_running > 0:
+    if verify_ok:
         _update_stage(pipeline_run, "VERIFY", "Done", verify_message)
         add_activity(application, "PIPELINE", f"VERIFY: {verify_message}", "Done")
-        pipeline_run["status"] = "Success"
+        pipeline_run["status"] = (
+            "DevelopmentFallback"
+            if pipeline_run.get("deployment_mode") == "Development fallback"
+            else "Success"
+        )
     else:
-        _update_stage(pipeline_run, "VERIFY", "Failed",
-            f"0 running pods after deploy; last status: {verify_message}")
+        _update_stage(pipeline_run, "VERIFY", "Failed", verify_message)
         add_activity(application, "PIPELINE",
-            f"VERIFY: No running pods found — check cluster", "Failed")
+            f"VERIFY failed: {verify_message}", "Failed")
         pipeline_run["status"] = "Failed"
 
+    pipeline_run["finished_at"] = _now()
     _save_pipeline_run(pipeline_run)
     save_application(application)
+    _finish_pipeline_job(pipeline_run)
 
 
-def trigger_pipeline(application_id: str, actor: Any | None = None) -> dict[str, Any]:
+def _run_pipeline_safely(pipeline_run: dict[str, Any]) -> None:
+    """Ensure unexpected background exceptions leave a retryable terminal run."""
+    try:
+        _run_pipeline(pipeline_run)
+    except Exception as exc:
+        application = find_application(pipeline_run.get("application_id", ""))
+        active_stage = next(
+            (
+                stage.get("name", "PIPELINE")
+                for stage in pipeline_run.get("stages", [])
+                if stage.get("status") == "Running"
+            ),
+            "PIPELINE",
+        )
+        safe_message = mask_secrets(f"Unexpected pipeline error: {exc}")
+        if active_stage != "PIPELINE":
+            _update_stage(pipeline_run, active_stage, "Failed", safe_message)
+        if application:
+            _stop_failed_pipeline(pipeline_run, active_stage, application)
+        else:
+            pipeline_run["status"] = "Failed"
+            pipeline_run["finished_at"] = _now()
+            pipeline_run["error"] = safe_message
+            _save_pipeline_run(pipeline_run)
+            _finish_pipeline_job(pipeline_run)
+
+
+def trigger_pipeline(
+    application_id: str,
+    actor: Any | None = None,
+    *,
+    trigger_type: str = "Manual",
+    requested_ref: str = "",
+    commit_author: str = "",
+    commit_message: str = "",
+) -> dict[str, Any]:
     """Create a pipeline run and start execution in background thread."""
     application = find_application(application_id)
     if not application:
         raise ValueError(f"Application {application_id} not found")
 
-    run_id = f"run-{application_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    run_id = f"run-{application_id}-{uuid.uuid4()}"
     now = _now()
 
     stages = []
@@ -949,22 +1159,37 @@ def trigger_pipeline(application_id: str, actor: Any | None = None) -> dict[str,
         "id": run_id,
         "application_id": application_id,
         "application_name": application.get("name", application_id),
-        "status": "Running",
+        "status": "Queued",
         "stages": stages,
         "image": "",
         "created_at": now,
         "updated_at": now,
+        "trigger_type": trigger_type,
+        "requested_ref": requested_ref or application.get("requested_ref", ""),
+        "commit_author": commit_author,
+        "commit_message": commit_message,
     }
     if actor and getattr(actor, "is_authenticated", False):
         pipeline_run["actor"] = getattr(actor, "username", "unknown")
         pipeline_run["actor_id"] = getattr(actor, "id", None)
         pipeline_run["actor_role"] = getattr(actor, "role", "")
 
+    reserve_pipeline_run(pipeline_run)
+    from app.modules.jobs.service import create_job
+
+    job = create_job(
+        "Pipeline", f"CI/CD Pipeline - {application.get('name', application_id)}",
+        application_id, command=f"pipeline {run_id}", actor=actor,
+        metadata={"application_id": application_id, "pipeline_run_id": run_id},
+    )
+    pipeline_run["job_id"] = job["id"]
+    # Attach the Job ID to the reserved database record.
     _save_pipeline_run(pipeline_run)
     add_activity(application, "PIPELINE", f"Pipeline {run_id} started (6 stages)", "Running")
+    save_application(application)
 
     # Run pipeline in background thread to avoid blocking HTTP request
-    thread = threading.Thread(target=_run_pipeline, args=(pipeline_run,), daemon=True)
+    thread = threading.Thread(target=_run_pipeline_safely, args=(pipeline_run,), daemon=True)
     thread.start()
 
     return pipeline_run
@@ -973,6 +1198,26 @@ def trigger_pipeline(application_id: str, actor: Any | None = None) -> dict[str,
 def get_latest_pipeline_run(application_id: str) -> dict[str, Any] | None:
     runs = load_pipeline_runs(application_id)
     return runs[0] if runs else None
+
+
+def retry_pipeline(
+    pipeline_run_id: str, actor: Any | None = None
+) -> dict[str, Any]:
+    original = next(
+        (run for run in load_pipeline_runs() if run.get("id") == pipeline_run_id), None
+    )
+    if not original:
+        raise ValueError("Pipeline run không tồn tại.")
+    if original.get("status") not in {"Failed", "Interrupted"}:
+        raise ValueError("Chỉ pipeline Failed hoặc Interrupted mới có thể retry.")
+    return trigger_pipeline(
+        original["application_id"],
+        actor=actor,
+        trigger_type="Retry",
+        requested_ref=original.get("commit_sha") or original.get("requested_ref", ""),
+        commit_author=original.get("commit_author", ""),
+        commit_message=original.get("commit_message", ""),
+    )
 
 
 def load_all_pipeline_events(application_ids: set[str] | None = None) -> list[dict[str, Any]]:

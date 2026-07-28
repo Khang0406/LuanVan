@@ -1,0 +1,53 @@
+{% extends 'base.html' %}{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1>{{ app.name }} — Deployment v{{ deployment.version }}</h1>
+    <p class="text-muted mb-0"><code>{{ deployment.id }}</code></p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('ui.application_detail', application_id=app.id) }}#deployments">← Deployment history</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card soft-card"><div class="card-body p-4">
+      <h5>Metadata</h5>
+      <dl class="row small mb-0">
+        <dt class="col-5">Status</dt><dd class="col-7">{{ deployment.status }}</dd>
+        <dt class="col-5">Verify</dt><dd class="col-7">{{ deployment.verify_status }}</dd>
+        <dt class="col-5">Mode</dt><dd class="col-7">{{ deployment.deployment_mode }}</dd>
+        <dt class="col-5">Repository</dt><dd class="col-7 text-break">{{ deployment.repository or '-' }}</dd>
+        <dt class="col-5">Branch</dt><dd class="col-7">{{ deployment.branch or '-' }}</dd>
+        <dt class="col-5">Commit</dt><dd class="col-7"><code>{{ deployment.commit_sha or '-' }}</code></dd>
+        <dt class="col-5">Pipeline</dt><dd class="col-7"><code>{{ deployment.pipeline_run_id or '-' }}</code></dd>
+        <dt class="col-5">Previous</dt><dd class="col-7"><code>{{ deployment.previous_deployment_id or '-' }}</code></dd>
+        <dt class="col-5">Rollback of</dt><dd class="col-7"><code>{{ deployment.rollback_of_deployment_id or '-' }}</code></dd>
+        <dt class="col-5">Actor</dt><dd class="col-7">{{ deployment.actor }}</dd>
+        <dt class="col-5">Namespace</dt><dd class="col-7"><code>{{ deployment.namespace }}</code></dd>
+        <dt class="col-5">URL</dt><dd class="col-7">{{ deployment.url or '-' }}</dd>
+      </dl>
+    </div></div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card soft-card mb-4"><div class="card-body p-4">
+      <h5>Service images</h5>
+      {% for service in deployment.services %}
+      <div class="border rounded p-3 mb-2">
+        <strong>{{ service.service }}</strong>
+        <div><code>{{ service.image }}</code></div>
+        <div class="small text-muted"><code>{{ service.digest or 'digest unavailable' }}</code></div>
+      </div>
+      {% endfor %}
+    </div></div>
+    <div class="card soft-card"><div class="card-body p-4">
+      <h5>Verify result</h5>
+      <pre class="mb-0 text-wrap">{{ deployment.verify_message or '-' }}</pre>
+    </div></div>
+  </div>
+  <div class="col-12">
+    <div class="card soft-card"><div class="card-body p-4">
+      <h5>Generated manifest</h5>
+      <pre class="mb-0" style="max-height: 36rem; overflow:auto;">{{ deployment.manifest }}</pre>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

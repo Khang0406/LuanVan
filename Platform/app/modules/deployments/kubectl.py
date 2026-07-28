@@ -1,11 +1,14 @@
 import json
+import base64
 import subprocess
 import time
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 from app.modules.applications.service import add_activity, save_application
 from app.modules.deployments.manifest import write_manifest
+from app.modules.pipeline.build import _get_registry_config, _has_valid_registry_credentials
 
 
 def _now() -> str:
@@ -54,6 +57,13 @@ def deploy_application(application: dict[str, Any]) -> tuple[bool, str]:
         application["status"] = "Pending Build"
         save_application(application)
         return False, "Chưa có Docker image cho application. Vui lòng trigger pipeline từ CI/CD để build trước."
+
+    registry_config = _get_registry_config(application)
+    if _has_valid_registry_credentials(registry_config):
+        secret_ok, secret_message = ensure_registry_pull_secret(application, registry_config)
+        if not secret_ok:
+            return False, f"Không tạo được imagePullSecret: {secret_message}"
+        application["image_pull_secret"] = f"{application['id']}-registry"
 
     manifest_path = write_manifest(application)
     add_activity(application, "MANIFEST", f"Generated Kubernetes manifest: {manifest_path}", "Done")
@@ -119,6 +129,180 @@ def deploy_application(application: dict[str, Any]) -> tuple[bool, str]:
     return False, last_output
 
 
+def ensure_registry_pull_secret(
+    application: dict[str, Any], registry_config: dict[str, str]
+) -> tuple[bool, str]:
+    """Apply dockerconfigjson through stdin so credentials never enter argv."""
+    registry = registry_config.get("registry") or "https://index.docker.io/v1/"
+    username = registry_config.get("username", "")
+    credential = registry_config.get("password") or registry_config.get("token", "")
+    if not username or not credential:
+        return False, "Thiếu username hoặc credential."
+    auth = base64.b64encode(f"{username}:{credential}".encode()).decode()
+    docker_config = json.dumps({
+        "auths": {registry: {"username": username, "password": credential, "auth": auth}}
+    }, separators=(",", ":"))
+    encoded_config = base64.b64encode(docker_config.encode()).decode()
+    secret_name = f"{application['id']}-registry"
+    manifest = f"""apiVersion: v1
+kind: Secret
+metadata:
+  name: {secret_name}
+  namespace: {application['namespace']}
+  labels:
+    app.kubernetes.io/part-of: {application['id']}
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: {encoded_config}
+"""
+    success, output = run_kubectl(
+        ["apply", "--validate=false", "-f", "-"], timeout=45, stdin=manifest
+    )
+    return success, "imagePullSecret applied" if success else output
+
+
+def verify_application(
+    application: dict[str, Any], timeout_seconds: int = 120
+) -> tuple[bool, str, dict[str, Any]]:
+    """Verify rollouts, replicas, pods, Services, URL and optional health paths."""
+    namespace = application["namespace"]
+    details: dict[str, Any] = {"services": [], "url": ""}
+    errors: list[str] = []
+    required_services = [
+        service for service in application.get("services", [])
+        if service.get("required", True)
+    ]
+    managed_database = application.get("managed_database")
+    if managed_database and managed_database.get("required", True):
+        required_services.append({
+            "name": managed_database.get("name", "mysql"),
+            "required": True,
+            "replicas": managed_database.get("replicas", 1),
+            "service_type": managed_database.get("service_type", "ClusterIP"),
+            "container_port": managed_database.get("container_port", 3306),
+            "health_path": "",
+        })
+    if not required_services:
+        return False, "Application không có required service để verify.", details
+
+    per_service_timeout = max(10, timeout_seconds // len(required_services))
+    for service in required_services:
+        name = f"{application['id']}-{service['name']}"
+        service_detail: dict[str, Any] = {"name": service["name"], "ready": False}
+        rollout_ok, rollout_output = run_kubectl(
+            ["rollout", "status", f"deployment/{name}", "-n", namespace,
+             f"--timeout={per_service_timeout}s"],
+            timeout=per_service_timeout + 10,
+        )
+        if not rollout_ok:
+            errors.append(f"{name}: rollout thất bại: {rollout_output}")
+            details["services"].append(service_detail)
+            continue
+
+        deployment_ok, deployment_output = run_kubectl(
+            ["get", "deployment", name, "-n", namespace, "-o", "json"], timeout=30
+        )
+        if not deployment_ok:
+            errors.append(f"{name}: không đọc được Deployment: {deployment_output}")
+            details["services"].append(service_detail)
+            continue
+        try:
+            deployment = json.loads(deployment_output)
+        except json.JSONDecodeError:
+            errors.append(f"{name}: kubectl trả về Deployment JSON không hợp lệ.")
+            details["services"].append(service_detail)
+            continue
+        expected = int(deployment.get("spec", {}).get("replicas", service.get("replicas", 1)))
+        status = deployment.get("status", {})
+        ready = int(status.get("readyReplicas", 0) or 0)
+        available = int(status.get("availableReplicas", 0) or 0)
+        updated = int(status.get("updatedReplicas", 0) or 0)
+        service_detail.update({
+            "expected_replicas": expected,
+            "ready_replicas": ready,
+            "available_replicas": available,
+            "updated_replicas": updated,
+        })
+        if min(ready, available, updated) < expected:
+            errors.append(
+                f"{name}: replicas chưa ready (expected={expected}, ready={ready}, "
+                f"available={available}, updated={updated})."
+            )
+
+        pods_ok, pods_output = run_kubectl(
+            ["get", "pods", "-n", namespace, "-l", f"app.kubernetes.io/name={name}",
+             "-o", "json"],
+            timeout=30,
+        )
+        if not pods_ok:
+            errors.append(f"{name}: không đọc được Pods: {pods_output}")
+        else:
+            try:
+                pods = json.loads(pods_output).get("items", [])
+                ready_pods = sum(
+                    1 for pod in pods
+                    if pod.get("status", {}).get("phase") == "Running"
+                    and pod.get("status", {}).get("containerStatuses")
+                    and all(item.get("ready") for item in pod["status"]["containerStatuses"])
+                )
+                service_detail["ready_pods"] = ready_pods
+                if ready_pods < expected:
+                    errors.append(f"{name}: chỉ {ready_pods}/{expected} pod/container Ready.")
+            except json.JSONDecodeError:
+                errors.append(f"{name}: kubectl trả về Pod JSON không hợp lệ.")
+
+        svc_ok, svc_output = run_kubectl(
+            ["get", "service", name, "-n", namespace, "-o", "json"], timeout=30
+        )
+        if not svc_ok:
+            errors.append(f"{name}: Service không tồn tại: {svc_output}")
+
+        service_detail["ready"] = not any(error.startswith(f"{name}:") for error in errors)
+        details["services"].append(service_detail)
+
+    public_services = [
+        service for service in required_services
+        if service.get("service_type", "ClusterIP") in {"NodePort", "LoadBalancer"}
+    ]
+    if public_services:
+        url = discover_application_url(application)
+        details["url"] = url
+        if not url:
+            errors.append("Không tìm thấy public URL cho NodePort/LoadBalancer service.")
+        else:
+            for service in public_services:
+                health_path = service.get("health_path", "")
+                if not health_path:
+                    continue
+                try:
+                    import requests
+
+                    parsed_url = urlsplit(url)
+                    public_origin = urlunsplit(
+                        (parsed_url.scheme, parsed_url.netloc, "", "", "")
+                    )
+                    response = requests.get(
+                        f"{public_origin.rstrip('/')}/{health_path.lstrip('/')}",
+                        timeout=int(service.get("health_timeout_seconds", 10)),
+                    )
+                    if response.status_code >= 400:
+                        errors.append(
+                            f"{service['name']}: health endpoint trả HTTP {response.status_code}."
+                        )
+                except Exception as exc:
+                    errors.append(f"{service['name']}: health endpoint thất bại: {exc}")
+
+    if errors:
+        return False, "\n".join(errors), details
+    summary = "; ".join(
+        f"{item['name']} {item.get('ready_replicas', 0)}/{item.get('expected_replicas', 0)} ready"
+        for item in details["services"]
+    )
+    if details["url"]:
+        summary += f"; URL={details['url']}"
+    return True, summary, details
+
+
 def _run_kubectl_with_retry(args: list[str], timeout: int = 60, max_retries: int = 3) -> tuple[bool, str]:
     """Run a kubectl command with retry on transient TLS / connectivity errors."""
     _RETRYABLE = (
@@ -147,6 +331,36 @@ def _run_kubectl_with_retry(args: list[str], timeout: int = 60, max_retries: int
     return last_ok, last_out
 
 
+def preserve_allocated_node_ports(application: dict[str, Any]) -> bool:
+    """Persist auto-allocated NodePorts before a Service is deleted/recreated."""
+    changed = False
+    namespace = application["namespace"]
+    for service in application.get("services", []):
+        if service.get("service_type") != "NodePort" or service.get("node_port"):
+            continue
+        name = f"{application['id']}-{service['name']}"
+        success, output = run_kubectl(
+            ["get", "service", name, "-n", namespace, "-o", "json"], timeout=20
+        )
+        if not success:
+            continue
+        try:
+            ports = json.loads(output).get("spec", {}).get("ports", [])
+        except json.JSONDecodeError:
+            continue
+        node_port = ports[0].get("nodePort") if ports else None
+        if node_port:
+            service["node_port"] = str(node_port)
+            changed = True
+    if changed:
+        add_activity(
+            application, "CONFIG",
+            "Đã lưu NodePort được Kubernetes cấp để giữ URL ổn định khi redeploy.", "Done",
+        )
+        save_application(application)
+    return changed
+
+
 def delete_application_workloads(application: dict[str, Any]) -> tuple[bool, str]:
     """Delete all K3s resources for an application (service → deploy → HPA → PVC → pod).
 
@@ -160,6 +374,7 @@ def delete_application_workloads(application: dict[str, Any]) -> tuple[bool, str
     namespace = application["namespace"]
     logs: list[str] = []
     all_ok = True
+    preserve_allocated_node_ports(application)
 
     # Pre-flight: wait for API server to become reachable (up to ~45 s)
     for preflight_attempt in range(1, 4):
@@ -409,12 +624,24 @@ def discover_application_url(application: dict[str, Any]) -> str:
             node_port = ports[0].get("nodePort")
             if node_port:
                 node_ip = _get_node_ip()
-                return f"http://{node_ip}:{node_port}"
+                base_url = f"http://{node_ip}:{node_port}"
+                public_path = str(service.get("public_path", "")).strip()
+                return (
+                    f"{base_url}/{public_path.lstrip('/')}"
+                    if public_path
+                    else base_url
+                )
         if service_type == "LoadBalancer":
             ingress = payload.get("status", {}).get("loadBalancer", {}).get("ingress", [])
             if ingress:
                 host = ingress[0].get("ip") or ingress[0].get("hostname")
                 if host:
-                    return f"http://{host}:{ports[0].get('port', 80)}"
+                    base_url = f"http://{host}:{ports[0].get('port', 80)}"
+                    public_path = str(service.get("public_path", "")).strip()
+                    return (
+                        f"{base_url}/{public_path.lstrip('/')}"
+                        if public_path
+                        else base_url
+                    )
 
     return ""

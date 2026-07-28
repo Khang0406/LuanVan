@@ -21,6 +21,25 @@
   </div>
 </div>
 
+{% if app.deployment_mode == 'development' and app.development_fallback_enabled %}
+<div class="alert alert-warning">
+  <strong>Development fallback đang bật.</strong>
+  Deployment fallback không phải production image deployment và không đủ điều kiện rollback bằng image.
+</div>
+{% endif %}
+
+<nav class="nav nav-pills flex-wrap gap-1 mb-4" aria-label="Application sections">
+  <a class="nav-link active" href="#overview">Overview</a>
+  <a class="nav-link" href="#services">Services</a>
+  <a class="nav-link" href="#deployments">Deployments</a>
+  <a class="nav-link" href="#pipeline">Pipeline</a>
+  <a class="nav-link" href="#monitoring">Monitoring</a>
+  <a class="nav-link" href="{{ url_for('ui.application_logs', application_id=app.id) }}">Logs</a>
+  <a class="nav-link" href="#scaling">Scaling</a>
+  <a class="nav-link" href="#environment">Environment</a>
+  <a class="nav-link" href="#activity">Activity</a>
+</nav>
+
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     <div class="mb-3">
@@ -32,7 +51,7 @@
 {% endwith %}
 
 <div class="row g-4">
-  <div class="col-lg-4">
+  <div class="col-lg-4" id="overview">
     <div class="card soft-card h-100">
       <div class="card-body p-4">
         <div class="d-flex justify-content-between mb-3">
@@ -44,6 +63,19 @@
           <div><strong>Namespace:</strong> <code>{{ app.namespace }}</code></div>
           <div><strong>Owner:</strong> {{ app.owner }}</div>
           <div><strong>Source:</strong> {{ app.source_type|upper }}</div>
+          {% if app.source_type == 'github' %}
+          <div><strong>Repository:</strong> <code>{{ app.github_url }}</code></div>
+          <div><strong>Branch/ref:</strong> {{ app.default_branch or 'main' }}{% if app.requested_ref %} / {{ app.requested_ref }}{% endif %}</div>
+          {% else %}
+          <div><strong>Docker image:</strong> <code>{{ app.docker_image or app.services[0].image }}</code></div>
+          {% endif %}
+          <div><strong>Current commit:</strong> <code>{{ (current_deployment.commit_sha if current_deployment else app.current_commit_sha) or '-' }}</code></div>
+          <div><strong>Current deployment:</strong>
+            {% if current_deployment %}v{{ current_deployment.version }} / <code>{{ current_deployment.id }}</code>{% else %}-{% endif %}
+          </div>
+          <div><strong>Latest pipeline:</strong>
+            {% if latest_pipeline %}<code>{{ latest_pipeline.id }}</code> — {{ latest_pipeline.status }}{% else %}-{% endif %}
+          </div>
           <div><strong>Services:</strong> {{ runtime.services }}</div>
           <div><strong>Replicas:</strong> {{ runtime.replicas }}</div>
           <div><strong>CPU limits:</strong> {{ runtime.cpu_limit }}</div>
@@ -53,7 +85,7 @@
         </div>
 
         <hr>
-        <form method="post" action="{{ url_for('ui.application_scale', application_id=app.id) }}" class="d-flex gap-2">
+        <form id="scaling" method="post" action="{{ url_for('ui.application_scale', application_id=app.id) }}" class="d-flex gap-2">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input class="form-control" type="number" min="1" name="replicas" value="{{ app.services[0].replicas if app.services else 1 }}">
           <button class="btn btn-outline-primary" type="submit">Scale</button>
@@ -70,7 +102,7 @@
   </div>
 
   <div class="col-lg-8">
-    <div class="card soft-card mb-4">
+    <div class="card soft-card mb-4" id="pipeline">
       <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">CI/CD flow</h5>
@@ -92,7 +124,7 @@
       </div>
     </div>
 
-    <div class="card soft-card">
+    <div class="card soft-card" id="monitoring">
       <div class="card-body p-4">
         <h5 class="mb-3">Kubernetes runtime status</h5>
         {% if cluster_status.raw_error %}
@@ -140,7 +172,7 @@
     </div>
   </div>
 
-  <div class="col-lg-6">
+  <div class="col-lg-6" id="services">
     <div class="card soft-card h-100">
       <div class="card-body p-4">
         <h5 class="mb-3">Services</h5>
@@ -152,6 +184,7 @@
           </div>
           <div class="small mt-2">
             <div>Image: <code>{{ service.image }}</code></div>
+            <div>Digest: <code>{{ service.image_digest or '-' }}</code></div>
             <div>Port: {{ service.container_port }} • Replicas: {{ service.replicas }}</div>
             <div>Resources: {{ service.cpu_request }}/{{ service.cpu_limit }} CPU, {{ service.memory_request }}/{{ service.memory_limit }} RAM</div>
             <div>Autoscaling: {{ 'On' if service.autoscaling else 'Off' }}</div>
@@ -162,7 +195,7 @@
     </div>
   </div>
 
-  <div class="col-lg-6">
+  <div class="col-lg-6" id="activity">
     <div class="card soft-card h-100">
       <div class="card-body p-4">
         <h5 class="mb-3">Activity logs</h5>
@@ -183,6 +216,95 @@
           <p class="text-muted">Chưa có activity.</p>
           {% endfor %}
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12" id="deployments">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Deployment history</h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr><th>Version</th><th>Commit / Images</th><th>Actor / Time</th><th>Status</th><th>URL</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for deployment in deployments %}
+              <tr>
+                <td>
+                  <strong>v{{ deployment.version }}</strong>
+                  {% if deployment.id == app.current_deployment_id %}<span class="badge text-bg-primary">Current</span>{% endif %}
+                  {% if deployment.rollback_of_deployment_id %}<div class="small text-muted">Rollback of {{ deployment.rollback_of_deployment_id }}</div>{% endif %}
+                </td>
+                <td>
+                  <code>{{ deployment.commit_sha[:12] if deployment.commit_sha else '-' }}</code>
+                  {% for image in deployment.services %}
+                  <div class="small"><code>{{ image.image }}</code>{% if image.digest %}<br><code>{{ image.digest }}</code>{% endif %}</div>
+                  {% endfor %}
+                </td>
+                <td>{{ deployment.actor }}<div class="small text-muted">{{ deployment.finished_at or deployment.started_at }}</div></td>
+                <td>
+                  <span class="badge text-bg-{{ 'success' if deployment.status == 'Ready' else ('danger' if deployment.status == 'Failed' else 'warning') }}">{{ deployment.status }}</span>
+                  <div class="small text-muted">{{ deployment.deployment_mode }}</div>
+                </td>
+                <td>{% if deployment.url %}<a href="{{ deployment.url }}" target="_blank" rel="noopener">{{ deployment.url }}</a>{% else %}-{% endif %}</td>
+                <td>
+                  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.application_deployment_detail', application_id=app.id, deployment_id=deployment.id) }}">Chi tiết</a>
+                  {% if deployment.rollback_eligible and deployment.status == 'Ready' and deployment.id != app.current_deployment_id %}
+                  <form class="d-inline" method="post" action="{{ url_for('ui.application_deployment_rollback', application_id=app.id, deployment_id=deployment.id) }}" onsubmit="return confirm('Rollback về v{{ deployment.version }}?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-outline-warning btn-sm" type="submit">Rollback</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="text-muted">Chưa có deployment versioned. Hãy chạy pipeline.</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12" id="environment">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5>Environment</h5>
+        <p class="text-muted">Environment được cấu hình theo từng service; secret values không hiển thị trong UI hoặc activity logs.</p>
+        {% if app.source_type == 'github' %}
+        <hr>
+        <h6>Container Registry</h6>
+        {% if registry_status.configured and registry_status.source == 'platform' %}
+        <div class="alert alert-success">
+          Application đang tự động sử dụng credential chung của Platform:
+          <strong>{{ registry_status.registry }}</strong> /
+          <strong>{{ registry_status.username }}</strong>.
+        </div>
+        {% elif registry_status.source == 'platform_missing' %}
+        <div class="alert alert-warning">
+          Application đã chọn kế thừa credential chung nhưng Admin chưa cấu hình.
+          PUSH sẽ dừng trước DEPLOY.
+        </div>
+        {% elif registry_status.configured %}
+        <div class="alert alert-info">
+          Application đang sử dụng registry override riêng.
+        </div>
+        {% endif %}
+        {% if registry_status.source != 'platform' %}
+        <form method="post" action="{{ url_for('ui.application_registry_use_platform', application_id=app.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-primary" type="submit">Dùng credential chung của Platform</button>
+        </form>
+        {% endif %}
+        {% if current_user.is_admin %}
+        <a class="btn btn-link px-0 mt-2" href="{{ url_for('ui.cicd') }}#platform-registry">
+          Cấu hình hoặc rotate credential chung
+        </a>
+        {% endif %}
+        {% endif %}
       </div>
     </div>
   </div>

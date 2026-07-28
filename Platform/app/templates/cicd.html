@@ -1,5 +1,82 @@
 {% extends 'base.html' %}{% block content %}
-<h1>CI/CD Flow</h1><p class="text-muted">Mô hình Developer push code → GitHub build image → Registry → Platform redeploy lên Kubernetes.</p>
-<div class="card soft-card mb-4"><div class="card-body p-4"><div class="row text-center g-3"><div class="col"><div class="p-3 bg-light rounded">Developer<br><small>commit/push</small></div></div><div class="col"><div class="p-3 bg-light rounded">GitHub<br><small>webhook/actions</small></div></div><div class="col"><div class="p-3 bg-light rounded">Registry<br><small>image tag</small></div></div><div class="col"><div class="p-3 bg-light rounded">CICT Platform<br><small>redeploy</small></div></div><div class="col"><div class="p-3 bg-light rounded">Kubernetes<br><small>rollout</small></div></div></div></div></div>
-<div class="card soft-card"><div class="card-body p-4"><h4>Pipeline events</h4><table class="table"><thead><tr><th>Time</th><th>Actor</th><th>Event</th><th>Status</th></tr></thead><tbody>{% for e in events %}<tr><td>{{ e.time }}</td><td>{{ e.actor }}</td><td>{{ e.event }}</td><td>{{ e.status }}</td></tr>{% endfor %}</tbody></table></div></div>
+<h1>CI/CD</h1>
+<p class="text-muted">Toàn cảnh pipeline; cấu hình và thao tác chi tiết nằm trong từng application.</p>
+
+{% if current_user.is_admin %}
+<div class="card soft-card mb-4" id="platform-registry">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+      <div>
+        <h4 class="mb-1">Platform Container Registry</h4>
+        <p class="text-muted mb-0">
+          Cấu hình một lần; mọi application mặc định tự động dùng credential này để push image.
+          Token không được trả về UI hoặc lưu trong Pipeline/Job/Audit.
+        </p>
+      </div>
+      {% if platform_registry.configured %}
+      <span class="badge text-bg-success">Configured</span>
+      {% else %}
+      <span class="badge text-bg-warning">Not configured</span>
+      {% endif %}
+    </div>
+    {% if platform_registry.configured %}
+    <div class="alert alert-success py-2">
+      Đang dùng <strong>{{ platform_registry.registry }}</strong> /
+      <strong>{{ platform_registry.username }}</strong>. Nhập PAT mới bên dưới để rotate.
+    </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('ui.platform_registry_credential') }}" class="row g-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-md-4">
+        <label class="form-label">Registry</label>
+        <input class="form-control" name="registry_url" value="{{ platform_registry.registry or 'docker.io' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Username / organization</label>
+        <input class="form-control" name="registry_username" value="{{ platform_registry.username }}" autocomplete="username" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">New PAT / OAT</label>
+        <input class="form-control" type="password" name="registry_credential" autocomplete="new-password" required>
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary" type="submit">Lưu credential chung</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  {% for label, value, color in [('Total', stats.total, 'primary'), ('Running / Queued', stats.running, 'info'), ('Failed', stats.failed, 'danger'), ('Success', stats.success, 'success')] %}
+  <div class="col-md-3"><div class="card soft-card"><div class="card-body">
+    <div class="text-muted small">{{ label }}</div><div class="display-6 text-{{ color }}">{{ value }}</div>
+  </div></div></div>
+  {% endfor %}
+</div>
+
+<div class="card soft-card mb-4"><div class="card-body p-4">
+  <h4>Pipeline runs</h4>
+  <div class="table-responsive"><table class="table align-middle">
+    <thead><tr><th>Run</th><th>Application</th><th>Trigger</th><th>Commit</th><th>Status</th><th>Time</th></tr></thead>
+    <tbody>
+    {% for run in runs %}
+      <tr>
+        <td><code>{{ run.id }}</code></td>
+        <td><a href="{{ url_for('ui.application_pipeline_history', application_id=run.application_id) }}">{{ run.application_name }}</a></td>
+        <td>{{ run.trigger_type or 'Manual' }}</td>
+        <td><code>{{ run.commit_sha[:12] if run.commit_sha else '-' }}</code></td>
+        <td><span class="badge text-bg-{{ 'success' if run.status == 'Success' else ('danger' if run.status == 'Failed' else 'info') }}">{{ run.status }}</span></td>
+        <td>{{ run.updated_at or run.created_at }}</td>
+      </tr>
+    {% else %}<tr><td colspan="6" class="text-muted">Chưa có pipeline.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div></div>
+
+<div class="card soft-card"><div class="card-body p-4">
+  <h4>Recent stage events</h4>
+  <table class="table"><thead><tr><th>Time</th><th>Application</th><th>Event</th><th>Status</th></tr></thead>
+  <tbody>{% for e in events %}<tr><td>{{ e.time }}</td><td>{{ e.actor }}</td><td>{{ e.event }}</td><td>{{ e.status }}</td></tr>{% endfor %}</tbody></table>
+</div></div>
 {% endblock %}

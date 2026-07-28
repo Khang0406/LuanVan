@@ -25,8 +25,20 @@
       <span class="text-muted ms-2">{{ run.created_at }}</span>
     </div>
     <span class="badge text-bg-{{ 'success' if run.status == 'Success' else ('danger' if run.status == 'Failed' else 'info') }}">{{ run.status }}</span>
+    {% if run.status in ['Failed', 'Interrupted'] %}
+    <form class="d-inline ms-2" method="post" action="{{ url_for('ui.application_pipeline_retry', application_id=app.id, pipeline_run_id=run.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-warning btn-sm" type="submit">Retry</button>
+    </form>
+    {% endif %}
   </div>
   <div class="card-body p-3">
+    <div class="small mb-3">
+      <strong>Trigger:</strong> {{ run.trigger_type or 'Manual' }} ·
+      <strong>Repository:</strong> {{ run.repository or app.github_url or '-' }} ·
+      <strong>Branch:</strong> {{ run.branch or app.default_branch or '-' }} ·
+      <strong>Commit:</strong> <code>{{ run.commit_sha or '-' }}</code>
+    </div>
     <div class="table-responsive">
       <table class="table table-sm align-middle mb-0">
         <thead>

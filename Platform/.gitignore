@@ -7,7 +7,11 @@ instance/
 .env
 # Build history — excluded to keep repo clean
 app/data/builds/
+app/data/phase0-backup/
 ansible/inventories/generated/
+ansible/group_vars/platform_builders.yml
 k8s/generated/*.yaml
 !k8s/generated/demo-nginx.yaml
 k8s/generated/.gitkeep
+k8s/platform/secret.yaml
+k8s/platform/builder-ssh-secret.yaml

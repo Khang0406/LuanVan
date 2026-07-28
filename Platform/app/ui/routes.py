@@ -11,6 +11,7 @@ from app.modules.applications.service import (
     find_accessible_application,
     load_accessible_applications,
     load_applications,
+    save_application,
     summarize_runtime,
 )
 from app.modules.clusters.service import build_cluster_inventory, install_kubernetes, load_clusters
@@ -21,6 +22,11 @@ from app.modules.deployments.kubectl import (
     get_application_status,
     restart_application,
     scale_application,
+)
+from app.modules.deployments.service import (
+    get_deployment,
+    list_deployments,
+    rollback_application,
 )
 from app.modules.servers.service import (
     add_server,
@@ -40,6 +46,7 @@ from app.modules.pipeline.engine import (
     get_latest_pipeline_run,
     load_all_pipeline_events,
     load_pipeline_runs,
+    retry_pipeline,
     trigger_pipeline,
 )
 from app.modules.monitoring.collector import (
@@ -65,6 +72,11 @@ from app.modules.monitoring.k8s_manifests import deploy_monitoring_stack
 from app.modules.auth.routes import role_required
 from app.modules.audit.service import load_audit_logs, record_audit
 from app.modules.jobs.service import load_accessible_jobs, pipeline_run_to_job, record_completed_job
+from app.registry_credentials import (
+    PLATFORM_DEFAULT_REFERENCE,
+    registry_credential_status,
+    save_registry_credential,
+)
 
 from .mock_data import INSTALL_STEPS
 
@@ -323,12 +335,23 @@ def application_detail(application_id):
     runtime = summarize_runtime(application)
     pipeline_steps = build_pipeline_steps(application)
     cluster_status = get_application_status(application)
+    deployments = list_deployments(application_id)
+    current_deployment = (
+        get_deployment(application.get("current_deployment_id"))
+        if application.get("current_deployment_id") else None
+    )
+    latest_pipeline = get_latest_pipeline_run(application_id)
+    registry_status = registry_credential_status(application)
     return render_template(
         "applications/detail.html",
         app=application,
         runtime=runtime,
         pipeline_steps=pipeline_steps,
         cluster_status=cluster_status,
+        deployments=deployments,
+        current_deployment=current_deployment,
+        latest_pipeline=latest_pipeline,
+        registry_status=registry_status,
     )
 
 
@@ -336,11 +359,107 @@ def application_detail(application_id):
 @login_required
 def application_deploy(application_id):
     application = _get_authorized_application(application_id)
-    success, output = deploy_application(application)
-    record_completed_job("Kubectl", "Deploy application", application["name"], success, output, command="kubectl apply --validate=false")
-    record_audit("APPLICATION_DEPLOY", application["id"], _result_label(success), output[:500])
-    flash(("Deploy thành công. " if success else "Deploy thất bại. ") + output, "success" if success else "danger")
+    try:
+        pipeline_run = trigger_pipeline(application_id, actor=current_user)
+        record_audit(
+            "APPLICATION_DEPLOY", application["id"], "SUCCESS",
+            f"Đã chuyển deploy sang pipeline versioned {pipeline_run['id']}.",
+        )
+        flash(
+            f"Đã khởi động pipeline versioned {pipeline_run['id']}; deployment chỉ được cập nhật sau VERIFY.",
+            "info",
+        )
+    except Exception as exc:
+        record_audit("APPLICATION_DEPLOY", application["id"], "FAILED", str(exc))
+        flash(f"Không thể khởi động deploy pipeline: {exc}", "danger")
     return redirect(url_for("ui.application_detail", application_id=application_id))
+
+
+@ui_bp.route("/applications/<application_id>/deployments/<deployment_id>")
+@login_required
+def application_deployment_detail(application_id, deployment_id):
+    application = _get_authorized_application(application_id)
+    deployment = get_deployment(deployment_id)
+    if not deployment or deployment.get("application_id") != application_id:
+        abort(404)
+    return render_template(
+        "applications/deployment_detail.html", app=application, deployment=deployment
+    )
+
+
+@ui_bp.post("/applications/<application_id>/deployments/<deployment_id>/rollback")
+@login_required
+def application_deployment_rollback(application_id, deployment_id):
+    application = _get_authorized_application(application_id)
+    success, message, rollback = rollback_application(
+        application, deployment_id, actor=current_user
+    )
+    if success:
+        flash(
+            f"Rollback thành công; deployment hiện tại là v{rollback['version']}.", "success"
+        )
+    else:
+        flash(f"Rollback thất bại: {message}", "danger")
+    return redirect(url_for("ui.application_detail", application_id=application_id))
+
+
+@ui_bp.post("/applications/<application_id>/registry-credential")
+@login_required
+@role_required("Admin")
+def application_registry_credential(application_id):
+    application = _get_authorized_application(application_id)
+    registry_url = request.form.get("registry_url", "docker.io").strip() or "docker.io"
+    username = request.form.get("registry_username", "").strip().lower()
+    credential = request.form.get("registry_credential", "")
+    if not username or not credential:
+        flash("Registry username và token/password không được để trống.", "danger")
+        return redirect(url_for("ui.application_detail", application_id=application_id) + "#environment")
+    reference = f"user:{current_user.id}"
+    try:
+        save_registry_credential(reference, username, credential, registry_url)
+        application["registry"] = {
+            "url": registry_url,
+            "username": username,
+            "credential_ref": reference,
+            "inherit_platform": False,
+        }
+        save_application(application)
+        record_audit(
+            "REGISTRY_CREDENTIAL_UPDATE", application_id, "SUCCESS",
+            "Đã cập nhật registry credential.",
+            metadata={"registry": registry_url, "username": username},
+        )
+        flash("Đã lưu registry credential an toàn. Có thể retry pipeline Failed.", "success")
+    except ValueError as exc:
+        record_audit(
+            "REGISTRY_CREDENTIAL_UPDATE", application_id, "FAILED", str(exc),
+            metadata={"registry": registry_url, "username": username},
+        )
+        flash(str(exc), "danger")
+    return redirect(url_for("ui.application_detail", application_id=application_id) + "#environment")
+
+
+@ui_bp.post("/applications/<application_id>/registry-use-platform")
+@login_required
+def application_registry_use_platform(application_id):
+    application = _get_authorized_application(application_id)
+    application["registry"] = {"inherit_platform": True}
+    save_application(application)
+    record_audit(
+        "REGISTRY_CREDENTIAL_INHERIT",
+        application_id,
+        "SUCCESS",
+        "Application sử dụng registry credential mặc định của Platform.",
+        metadata={"credential_source": "platform"},
+    )
+    flash(
+        "Application sẽ tự động dùng registry credential chung của Platform.",
+        "success",
+    )
+    return redirect(
+        url_for("ui.application_detail", application_id=application_id)
+        + "#environment"
+    )
 
 
 @ui_bp.post("/applications/<application_id>/restart")
@@ -416,6 +535,29 @@ def application_pipeline_history(application_id):
     return render_template("applications/pipeline.html", app=application, runs=runs)
 
 
+@ui_bp.post("/applications/<application_id>/pipeline/<pipeline_run_id>/retry")
+@login_required
+def application_pipeline_retry(application_id, pipeline_run_id):
+    application = _get_authorized_application(application_id)
+    original = next(
+        (run for run in load_pipeline_runs(application_id) if run.get("id") == pipeline_run_id),
+        None,
+    )
+    if not original:
+        abort(404)
+    try:
+        run = retry_pipeline(pipeline_run_id, actor=current_user)
+        record_audit(
+            "PIPELINE_RETRY", application["id"], "SUCCESS",
+            f"Retry {pipeline_run_id} as {run['id']}.",
+        )
+        flash(f"Đã retry pipeline dưới run mới {run['id']}.", "info")
+    except ValueError as exc:
+        record_audit("PIPELINE_RETRY", application["id"], "FAILED", str(exc))
+        flash(str(exc), "danger")
+    return redirect(url_for("ui.application_pipeline_history", application_id=application_id))
+
+
 @ui_bp.route("/applications/<application_id>/logs")
 @login_required
 def application_logs(application_id):
@@ -467,13 +609,72 @@ def jobs():
 @login_required
 def cicd():
     application_ids = {app["id"] for app in load_accessible_applications(current_user)}
+    runs = [
+        run for run in load_pipeline_runs()
+        if run.get("application_id") in application_ids
+    ]
     events = load_all_pipeline_events(application_ids)
     # fallback to mock if empty
     from .mock_data import PIPELINE_EVENTS as MOCK_EVENTS
 
     if not events and current_user.is_admin:
         events = MOCK_EVENTS
-    return render_template("cicd.html", events=events)
+    stats = {
+        "total": len(runs),
+        "running": sum(run.get("status") in {"Running", "Queued"} for run in runs),
+        "failed": sum(run.get("status") == "Failed" for run in runs),
+        "success": sum(run.get("status") == "Success" for run in runs),
+    }
+    return render_template(
+        "cicd.html",
+        events=events,
+        runs=runs,
+        stats=stats,
+        platform_registry=registry_credential_status({}),
+    )
+
+
+@ui_bp.post("/cicd/registry-credential")
+@login_required
+@role_required("Admin")
+def platform_registry_credential():
+    registry_url = (
+        request.form.get("registry_url", "docker.io").strip() or "docker.io"
+    )
+    username = request.form.get("registry_username", "").strip().lower()
+    credential = request.form.get("registry_credential", "")
+    if not username or not credential:
+        flash("Registry username và PAT/token không được để trống.", "danger")
+        return redirect(url_for("ui.cicd") + "#platform-registry")
+    try:
+        save_registry_credential(
+            PLATFORM_DEFAULT_REFERENCE,
+            username,
+            credential,
+            registry_url,
+        )
+        record_audit(
+            "PLATFORM_REGISTRY_CREDENTIAL_UPDATE",
+            "platform-registry",
+            "SUCCESS",
+            "Đã cập nhật registry credential mặc định của Platform.",
+            metadata={"registry": registry_url, "username": username},
+        )
+        flash(
+            "Đã lưu credential chung. Mọi application đang kế thừa sẽ tự "
+            "động dùng credential này ở pipeline tiếp theo.",
+            "success",
+        )
+    except ValueError as exc:
+        record_audit(
+            "PLATFORM_REGISTRY_CREDENTIAL_UPDATE",
+            "platform-registry",
+            "FAILED",
+            str(exc),
+            metadata={"registry": registry_url, "username": username},
+        )
+        flash(str(exc), "danger")
+    return redirect(url_for("ui.cicd") + "#platform-registry")
 
 
 def _get_monitoring_data() -> dict[str, Any]:

@@ -1,11 +1,13 @@
-import json
 import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from app.security import temporary_ansible_extra_vars
+
 from app.config import BASE_DIR
 
+from app.json_store import is_list_of_dicts, read_json, write_json
 DATA_DIR = BASE_DIR / "app" / "data"
 SERVERS_FILE = DATA_DIR / "servers.json"
 
@@ -57,15 +59,13 @@ def _ensure_data_file() -> None:
 
 
 def load_servers() -> list[dict[str, Any]]:
-    _ensure_data_file()
-    with SERVERS_FILE.open("r", encoding="utf-8") as file:
-        return json.load(file)
+    return read_json(SERVERS_FILE, DEFAULT_SERVERS, is_list_of_dicts)
 
 
 def save_servers(servers: list[dict[str, Any]]) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with SERVERS_FILE.open("w", encoding="utf-8") as file:
-        json.dump(servers, file, ensure_ascii=False, indent=2)
+    if not is_list_of_dicts(servers):
+        raise ValueError("servers must be a list of objects")
+    write_json(SERVERS_FILE, servers)
 
 
 def make_server_id(name: str, ip: str) -> str:
@@ -250,27 +250,36 @@ def bootstrap_sudo_nopasswd(server_id: str, sudo_password: str) -> tuple[bool, s
         f"visudo -cf {sudoers_file}"
     )
 
-    command = [
-        "ansible",
-        "target",
-        "-i",
-        str(inventory_file),
-        "-b",
-        "-m",
-        "shell",
-        "-a",
-        shell_script,
-        "--extra-vars",
-        f"ansible_become_password={sudo_password}",
-    ]
+    with temporary_ansible_extra_vars(
+        {"ansible_become_password": sudo_password}
+    ) as extra_vars_file:
+        command = [
+            "ansible",
+            "target",
+            "-i",
+            str(inventory_file),
+            "-b",
+            "-m",
+            "shell",
+            "-a",
+            shell_script,
+            "--extra-vars",
+            f"@{extra_vars_file}",
+        ]
 
-    try:
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=40, check=False)
-        raw_output = (completed.stdout + completed.stderr).strip()
-        success = completed.returncode == 0
-    except subprocess.TimeoutExpired:
-        success = False
-        raw_output = "Bootstrap sudo timeout sau 40 giây."
+        try:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=40,
+                check=False,
+            )
+            raw_output = (completed.stdout + completed.stderr).strip()
+            success = completed.returncode == 0
+        except subprocess.TimeoutExpired:
+            success = False
+            raw_output = "Bootstrap sudo timeout sau 40 giây."
 
     if success:
         verify_success, verify_output = test_sudo_nopasswd(server_id)

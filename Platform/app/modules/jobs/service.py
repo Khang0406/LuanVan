@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 from typing import Any
 
@@ -7,8 +6,12 @@ from flask_login import current_user
 
 from app.config import BASE_DIR
 
+from app.delivery_store import list_jobs as list_jobs_from_db
+from app.delivery_store import migrate_default_json_state, replace_jobs
+from app.json_store import is_list_of_dicts, mask_secrets, normalize_status, read_json, write_json
 DATA_DIR = BASE_DIR / "app" / "data"
 JOBS_FILE = DATA_DIR / "jobs.json"
+DEFAULT_JOBS_FILE = JOBS_FILE
 
 
 def _now() -> str:
@@ -22,17 +25,24 @@ def _ensure_jobs_file() -> None:
 
 
 def load_jobs(limit: int | None = 200) -> list[dict[str, Any]]:
-    _ensure_jobs_file()
-    with JOBS_FILE.open("r", encoding="utf-8") as file:
-        jobs = json.load(file)
+    if JOBS_FILE == DEFAULT_JOBS_FILE:
+        migrate_default_json_state()
+        jobs = list_jobs_from_db()
+    else:
+        jobs = read_json(JOBS_FILE, [], is_list_of_dicts)
     jobs = sorted(jobs, key=lambda item: item.get("created_at", ""), reverse=True)
     return jobs[:limit] if limit else jobs
 
 
 def save_jobs(jobs: list[dict[str, Any]]) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with JOBS_FILE.open("w", encoding="utf-8") as file:
-        json.dump(jobs, file, ensure_ascii=False, indent=2)
+    if not is_list_of_dicts(jobs):
+        raise ValueError("jobs must be a list of objects")
+    safe_jobs = mask_secrets(jobs)
+    if JOBS_FILE == DEFAULT_JOBS_FILE:
+        migrate_default_json_state()
+        replace_jobs(safe_jobs)
+        return
+    write_json(JOBS_FILE, safe_jobs)
 
 
 def command_to_text(command: list[str] | tuple[str, ...] | str | None) -> str:
@@ -70,7 +80,7 @@ def create_job(
         "title": title,
         "target": target,
         "status": "Running",
-        "command": command_to_text(command),
+        "command": mask_secrets(command_to_text(command)),
         "output": "",
         "steps": steps or [],
         "created_at": now,
@@ -96,9 +106,9 @@ def finish_job(
     now = _now()
     for index, job in enumerate(jobs):
         if job.get("id") == job_id:
-            job["status"] = "Success" if success else "Failed"
-            job["output"] = output or message
-            job["message"] = message
+            job["status"] = normalize_status("Success" if success else "Failed")
+            job["output"] = mask_secrets(output or message)
+            job["message"] = mask_secrets(message)
             job["updated_at"] = now
             job["finished_at"] = now
             if steps is not None:

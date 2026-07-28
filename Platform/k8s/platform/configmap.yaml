@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: platform-system
+data:
+  PLATFORM_ENV: production
+  PLATFORM_HOST: "0.0.0.0"
+  PLATFORM_PORT: "8000"
+  TRUST_PROXY_COUNT: "1"
+  PIPELINE_MAX_CONCURRENT: "1"
+  TEST_CONTAINER_MEMORY_LIMIT: 512m
+  TEST_CONTAINER_CPU_LIMIT: "1.0"
+  TEST_CONTAINER_PIDS_LIMIT: "256"
+  CONTAINER_HEALTH_PROBE_IMAGE: curlimages/curl:8.10.1
+  COOKIE_SECURE: "true"
+  DATABASE_URL: sqlite:////var/lib/platform/app.db
+  DELIVERY_DATABASE_PATH: /var/lib/platform/app.db
+  PLATFORM_DATA_DIR: /var/lib/platform
+  DOCKER_BUILDKIT: "1"
+  # Replace this private address before deployment. The Docker daemon is not
+  # exposed over TCP; Docker CLI tunnels commands through SSH.
+  DOCKER_HOST: ssh://platform-builder@BUILD_WORKER_PRIVATE_IP
+  DOCKER_SSH_COMMAND: >-
+    ssh -i /run/secrets/builder/id_ed25519
+    -o IdentitiesOnly=yes
+    -o StrictHostKeyChecking=yes
+    -o UserKnownHostsFile=/run/secrets/builder/known_hosts
+    -o ConnectTimeout=15
+  PROMETHEUS_URL: http://prometheus-operated.monitoring.svc.cluster.local:9090
+  GRAFANA_URL: http://grafana.monitoring.svc.cluster.local:3000

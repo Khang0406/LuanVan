@@ -1,11 +1,13 @@
-import json
 import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from app.security import temporary_ansible_extra_vars
+
 from app.config import BASE_DIR
+from app.json_store import is_list_of_dicts, read_json, write_json
 from app.modules.servers.service import find_server, load_servers, save_servers
 
 DATA_DIR = BASE_DIR / "app" / "data"
@@ -24,16 +26,14 @@ def _ensure_clusters_file() -> None:
 
 def load_clusters() -> list[dict[str, Any]]:
     """Đọc danh sách cluster từ clusters.json."""
-    _ensure_clusters_file()
-    with CLUSTERS_FILE.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return read_json(CLUSTERS_FILE, [], is_list_of_dicts)
 
 
 def save_clusters(clusters: list[dict[str, Any]]) -> None:
     """Ghi danh sách cluster vào clusters.json."""
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with CLUSTERS_FILE.open("w", encoding="utf-8") as f:
-        json.dump(clusters, f, ensure_ascii=False, indent=2)
+    if not is_list_of_dicts(clusters):
+        raise ValueError("clusters must be a list of objects")
+    write_json(CLUSTERS_FILE, clusters)
 
 
 def create_cluster(selected_nodes: list[dict[str, str]], name: str | None = None) -> str:
@@ -177,31 +177,43 @@ def install_kubernetes(selected_nodes: list[dict[str, str]], sudo_password: str 
     ]
 
     sudo_password = sudo_password.strip()
-    if sudo_password:
-        command.extend(["--extra-vars", f"ansible_become_password={sudo_password}"])
+    extra_vars = (
+        {"ansible_become_password": sudo_password}
+        if sudo_password
+        else {}
+    )
+    with temporary_ansible_extra_vars(extra_vars) as extra_vars_file:
+        if extra_vars:
+            command.extend(["--extra-vars", f"@{extra_vars_file}"])
 
-    try:
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=1800, check=False)
-        output = (completed.stdout + completed.stderr).strip()
-        if completed.returncode == 0:
-            kube_msg = _sync_kubeconfig_to_host(selected_nodes)
-
-            # Tạo cluster record và gán cluster_id cho các server
-            cluster_id = create_cluster(selected_nodes)
-            cluster_msg = f"Đã tạo cluster {cluster_id} và gán cho {len(selected_nodes)} server."
-
-            full_msg = "\n".join(
-                part for part in [
-                    "Cài đặt Kubernetes/K3s bằng Ansible thành công.",
-                    kube_msg,
-                    cluster_msg,
-                ] if part
+        try:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=1800,
+                check=False,
             )
-            return True, full_msg, output
-        return False, "Cài đặt Kubernetes/K3s thất bại. Xem log chi tiết bên dưới.", output
-    except subprocess.TimeoutExpired as exc:
-        output = ((exc.stdout or "") + (exc.stderr or "")).strip()
-        return False, "Cài đặt Kubernetes/K3s timeout sau 30 phút.", output
+            output = (completed.stdout + completed.stderr).strip()
+            if completed.returncode == 0:
+                kube_msg = _sync_kubeconfig_to_host(selected_nodes)
+
+                # Tạo cluster record và gán cluster_id cho các server
+                cluster_id = create_cluster(selected_nodes)
+                cluster_msg = f"Đã tạo cluster {cluster_id} và gán cho {len(selected_nodes)} server."
+
+                full_msg = "\n".join(
+                    part for part in [
+                        "Cài đặt Kubernetes/K3s bằng Ansible thành công.",
+                        kube_msg,
+                        cluster_msg,
+                    ] if part
+                )
+                return True, full_msg, output
+            return False, "Cài đặt Kubernetes/K3s thất bại. Xem log chi tiết bên dưới.", output
+        except subprocess.TimeoutExpired as exc:
+            output = ((exc.stdout or "") + (exc.stderr or "")).strip()
+            return False, "Cài đặt Kubernetes/K3s timeout sau 30 phút.", output
 
 
 def _sync_kubeconfig_to_host(selected_nodes: list[dict[str, str]]) -> str:

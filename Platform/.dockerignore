@@ -1,0 +1,12 @@
+.git
+.venv
+.vevn
+__pycache__
+*.pyc
+.env
+instance
+app/data/builds
+app/data/phase0-backup
+ansible/inventories/generated
+k8s/generated
+tests
