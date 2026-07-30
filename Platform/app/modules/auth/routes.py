@@ -20,13 +20,23 @@ def _safe_next_url(target: str | None) -> str | None:
     return target
 
 
-def role_required(role: str):
+def role_required(*roles: str):
+    allowed = set(roles)
+    if not allowed:
+        raise ValueError("At least one role is required")
+
     def decorator(f):
         @wraps(f)
         @login_required
         def decorated_function(*args, **kwargs):
-            if current_user.role != role:
-                record_audit("ACCESS_DENIED", request.path, "FAILED", f"Yêu cầu role {role}, user role {current_user.role}.")
+            if current_user.role not in allowed:
+                required = ", ".join(sorted(allowed))
+                record_audit(
+                    "ACCESS_DENIED",
+                    request.path,
+                    "FAILED",
+                    f"Yêu cầu role {required}, user role {current_user.role}.",
+                )
                 flash("Bạn không có quyền truy cập trang này.", "danger")
                 return redirect(url_for("dashboard"))
             return f(*args, **kwargs)

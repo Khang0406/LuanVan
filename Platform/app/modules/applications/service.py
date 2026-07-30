@@ -49,8 +49,8 @@ def _default_applications() -> list[dict[str, Any]]:
                     "cpu_limit": "500m",
                     "memory_request": "128Mi",
                     "memory_limit": "512Mi",
-                    "min_replicas": 1,
-                    "max_replicas": 3,
+                    "min_replicas": 2,
+                    "max_replicas": 5,
                     "autoscaling": False,
                     "cpu_threshold": 70,
                 }
@@ -92,8 +92,8 @@ def save_applications(applications: list[dict[str, Any]]) -> None:
 
 
 def can_access_application(application: dict[str, Any], user: Any) -> bool:
-    """Admin can access every app; Developers only apps assigned to their user id."""
-    if getattr(user, "is_admin", False):
+    """Admins/Viewers can read all apps; Developers are isolated by ownership."""
+    if getattr(user, "role", "") in {"Admin", "Viewer"}:
         return True
     return application.get("user_id") == getattr(user, "id", None)
 
@@ -123,6 +123,17 @@ def save_application(updated_application: dict[str, Any]) -> None:
     else:
         applications.append(updated_application)
     save_applications(applications)
+
+
+def parse_env_map(raw_data: str) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for line in raw_data.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        result[key.strip()] = value.strip()
+    return result
 
 
 def parse_env_lines(raw_env: str) -> list[dict[str, str]]:
@@ -173,6 +184,8 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
         # fallback single-service form cũ
         default_image = form.get("docker_image", "").strip()
         image = default_image or f"{slugify(form.get('owner', '').strip())}/{slugify(form.get('name', '').strip())}:latest"
+        raw_cmd = form.get("service_command", "").strip()
+        raw_args = form.get("service_args", "").strip()
         return [
             {
                 "name": slugify(form.get("service_name", "web").strip() or "web"),
@@ -182,14 +195,17 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
                 "service_type": form.get("service_type", "NodePort").strip(),
                 "node_port": form.get("node_port", "").strip(),
                 "env": parse_env_lines(form.get("env", "")),
+                "command": [c.strip() for c in raw_cmd.split(",") if c.strip()],
+                "args": [c.strip() for c in raw_args.split(",") if c.strip()],
+                "public": form.get("service_public", "on") == "on",
                 "cpu_request": form.get("cpu_request", "100m").strip() or "100m",
                 "cpu_limit": form.get("cpu_limit", "500m").strip() or "500m",
                 "memory_request": form.get("memory_request", "128Mi").strip() or "128Mi",
                 "memory_limit": form.get("memory_limit", "512Mi").strip() or "512Mi",
-                "min_replicas": _bounded_int(form.get("min_replicas"), "Min replicas", 1, 1, 100),
-                "max_replicas": _bounded_int(form.get("max_replicas"), "Max replicas", 3, 1, 100),
+                "min_replicas": _bounded_int(form.get("min_replicas"), "Min replicas", 2, 1, 100),
+                "max_replicas": _bounded_int(form.get("max_replicas"), "Max replicas", 5, 1, 100),
                 "autoscaling": form.get("autoscaling") == "on",
-                "cpu_threshold": _bounded_int(form.get("cpu_threshold"), "CPU threshold", 70, 1, 100),
+                "cpu_threshold": _bounded_int(form.get("cpu_threshold"), "CPU threshold", 50, 1, 100),
             }
         ]
 
@@ -199,6 +215,9 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
     types = form.getlist("service_types")
     node_ports = form.getlist("service_node_ports")
     envs = form.getlist("service_envs")
+    commands = form.getlist("service_commands")
+    args_list = form.getlist("service_args")
+    publics = form.getlist("service_publics")
 
     services: list[dict[str, Any]] = []
     for i, name_raw in enumerate(names):
@@ -219,15 +238,18 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
             "replicas": replicas,
             "service_type": svc_type,
             "node_port": node_port,
+            "public": publics[i] == "on" if i < len(publics) else True,
             "env": parse_env_lines(env_raw),
+            "command": [c.strip() for c in (commands[i].split(",") if i < len(commands) and commands[i] else "") if c.strip()],
+            "args": [c.strip() for c in (args_list[i].split(",") if i < len(args_list) and args_list[i] else "") if c.strip()],
             "cpu_request": form.get("cpu_request", "100m").strip() or "100m",
             "cpu_limit": form.get("cpu_limit", "500m").strip() or "500m",
             "memory_request": form.get("memory_request", "128Mi").strip() or "128Mi",
             "memory_limit": form.get("memory_limit", "512Mi").strip() or "512Mi",
-            "min_replicas": _bounded_int(form.get("min_replicas"), "Min replicas", max(replicas, 1), 1, 100),
-            "max_replicas": _bounded_int(form.get("max_replicas"), "Max replicas", max(replicas, 3), 1, 100),
+            "min_replicas": _bounded_int(form.get("min_replicas"), "Min replicas", max(replicas, 2), 1, 100),
+            "max_replicas": _bounded_int(form.get("max_replicas"), "Max replicas", max(replicas, 5), 1, 100),
             "autoscaling": form.get("autoscaling") == "on",
-            "cpu_threshold": _bounded_int(form.get("cpu_threshold"), "CPU threshold", 70, 1, 100),
+            "cpu_threshold": _bounded_int(form.get("cpu_threshold"), "CPU threshold", 50, 1, 100),
         })
 
     return services
@@ -314,6 +336,8 @@ def create_application(form: dict[str, Any], user: Any) -> dict[str, Any]:
         "development_fallback_enabled": form.get("development_fallback_enabled") == "on",
         "registry": registry,
         "description": form.get("description", "").strip(),
+        "config_data": parse_env_map(form.get("config_data", "")),
+        "secrets": [],
         "services": services,
         "status": "Draft",
         "url": "",
@@ -322,6 +346,18 @@ def create_application(form: dict[str, Any], user: Any) -> dict[str, Any]:
         "updated_at": _now(),
         "activity_logs": [],
     }
+
+    secret_keys_raw = form.get("secret_keys", "").strip()
+    secret_values_raw = form.get("secret_values", "").strip()
+    if secret_keys_raw and secret_values_raw:
+        from app.secret_store import save_secret
+        keys_list = [k.strip() for k in secret_keys_raw.split(",") if k.strip()]
+        vals_list = [v.strip() for v in secret_values_raw.split(",") if v.strip()]
+        for i, key in enumerate(keys_list):
+            val = vals_list[i] if i < len(vals_list) else ""
+            if key and val:
+                save_secret(application_id, key, val)
+                application["secrets"].append(key)
     webhook_secret = form.get("webhook_secret", "").strip()
     if source_type == "github" and webhook_secret:
         application["webhook_secret_ref"] = save_webhook_secret(application_id, webhook_secret)

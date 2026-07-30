@@ -179,6 +179,12 @@ class PrometheusClient:
             )
         return result
 
+    def node_ready(self) -> list[dict[str, Any]]:
+        """Return the Ready=true condition for every Kubernetes node."""
+        return self.instant_query(
+            'kube_node_status_condition{condition="Ready",status="true"}'
+        )
+
     def node_disk_percent(self, mountpoint: str = "/") -> list[dict[str, Any]]:
         """Per-node disk usage % on *mountpoint*."""
         result = self.instant_query(
@@ -214,7 +220,7 @@ class PrometheusClient:
         base = 'kube_pod_status_ready{condition="true"}'
         if namespace:
             base = f'kube_pod_status_ready{{condition="true", namespace="{namespace}"}}'
-        result = self.instant_query(f"count({base}) by (namespace)")
+        result = self.instant_query(f"sum({base}) by (namespace)")
         return result
 
     def pod_restarts_total(self, namespace: str = "") -> list[dict[str, Any]]:
@@ -223,6 +229,61 @@ class PrometheusClient:
         if namespace:
             base = f'kube_pod_container_status_restarts_total{{namespace="{namespace}"}}'
         result = self.instant_query(f"sum({base}) by (pod)")
+        return result
+
+    def pod_cpu_millicores(self, namespace: str) -> list[dict[str, Any]]:
+        """Current CPU usage grouped by pod, expressed in millicores."""
+        return self.instant_query(
+            "sum(rate(container_cpu_usage_seconds_total"
+            f'{{namespace="{namespace}",container!="",container!="POD"}}[2m])) '
+            "by (pod) * 1000"
+        )
+
+    def pod_memory_bytes(self, namespace: str) -> list[dict[str, Any]]:
+        """Current working-set memory grouped by pod."""
+        return self.instant_query(
+            "sum(container_memory_working_set_bytes"
+            f'{{namespace="{namespace}",container!="",container!="POD"}}) by (pod)'
+        )
+
+    def deployment_replicas(self, namespace: str) -> tuple[int, int]:
+        """Return desired and ready replicas for deployments in a namespace."""
+        desired = self.instant_query(
+            f'sum(kube_deployment_spec_replicas{{namespace="{namespace}"}})'
+        )
+        ready = self.instant_query(
+            f'sum(kube_deployment_status_replicas_ready{{namespace="{namespace}"}})'
+        )
+
+        def value(rows: list[dict[str, Any]]) -> int:
+            try:
+                return int(float(rows[0]["value"][1]))
+            except (IndexError, KeyError, TypeError, ValueError):
+                return 0
+
+        return value(desired), value(ready)
+
+    def hpa_replicas(self, namespace: str) -> list[dict[str, Any]]:
+        """Return HPA current/max replica series."""
+        current = self.instant_query(
+            f'kube_horizontalpodautoscaler_status_current_replicas{{namespace="{namespace}"}}'
+        )
+        maximum = self.instant_query(
+            f'kube_horizontalpodautoscaler_spec_max_replicas{{namespace="{namespace}"}}'
+        )
+        maxima = {
+            row.get("metric", {}).get("horizontalpodautoscaler", ""): row
+            for row in maximum
+        }
+        result: list[dict[str, Any]] = []
+        for row in current:
+            name = row.get("metric", {}).get("horizontalpodautoscaler", "")
+            try:
+                current_value = int(float(row.get("value", [None, 0])[1]))
+                max_value = int(float(maxima.get(name, {}).get("value", [None, 0])[1]))
+            except (TypeError, ValueError):
+                continue
+            result.append({"name": name, "current_replicas": current_value, "max_replicas": max_value})
         return result
 
     def total_nodes(self) -> int:

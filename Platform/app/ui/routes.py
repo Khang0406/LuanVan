@@ -18,6 +18,7 @@ from app.modules.clusters.service import build_cluster_inventory, install_kubern
 from app.modules.deployments.kubectl import (
     delete_application_workloads,
     deploy_application,
+    get_application_log_options,
     get_application_logs,
     get_application_status,
     restart_application,
@@ -32,6 +33,7 @@ from app.modules.servers.service import (
     add_server,
     bootstrap_multiple_servers,
     bootstrap_sudo_nopasswd,
+    delete_server,
     find_server,
     load_servers,
     ping_scan_network,
@@ -69,6 +71,7 @@ from app.modules.monitoring.alerting import (
 )
 from app.modules.monitoring.grafana import get_grafana_embed_url
 from app.modules.monitoring.k8s_manifests import deploy_monitoring_stack
+from app.modules.monitoring.scaling import load_scale_events, record_scale_events
 from app.modules.auth.routes import role_required
 from app.modules.audit.service import load_audit_logs, record_audit
 from app.modules.jobs.service import load_accessible_jobs, pipeline_run_to_job, record_completed_job
@@ -114,6 +117,38 @@ def server_detail(server_id):
     if not server:
         abort(404)
     return render_template("servers/detail.html", server=server)
+
+
+@ui_bp.post("/servers/<server_id>/delete")
+@login_required
+@role_required("Admin")
+def server_delete(server_id):
+    server = find_server(server_id)
+    if not server:
+        abort(404)
+
+    removed = delete_server(server_id)
+    if not removed:
+        abort(404)
+
+    server_name = removed.get("name") or server_id
+    record_audit(
+        "SERVER_DELETE",
+        server_name,
+        "SUCCESS",
+        f"Đã xóa server {server_name} khỏi inventory Platform.",
+        metadata={
+            "server_id": server_id,
+            "role": removed.get("role", ""),
+            "had_cluster_reference": bool(removed.get("cluster_id")),
+        },
+    )
+    flash(
+        f"Đã xóa server {server_name} khỏi inventory Platform. "
+        "Platform không tắt máy và không thay đổi node Kubernetes.",
+        "success",
+    )
+    return redirect(url_for("ui.servers"))
 
 
 @ui_bp.route("/servers/new", methods=["GET", "POST"])
@@ -289,6 +324,7 @@ def applications():
 
 @ui_bp.route("/applications/new", methods=["GET", "POST"])
 @login_required
+@role_required("Admin", "Developer")
 def application_form():
     if request.method == "POST":
         required_fields = ["name", "owner"]
@@ -328,10 +364,45 @@ def application_form():
     return render_template("applications/form.html", form={})
 
 
-@ui_bp.route("/applications/<application_id>")
+@ui_bp.route("/applications/<application_id>", methods=["GET", "POST"])
 @login_required
 def application_detail(application_id):
     application = _get_authorized_application(application_id)
+
+    if request.method == "POST":
+        if current_user.role not in {"Admin", "Developer"}:
+            record_audit(
+                "ACCESS_DENIED", application_id, "FAILED",
+                "Viewer attempted to manage application secrets.",
+            )
+            abort(403)
+        if request.form.get("add_secret"):
+            key = request.form.get("secret_key", "").strip()
+            value = request.form.get("secret_value", "").strip()
+            if key and value:
+                from app.secret_store import save_secret as save_app_secret
+                try:
+                    save_app_secret(application_id, key, value)
+                    application.setdefault("secrets", [])
+                    if key not in application["secrets"]:
+                        application["secrets"].append(key)
+                    save_application(application)
+                    flash(f"Secret '{key}' đã được lưu.", "success")
+                except ValueError as exc:
+                    flash(str(exc), "danger")
+            return redirect(url_for("ui.application_detail", application_id=application_id))
+
+        if request.form.get("delete_secret"):
+            key = request.form.get("secret_key_delete", "").strip()
+            if key:
+                from app.secret_store import delete_secret as del_app_secret
+                del_app_secret(application_id, key)
+                if application.get("secrets") and key in application["secrets"]:
+                    application["secrets"].remove(key)
+                save_application(application)
+                flash(f"Secret '{key}' đã được xoá.", "info")
+            return redirect(url_for("ui.application_detail", application_id=application_id))
+
     runtime = summarize_runtime(application)
     pipeline_steps = build_pipeline_steps(application)
     cluster_status = get_application_status(application)
@@ -342,6 +413,15 @@ def application_detail(application_id):
     )
     latest_pipeline = get_latest_pipeline_run(application_id)
     registry_status = registry_credential_status(application)
+    try:
+        metrics = get_prometheus_app_metrics([application])
+        application_metric = metrics[0] if metrics else application_metrics([application])[0]
+    except Exception:
+        application_metric = {}
+    application_alerts = [
+        alert for alert in load_alerts()
+        if alert.get("application_id") == application_id
+    ]
     return render_template(
         "applications/detail.html",
         app=application,
@@ -352,11 +432,15 @@ def application_detail(application_id):
         current_deployment=current_deployment,
         latest_pipeline=latest_pipeline,
         registry_status=registry_status,
+        application_metric=application_metric,
+        application_alerts=application_alerts,
+        scale_events=load_scale_events(application_id)[:20],
     )
 
 
 @ui_bp.post("/applications/<application_id>/deploy")
 @login_required
+@role_required("Admin", "Developer")
 def application_deploy(application_id):
     application = _get_authorized_application(application_id)
     try:
@@ -366,7 +450,8 @@ def application_deploy(application_id):
             f"Đã chuyển deploy sang pipeline versioned {pipeline_run['id']}.",
         )
         flash(
-            f"Đã khởi động pipeline versioned {pipeline_run['id']}; deployment chỉ được cập nhật sau VERIFY.",
+            f"Đã xếp pipeline versioned {pipeline_run['id']} vào hàng đợi; "
+            "deployment chỉ được cập nhật sau VERIFY.",
             "info",
         )
     except Exception as exc:
@@ -389,6 +474,7 @@ def application_deployment_detail(application_id, deployment_id):
 
 @ui_bp.post("/applications/<application_id>/deployments/<deployment_id>/rollback")
 @login_required
+@role_required("Admin", "Developer")
 def application_deployment_rollback(application_id, deployment_id):
     application = _get_authorized_application(application_id)
     success, message, rollback = rollback_application(
@@ -405,7 +491,7 @@ def application_deployment_rollback(application_id, deployment_id):
 
 @ui_bp.post("/applications/<application_id>/registry-credential")
 @login_required
-@role_required("Admin")
+@role_required("Admin", "Developer")
 def application_registry_credential(application_id):
     application = _get_authorized_application(application_id)
     registry_url = request.form.get("registry_url", "docker.io").strip() or "docker.io"
@@ -441,6 +527,7 @@ def application_registry_credential(application_id):
 
 @ui_bp.post("/applications/<application_id>/registry-use-platform")
 @login_required
+@role_required("Admin", "Developer")
 def application_registry_use_platform(application_id):
     application = _get_authorized_application(application_id)
     application["registry"] = {"inherit_platform": True}
@@ -464,6 +551,7 @@ def application_registry_use_platform(application_id):
 
 @ui_bp.post("/applications/<application_id>/restart")
 @login_required
+@role_required("Admin", "Developer")
 def application_restart(application_id):
     application = _get_authorized_application(application_id)
     success, output = restart_application(application)
@@ -475,6 +563,7 @@ def application_restart(application_id):
 
 @ui_bp.post("/applications/<application_id>/scale")
 @login_required
+@role_required("Admin", "Developer")
 def application_scale(application_id):
     application = _get_authorized_application(application_id)
     replicas = int(request.form.get("replicas") or 1)
@@ -487,6 +576,7 @@ def application_scale(application_id):
 
 @ui_bp.post("/applications/<application_id>/delete-workloads")
 @login_required
+@role_required("Admin", "Developer")
 def application_delete_workloads(application_id):
     application = _get_authorized_application(application_id)
     success, output = delete_application_workloads(application)
@@ -498,6 +588,7 @@ def application_delete_workloads(application_id):
 
 @ui_bp.post("/applications/<application_id>/delete")
 @login_required
+@role_required("Admin", "Developer")
 def application_delete(application_id):
     """Xóa application khỏi hệ thống và dọn dẹp namespace K8s."""
     application = _get_authorized_application(application_id)
@@ -513,13 +604,21 @@ def application_delete(application_id):
 
 @ui_bp.post("/applications/<application_id>/pipeline")
 @login_required
+@role_required("Admin", "Developer")
 def application_pipeline_trigger(application_id):
     """Trigger CI/CD pipeline for a specific application."""
     application = _get_authorized_application(application_id)
     try:
         pipeline_run = trigger_pipeline(application_id, actor=current_user)
-        record_audit("PIPELINE_TRIGGER", application["id"], "SUCCESS", f"Pipeline {pipeline_run['id']} đã được khởi động.")
-        flash(f"Pipeline {pipeline_run['id']} đã được khởi động (6 stages). Đang chạy ngầm...", "info")
+        record_audit(
+            "PIPELINE_TRIGGER", application["id"], "SUCCESS",
+            f"Pipeline {pipeline_run['id']} đã được xếp hàng.",
+        )
+        flash(
+            f"Pipeline {pipeline_run['id']} đã vào SQLite queue (6 stages). "
+            "Worker sẽ tự nhận task.",
+            "info",
+        )
     except Exception as exc:
         record_audit("PIPELINE_TRIGGER", application["id"], "FAILED", str(exc))
         flash(f"Không thể khởi động pipeline: {exc}", "danger")
@@ -535,8 +634,29 @@ def application_pipeline_history(application_id):
     return render_template("applications/pipeline.html", app=application, runs=runs)
 
 
+@ui_bp.get("/applications/<application_id>/manifest")
+@login_required
+def application_manifest_preview(application_id):
+    application = _get_authorized_application(application_id)
+    from app.modules.deployments.manifest import build_manifest
+    from app.json_store import mask_secrets
+    manifest = build_manifest(application)
+    redacted = mask_secrets(manifest)
+    return jsonify({"manifest": redacted})
+
+
+@ui_bp.get("/applications/<application_id>/secrets")
+@login_required
+def application_secrets_list(application_id):
+    _get_authorized_application(application_id)
+    from app.secret_store import list_secret_keys
+    keys = list_secret_keys(application_id)
+    return jsonify({"keys": keys})
+
+
 @ui_bp.post("/applications/<application_id>/pipeline/<pipeline_run_id>/retry")
 @login_required
+@role_required("Admin", "Developer")
 def application_pipeline_retry(application_id, pipeline_run_id):
     application = _get_authorized_application(application_id)
     original = next(
@@ -562,10 +682,26 @@ def application_pipeline_retry(application_id, pipeline_run_id):
 @login_required
 def application_logs(application_id):
     application = _get_authorized_application(application_id)
-    success, logs = get_application_logs(application)
+    options = get_application_log_options(application)
+    service = request.args.get("service", "").strip()
+    pod = request.args.get("pod", "").strip()
+    container = request.args.get("container", "").strip()
+    since = request.args.get("since", "1h").strip()
+    try:
+        tail = int(request.args.get("tail", "120"))
+    except ValueError:
+        tail = 120
+    success, logs = get_application_logs(
+        application, tail=tail, service=service, pod=pod,
+        container=container, since=since,
+    )
     record_completed_job("Kubectl", "Lấy pod logs", application["name"], success, logs, command="kubectl logs")
     record_audit("APPLICATION_LOGS_VIEW", application["id"], _result_label(success), "Người dùng truy vấn pod logs.")
-    return render_template("deployments/logs.html", app=application, logs=logs, success=success)
+    return render_template(
+        "deployments/logs.html", app=application, logs=logs, success=success,
+        options=options, selected_service=service, selected_pod=pod,
+        selected_container=container, selected_since=since, selected_tail=tail,
+    )
 
 
 @ui_bp.route("/deployments/service-form")
@@ -732,6 +868,7 @@ def _get_monitoring_data() -> dict[str, Any]:
     all_alerts: list[dict[str, Any]] = []
     try:
         all_alerts = collect_and_persist(apps, nodes=nodes, app_metrics=app_metrics_list)
+        record_scale_events(app_metrics_list)
     except Exception:
         pass
 
@@ -767,7 +904,6 @@ def _get_monitoring_data() -> dict[str, Any]:
 
 @ui_bp.route("/monitoring")
 @login_required
-@role_required("Admin")
 def monitoring():
     data = _get_monitoring_data()
     return render_template(
@@ -785,7 +921,6 @@ def monitoring():
 
 @ui_bp.route("/monitoring/api/metrics")
 @login_required
-@role_required("Admin")
 def monitoring_api_metrics():
     """JSON endpoint for real-time AJAX polling. Always returns valid JSON."""
     try:
@@ -797,7 +932,6 @@ def monitoring_api_metrics():
 
 @ui_bp.route("/monitoring/api/charts")
 @login_required
-@role_required("Admin")
 def monitoring_api_charts():
     """JSON endpoint for chart time-series data (last 30 min).
 
@@ -906,7 +1040,6 @@ def monitoring_refresh():
 
 @ui_bp.route("/monitoring/grafana")
 @login_required
-@role_required("Admin")
 def monitoring_grafana():
     """Render Grafana embedded iframe page."""
     data = _get_monitoring_data()
@@ -1037,7 +1170,6 @@ def monitoring_grafana_static_proxy(rest=""):
 
 @ui_bp.route("/monitoring/alerts")
 @login_required
-@role_required("Admin")
 def monitoring_alerts():
     """View all alert history."""
     data = _get_monitoring_data()

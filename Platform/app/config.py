@@ -52,3 +52,7 @@ class Config:
                 "FLASK_SECRET_KEY must be set to a strong non-default value "
                 "when PLATFORM_ENV=production."
             )
+        if not cls.SESSION_COOKIE_SECURE or not cls.REMEMBER_COOKIE_SECURE:
+            raise RuntimeError(
+                "COOKIE_SECURE must be true when PLATFORM_ENV=production."
+            )

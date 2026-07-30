@@ -6,5 +6,50 @@
   </div>
   {% if success is defined %}<span class="badge text-bg-{{ 'success' if success else 'danger' }}">{{ 'OK' if success else 'FAILED' }}</span>{% endif %}
 </div>
+<form method="get" class="card soft-card p-3 mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label">Service</label>
+      <select class="form-select" name="service">
+        <option value="">Tất cả</option>
+        {% for name in options|map(attribute='service')|unique %}
+        <option value="{{ name }}" {{ 'selected' if selected_service == name }}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Pod</label>
+      <select class="form-select" name="pod">
+        <option value="">Tất cả</option>
+        {% for option in options %}
+        <option value="{{ option.pod }}" {{ 'selected' if selected_pod == option.pod }}>{{ option.pod }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Container</label>
+      <select class="form-select" name="container">
+        <option value="">Tất cả</option>
+        {% for name in options|map(attribute='containers')|sum(start=[])|unique %}
+        <option value="{{ name }}" {{ 'selected' if selected_container == name }}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Khoảng thời gian</label>
+      <select class="form-select" name="since">
+        {% for value in ['15m', '30m', '1h', '6h', '24h'] %}
+        <option value="{{ value }}" {{ 'selected' if selected_since == value }}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-1">
+      <label class="form-label">Tail</label>
+      <input class="form-control" name="tail" type="number" min="1" max="2000" value="{{ selected_tail }}">
+    </div>
+    <div class="col-md-1"><button class="btn btn-primary w-100" type="submit">Xem</button></div>
+  </div>
+</form>
+<p class="small text-muted">Giá trị secret được masking trước khi ghi Job/Audit hoặc hiển thị.</p>
 <pre class="log-panel">{{ logs or 'Chưa lấy được log từ Kubernetes.' }}</pre>
 {% endblock %}

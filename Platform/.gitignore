@@ -15,3 +15,11 @@ k8s/generated/*.yaml
 k8s/generated/.gitkeep
 k8s/platform/secret.yaml
 k8s/platform/builder-ssh-secret.yaml
+
+# Local runtime state and credential stores
+app/data/application_secrets.json
+app/data/registry_credentials.json
+app/data/audit_logs.json
+app/data/jobs.json
+app/data/scale_events.json
+app/data/ansible-*.ini

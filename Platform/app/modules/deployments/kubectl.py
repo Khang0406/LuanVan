@@ -9,6 +9,8 @@ from urllib.parse import urlsplit, urlunsplit
 from app.modules.applications.service import add_activity, save_application
 from app.modules.deployments.manifest import write_manifest
 from app.modules.pipeline.build import _get_registry_config, _has_valid_registry_credentials
+from app.json_store import mask_secrets
+from app.secret_store import get_secret_map
 
 
 def _now() -> str:
@@ -189,8 +191,9 @@ def verify_application(
     for service in required_services:
         name = f"{application['id']}-{service['name']}"
         service_detail: dict[str, Any] = {"name": service["name"], "ready": False}
+        workload_kind = "statefulset" if service.get("statefulset") else "deployment"
         rollout_ok, rollout_output = run_kubectl(
-            ["rollout", "status", f"deployment/{name}", "-n", namespace,
+            ["rollout", "status", f"{workload_kind}/{name}", "-n", namespace,
              f"--timeout={per_service_timeout}s"],
             timeout=per_service_timeout + 10,
         )
@@ -200,10 +203,10 @@ def verify_application(
             continue
 
         deployment_ok, deployment_output = run_kubectl(
-            ["get", "deployment", name, "-n", namespace, "-o", "json"], timeout=30
+            ["get", workload_kind, name, "-n", namespace, "-o", "json"], timeout=30
         )
         if not deployment_ok:
-            errors.append(f"{name}: không đọc được Deployment: {deployment_output}")
+            errors.append(f"{name}: không đọc được {workload_kind}: {deployment_output}")
             details["services"].append(service_detail)
             continue
         try:
@@ -215,7 +218,13 @@ def verify_application(
         expected = int(deployment.get("spec", {}).get("replicas", service.get("replicas", 1)))
         status = deployment.get("status", {})
         ready = int(status.get("readyReplicas", 0) or 0)
-        available = int(status.get("availableReplicas", 0) or 0)
+        available = int(
+            status.get(
+                "availableReplicas",
+                status.get("readyReplicas", 0) if workload_kind == "statefulset" else 0,
+            )
+            or 0
+        )
         updated = int(status.get("updatedReplicas", 0) or 0)
         service_detail.update({
             "expected_replicas": expected,
@@ -512,16 +521,71 @@ def scale_application(application: dict[str, Any], replicas: int) -> tuple[bool,
     return all_success, "\n".join(outputs)
 
 
-def get_application_logs(application: dict[str, Any], tail: int = 120) -> tuple[bool, str]:
+def get_application_log_options(application: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return selectable service/pod/container targets owned by an application."""
+    namespace = application["namespace"]
+    success, output = run_kubectl([
+        "get", "pods", "-n", namespace,
+        "-l", f"app.kubernetes.io/part-of={application['id']}", "-o", "json",
+    ])
+    if not success:
+        return []
+    try:
+        items = json.loads(output).get("items", [])
+    except (json.JSONDecodeError, TypeError):
+        return []
+    options: list[dict[str, Any]] = []
+    for item in items:
+        metadata = item.get("metadata", {})
+        pod_name = metadata.get("name", "")
+        app_name = metadata.get("labels", {}).get("app.kubernetes.io/name", "")
+        service = app_name.removeprefix(f"{application['id']}-")
+        containers = [c.get("name", "") for c in item.get("spec", {}).get("containers", [])]
+        options.append({"service": service, "pod": pod_name, "containers": containers})
+    return sorted(options, key=lambda row: (row["service"], row["pod"]))
+
+
+def get_application_logs(
+    application: dict[str, Any],
+    tail: int = 120,
+    service: str = "",
+    pod: str = "",
+    container: str = "",
+    since: str = "1h",
+) -> tuple[bool, str]:
     namespace = application["namespace"]
     outputs: list[str] = []
     all_success = True
+    tail = max(1, min(int(tail), 2000))
+    allowed_since = {"15m", "30m", "1h", "6h", "24h"}
+    since = since if since in allowed_since else "1h"
+    options = get_application_log_options(application)
+    selected = [
+        option for option in options
+        if (not service or option["service"] == service)
+        and (not pod or option["pod"] == pod)
+        and (not container or container in option["containers"])
+    ]
 
-    for service in application.get("services", []):
-        deployment_name = f"{application['id']}-{service['name']}"
-        success, output = run_kubectl(["logs", f"deployment/{deployment_name}", "-n", namespace, f"--tail={tail}"], timeout=45)
-        all_success = all_success and success
-        outputs.append(f"### {deployment_name}\n{output}")
+    if not selected:
+        return False, "Không tìm thấy pod/container hợp lệ thuộc application."
+
+    for option in selected:
+        containers = [container] if container else option["containers"]
+        for container_name in containers:
+            args = [
+                "logs", option["pod"], "-n", namespace, "-c", container_name,
+                f"--tail={tail}", f"--since={since}", "--timestamps=true",
+            ]
+            success, output = run_kubectl(args, timeout=45)
+            all_success = all_success and success
+            safe_output = str(mask_secrets(output))
+            for secret_value in get_secret_map(application["id"]).values():
+                if secret_value:
+                    safe_output = safe_output.replace(secret_value, "***")
+            outputs.append(
+                f"### {option['service']} / {option['pod']} / {container_name}\n{safe_output}"
+            )
 
     add_activity(application, "LOGS", "Người dùng truy vấn runtime logs của application.", "Done" if all_success else "Warning")
     save_application(application)

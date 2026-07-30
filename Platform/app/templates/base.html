@@ -23,9 +23,7 @@
       <a class="nav-link" href="{{ url_for('ui.applications') }}">Applications</a>
       <a class="nav-link" href="{{ url_for('ui.deployment_detail') }}">Deployments</a>
       <a class="nav-link" href="{{ url_for('ui.cicd') }}">CI/CD</a>
-      {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="nav-link" href="{{ url_for('ui.monitoring') }}">Monitoring</a>
-      {% endif %}
       <a class="nav-link" href="{{ url_for('ui.jobs') }}">Job Logs</a>
       {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="nav-link" href="{{ url_for('ui.audit') }}">Audit Log</a>

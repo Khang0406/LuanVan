@@ -6,6 +6,7 @@
   </div>
   <div class="d-flex flex-wrap gap-2">
     <a class="btn btn-outline-secondary" href="{{ url_for('ui.applications') }}">← Applications</a>
+    {% if current_user.role != 'Viewer' %}
     <form method="post" action="{{ url_for('ui.application_pipeline_trigger', application_id=app.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-success" type="submit">🚀 Trigger Pipeline</button>
@@ -18,13 +19,13 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-warning" type="submit">Restart</button>
     </form>
+    {% endif %}
   </div>
 </div>
 
 {% if app.deployment_mode == 'development' and app.development_fallback_enabled %}
 <div class="alert alert-warning">
-  <strong>Development fallback đang bật.</strong>
-  Deployment fallback không phải production image deployment và không đủ điều kiện rollback bằng image.
+  <strong>Development fallback đang bật.</strong> Triển khai không phải production và không đủ điều kiện rollback bằng image.
 </div>
 {% endif %}
 
@@ -33,10 +34,9 @@
   <a class="nav-link" href="#services">Services</a>
   <a class="nav-link" href="#deployments">Deployments</a>
   <a class="nav-link" href="#pipeline">Pipeline</a>
-  <a class="nav-link" href="#monitoring">Monitoring</a>
+  <a class="nav-link" href="#monitoring">Runtime</a>
   <a class="nav-link" href="{{ url_for('ui.application_logs', application_id=app.id) }}">Logs</a>
-  <a class="nav-link" href="#scaling">Scaling</a>
-  <a class="nav-link" href="#environment">Environment</a>
+  <a class="nav-link" href="#environment">Config & Secrets</a>
   <a class="nav-link" href="#activity">Activity</a>
 </nav>
 
@@ -73,30 +73,21 @@
           <div><strong>Current deployment:</strong>
             {% if current_deployment %}v{{ current_deployment.version }} / <code>{{ current_deployment.id }}</code>{% else %}-{% endif %}
           </div>
-          <div><strong>Latest pipeline:</strong>
-            {% if latest_pipeline %}<code>{{ latest_pipeline.id }}</code> — {{ latest_pipeline.status }}{% else %}-{% endif %}
-          </div>
-          <div><strong>Services:</strong> {{ runtime.services }}</div>
-          <div><strong>Replicas:</strong> {{ runtime.replicas }}</div>
-          <div><strong>CPU limits:</strong> {{ runtime.cpu_limit }}</div>
-          <div><strong>Memory limits:</strong> {{ runtime.memory_limit }}</div>
+          <div><strong>Services:</strong> {{ runtime.services }} | <strong>Replicas:</strong> {{ runtime.replicas }}</div>
+          <div><strong>CPU:</strong> {{ runtime.cpu_limit }} | <strong>RAM:</strong> {{ runtime.memory_limit }}</div>
           <div><strong>Last deployed:</strong> {{ app.last_deployed_at or '-' }}</div>
           <div><strong>URL:</strong> {% if app.url %}<a href="{{ app.url }}" target="_blank" rel="noopener">{{ app.url }}</a>{% else %}<span class="text-muted">Chưa có URL</span>{% endif %}</div>
         </div>
-
         <hr>
-        <form id="scaling" method="post" action="{{ url_for('ui.application_scale', application_id=app.id) }}" class="d-flex gap-2">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input class="form-control" type="number" min="1" name="replicas" value="{{ app.services[0].replicas if app.services else 1 }}">
-          <button class="btn btn-outline-primary" type="submit">Scale</button>
-        </form>
-        <div class="d-flex flex-wrap gap-2 mt-3">
+        <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.application_logs', application_id=app.id) }}">Xem logs</a>
-          <form method="post" action="{{ url_for('ui.application_delete_workloads', application_id=app.id) }}" onsubmit="return confirm('Xoá workloads khỏi Kubernetes?');">
+          <a class="btn btn-outline-info btn-sm" href="#" onclick="fetchManifest();return false;">Preview manifest</a>
+          {% if current_user.role != 'Viewer' %}<form method="post" action="{{ url_for('ui.application_delete_workloads', application_id=app.id) }}" onsubmit="return confirm('Xoá workloads khỏi Kubernetes?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-outline-danger btn-sm" type="submit">Delete workloads</button>
-          </form>
+          </form>{% endif %}
         </div>
+        <pre id="manifest-preview" class="mt-3 p-2 border rounded" style="max-height:300px;overflow:auto;display:none;font-size:11px;background:#f8f9fa;"></pre>
       </div>
     </div>
   </div>
@@ -150,7 +141,43 @@
             </div>
           </div>
         </div>
-
+        {% if application_metric %}
+        <div class="row g-3 mt-1">
+          <div class="col-md-3"><div class="border rounded p-3"><div class="text-muted small">CPU application</div><strong>{{ application_metric.cpu_millicores or 0 }} m</strong></div></div>
+          <div class="col-md-3"><div class="border rounded p-3"><div class="text-muted small">RAM application</div><strong>{{ ((application_metric.memory_bytes or 0) / 1048576)|round(1) }} MiB</strong></div></div>
+          <div class="col-md-3"><div class="border rounded p-3"><div class="text-muted small">Ready / desired</div><strong>{{ application_metric.ready_replicas|default(application_metric.ready_pods, true) }}/{{ application_metric.desired_replicas|default(application_metric.total_pods, true) }}</strong></div></div>
+          <div class="col-md-3"><div class="border rounded p-3"><div class="text-muted small">Restart count</div><strong>{{ application_metric.restarts or 0 }}</strong></div></div>
+        </div>
+        <div class="small text-muted mt-2">
+          Source: {{ application_metric.metric_source or '-' }} · Version: {{ application_metric.deployment_version or '-' }}
+          · Digest: {% for digest in application_metric.image_digests %}<code>{{ digest }}</code>{% else %}-{% endfor %}
+        </div>
+        {% if application_metric.pods %}
+        <div class="table-responsive mt-3">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Pod</th><th>Status</th><th>CPU</th><th>RAM</th><th>Restarts</th><th>Logs</th></tr></thead>
+            <tbody>{% for pod in application_metric.pods %}
+              <tr>
+                <td><code>{{ pod.name }}</code></td><td>{{ pod.phase or ('Ready' if pod.ready else '-') }}</td>
+                <td>{{ pod.cpu_millicores or 0 }} m</td><td>{{ ((pod.memory_bytes or 0) / 1048576)|round(1) }} MiB</td>
+                <td>{{ pod.restarts or 0 }}</td>
+                <td><a href="{{ url_for('ui.application_logs', application_id=app.id, pod=pod.name) }}">Mở logs</a></td>
+              </tr>
+            {% endfor %}</tbody>
+          </table>
+        </div>
+        {% endif %}
+        {% endif %}
+        {% if scale_events %}
+        <h6 class="mt-3">HPA scale events</h6>
+        <div class="small">{% for event in scale_events %}<span class="me-3">{{ event.time }}: {{ event.direction }} → {{ event.replicas }}</span>{% endfor %}</div>
+        {% endif %}
+        {% if application_alerts %}
+        <h6 class="mt-3">Application alerts</h6>
+        {% for alert in application_alerts[:5] %}
+        <div class="small"><span class="badge {{ 'text-bg-success' if alert.state == 'Resolved' else 'text-bg-warning' }}">{{ alert.state or 'Firing' }}</span> {{ alert.message }} · <a href="{{ url_for('ui.application_logs', application_id=app.id) }}">Logs</a></div>
+        {% endfor %}
+        {% endif %}
         <div class="table-responsive mt-3">
           <table class="table table-sm align-middle">
             <thead><tr><th>Pod</th><th>Phase</th><th>Node</th><th>Created</th></tr></thead>
@@ -180,42 +207,99 @@
         <div class="border rounded p-3 mb-3">
           <div class="d-flex justify-content-between">
             <strong>{{ service.name }}</strong>
-            <span class="badge text-bg-light">{{ service.service_type }}</span>
+            <div>
+              <span class="badge text-bg-light">{{ service.service_type }}</span>
+              {% if service.get('public') == false %}<span class="badge text-bg-secondary">internal</span>{% endif %}
+            </div>
           </div>
           <div class="small mt-2">
             <div>Image: <code>{{ service.image }}</code></div>
             <div>Digest: <code>{{ service.image_digest or '-' }}</code></div>
-            <div>Port: {{ service.container_port }} • Replicas: {{ service.replicas }}</div>
-            <div>Resources: {{ service.cpu_request }}/{{ service.cpu_limit }} CPU, {{ service.memory_request }}/{{ service.memory_limit }} RAM</div>
+            <div>Port: {{ service.container_port }} | Replicas: {{ service.replicas }}</div>
+            <div>Resources: {{ service.get('cpu_request','100m') }}/{{ service.get('cpu_limit','500m') }} CPU, {{ service.get('memory_request','128Mi') }}/{{ service.get('memory_limit','512Mi') }} RAM</div>
+            {% if service.get('command') %}<div>Command: <code>{{ service.command|join(' ') }}</code></div>{% endif %}
+            {% if service.get('args') %}<div>Args: <code>{{ service.args|join(' ') }}</code></div>{% endif %}
             <div>Autoscaling: {{ 'On' if service.autoscaling else 'Off' }}</div>
+            {% if service.get('readinessProbe') %}
+            <div class="mt-1"><span class="badge text-bg-info">Readiness: {{ service.readinessProbe.type }} {{ service.readinessProbe.path or '' }}</span></div>
+            {% endif %}
+            {% if service.get('livenessProbe') %}
+            <div class="mt-1"><span class="badge text-bg-info">Liveness: {{ service.livenessProbe.type }}</span></div>
+            {% endif %}
           </div>
+          {% if service.get('env') %}
+          <div class="mt-2">
+            <strong class="small">Env:</strong>
+            <div class="small text-muted">
+              {% for item in service.env %}<code>{{ item.name }}</code>={{ '***' if ('PASSWORD' in item.name|upper or 'SECRET' in item.name|upper or 'TOKEN' in item.name|upper or 'KEY' in item.name|upper) else item.value }}{% if not loop.last %}, {% endif %}{% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          {% if service.get('ingress') %}
+          <div class="mt-1"><span class="badge text-bg-primary">Ingress: {{ service.ingress.host }}{{ service.ingress.path }}</span>{% if service.ingress.tls %} <span class="badge text-bg-success">TLS</span>{% endif %}</div>
+          {% endif %}
         </div>
         {% endfor %}
       </div>
     </div>
   </div>
 
-  <div class="col-lg-6" id="activity">
-    <div class="card soft-card h-100">
+  <div class="col-lg-6" id="environment">
+    <div class="card soft-card mb-4">
       <div class="card-body p-4">
-        <h5 class="mb-3">Activity logs</h5>
-        <div class="d-grid gap-2">
-          {% for log in app.activity_logs %}
-          {% set border_color = 'success' if log.status == 'Done' else ('danger' if log.status == 'Failed' else ('warning' if log.status == 'Warning' else 'secondary')) %}
-          <div class="border-start border-3 border-{{ border_color }} ps-3 py-1">
-            <div class="d-flex justify-content-between align-items-start">
-              <strong class="{{ 'text-warning' if log.type == 'SCAN' else '' }}">
-                {% if log.type == 'SCAN' %}⚠ SCAN{% else %}{{ log.type }}{% endif %}
-              </strong>
-              <span class="badge text-bg-{{ 'success' if log.status == 'Done' else ('danger' if log.status == 'Failed' else ('warning' if log.status == 'Warning' else 'secondary')) }} ms-2">{{ log.status }}</span>
-            </div>
-            <div class="text-muted small">{{ log.time }}</div>
-            <div class="small" style="white-space: pre-wrap; word-break: break-word;">{{ log.message }}</div>
-          </div>
+        <h5 class="mb-3">ConfigMap</h5>
+        {% if app.get('config_data') %}
+        <table class="table table-sm">
+          <thead><tr><th>Key</th><th>Value</th></tr></thead>
+          <tbody>{% for k, v in app.config_data.items() %}
+            <tr><td><code>{{ k }}</code></td><td><code>{{ v }}</code></td></tr>
+          {% endfor %}</tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">Chưa cấu hình ConfigMap.</p>
+        {% endif %}
+
+        <h5 class="mt-4 mb-3">Secrets <small class="text-muted">(giá trị đã được ẩn — không hiển thị lại sau khi lưu)</small></h5>
+        <div id="secrets-list" class="mb-2">
+          {% if app.get('secrets') %}
+            {% for key in app.secrets %}<span class="badge text-bg-danger me-1 mb-1">{{ key }}</span>{% endfor %}
           {% else %}
-          <p class="text-muted">Chưa có activity.</p>
-          {% endfor %}
+            <span class="text-muted">Chưa có secret.</span>
+          {% endif %}
         </div>
+        {% if current_user.role != 'Viewer' %}<form method="post" action="{{ url_for('ui.application_detail', application_id=app.id) }}" class="row g-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="add_secret" value="1">
+          <div class="col-md-5"><input class="form-control form-control-sm" name="secret_key" placeholder="KEY_NAME" required></div>
+          <div class="col-md-5"><input class="form-control form-control-sm" type="password" name="secret_value" placeholder="giá trị bí mật" required autocomplete="new-password"></div>
+          <div class="col-md-2"><button class="btn btn-outline-primary btn-sm w-100" type="submit">Thêm</button></div>
+        </form>
+        <form method="post" action="{{ url_for('ui.application_detail', application_id=app.id) }}" class="d-flex gap-2 mt-2">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="delete_secret" value="1">
+          <select class="form-select form-select-sm" name="secret_key_delete">
+            {% if app.get('secrets') %}{% for key in app.secrets %}<option value="{{ key }}">{{ key }}</option>{% endfor %}{% endif %}
+          </select>
+          <button class="btn btn-outline-danger btn-sm" type="submit" onclick="return confirm('Xoá secret này?');">Xoá</button>
+        </form>{% endif %}
+
+        {% if app.source_type == 'github' %}
+        <hr class="mt-4">
+        <h6>Container Registry</h6>
+        {% if registry_status.configured and registry_status.source == 'platform' %}
+        <div class="alert alert-success">Application dùng credential chung của Platform: <strong>{{ registry_status.registry }}</strong> / <strong>{{ registry_status.username }}</strong>.</div>
+        {% elif registry_status.source == 'platform_missing' %}
+        <div class="alert alert-warning">Admin chưa cấu hình credential chung.</div>
+        {% elif registry_status.configured %}
+        <div class="alert alert-info">Application dùng registry override riêng.</div>
+        {% endif %}
+        {% if registry_status.source != 'platform' and current_user.role != 'Viewer' %}
+        <form method="post" action="{{ url_for('ui.application_registry_use_platform', application_id=app.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-primary btn-sm" type="submit">Dùng credential chung của Platform</button>
+        </form>
+        {% endif %}
+        {% endif %}
       </div>
     </div>
   </div>
@@ -251,7 +335,7 @@
                 <td>{% if deployment.url %}<a href="{{ deployment.url }}" target="_blank" rel="noopener">{{ deployment.url }}</a>{% else %}-{% endif %}</td>
                 <td>
                   <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.application_deployment_detail', application_id=app.id, deployment_id=deployment.id) }}">Chi tiết</a>
-                  {% if deployment.rollback_eligible and deployment.status == 'Ready' and deployment.id != app.current_deployment_id %}
+                  {% if current_user.role != 'Viewer' and deployment.rollback_eligible and deployment.status == 'Ready' and deployment.id != app.current_deployment_id %}
                   <form class="d-inline" method="post" action="{{ url_for('ui.application_deployment_rollback', application_id=app.id, deployment_id=deployment.id) }}" onsubmit="return confirm('Rollback về v{{ deployment.version }}?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-outline-warning btn-sm" type="submit">Rollback</button>
@@ -269,44 +353,37 @@
     </div>
   </div>
 
-  <div class="col-12" id="environment">
-    <div class="card soft-card">
+  <div class="col-lg-6" id="activity">
+    <div class="card soft-card h-100">
       <div class="card-body p-4">
-        <h5>Environment</h5>
-        <p class="text-muted">Environment được cấu hình theo từng service; secret values không hiển thị trong UI hoặc activity logs.</p>
-        {% if app.source_type == 'github' %}
-        <hr>
-        <h6>Container Registry</h6>
-        {% if registry_status.configured and registry_status.source == 'platform' %}
-        <div class="alert alert-success">
-          Application đang tự động sử dụng credential chung của Platform:
-          <strong>{{ registry_status.registry }}</strong> /
-          <strong>{{ registry_status.username }}</strong>.
+        <h5 class="mb-3">Activity logs</h5>
+        <div class="d-grid gap-2" style="max-height:400px;overflow-y:auto;">
+          {% for log in app.activity_logs %}
+          {% set border_color = 'success' if log.status == 'Done' else ('danger' if log.status == 'Failed' else ('warning' if log.status == 'Warning' else 'secondary')) %}
+          <div class="border-start border-3 border-{{ border_color }} ps-3 py-1">
+            <div class="d-flex justify-content-between align-items-start">
+              <strong class="{{ 'text-warning' if log.type == 'SCAN' else '' }}">{{ log.type }}</strong>
+              <span class="badge text-bg-{{ 'success' if log.status == 'Done' else ('danger' if log.status == 'Failed' else ('warning' if log.status == 'Warning' else 'secondary')) }} ms-2">{{ log.status }}</span>
+            </div>
+            <div class="text-muted small">{{ log.time }}</div>
+            <div class="small" style="white-space: pre-wrap; word-break: break-word;">{{ log.message }}</div>
+          </div>
+          {% else %}
+          <p class="text-muted">Chưa có activity.</p>
+          {% endfor %}
         </div>
-        {% elif registry_status.source == 'platform_missing' %}
-        <div class="alert alert-warning">
-          Application đã chọn kế thừa credential chung nhưng Admin chưa cấu hình.
-          PUSH sẽ dừng trước DEPLOY.
-        </div>
-        {% elif registry_status.configured %}
-        <div class="alert alert-info">
-          Application đang sử dụng registry override riêng.
-        </div>
-        {% endif %}
-        {% if registry_status.source != 'platform' %}
-        <form method="post" action="{{ url_for('ui.application_registry_use_platform', application_id=app.id) }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-outline-primary" type="submit">Dùng credential chung của Platform</button>
-        </form>
-        {% endif %}
-        {% if current_user.is_admin %}
-        <a class="btn btn-link px-0 mt-2" href="{{ url_for('ui.cicd') }}#platform-registry">
-          Cấu hình hoặc rotate credential chung
-        </a>
-        {% endif %}
-        {% endif %}
       </div>
     </div>
   </div>
 </div>
+
+<script>
+function fetchManifest() {
+  const pre = document.getElementById('manifest-preview');
+  pre.style.display = 'block'; pre.textContent = 'Loading...';
+  fetch('{{ url_for("ui.application_manifest_preview", application_id=app.id) }}')
+    .then(r => r.json()).then(d => { pre.textContent = d.manifest; })
+    .catch(e => { pre.textContent = 'Failed to load manifest: ' + e; });
+}
+</script>
 {% endblock %}

@@ -1,5 +1,10 @@
 # Demo script UI thứ 6
 
+> Kịch bản bảo vệ production Giai đoạn 4 nằm trong
+> `phase4-production-acceptance.md`. Luồng hiện tại dùng SQLite queue và
+> pipeline worker riêng; các mô tả “backend bổ sung sau” bên dưới là lịch sử của
+> prototype ban đầu.
+
 ## Mục tiêu demo
 
 Cho thầy thấy sản phẩm sẽ hỗ trợ người dùng làm gì, luồng thao tác ra sao và backend/business logic sẽ được nối vào các màn hình nào.

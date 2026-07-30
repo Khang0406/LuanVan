@@ -104,6 +104,14 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-sm btn-primary" type="submit">Test Ansible</button>
               </form>
+              <form
+                method="post"
+                action="{{ url_for('ui.server_delete', server_id=s.id) }}"
+                onsubmit="return confirm('Xóa server này khỏi inventory Platform? Thao tác này không tắt máy và không gỡ node khỏi Kubernetes.');"
+              >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+              </form>
             </div>
           </td>
         </tr>

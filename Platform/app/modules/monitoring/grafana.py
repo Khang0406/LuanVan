@@ -98,6 +98,18 @@ CLUSTER_OVERVIEW_DASHBOARD = {
         "title": "Cluster Overview",
         "timezone": "browser",
         "refresh": "30s",
+        "templating": {
+            "list": [{
+                "name": "namespace",
+                "label": "Application namespace",
+                "type": "query",
+                "datasource": "Prometheus",
+                "query": "label_values(kube_pod_info, namespace)",
+                "refresh": 1,
+                "includeAll": True,
+                "multi": False,
+            }]
+        },
         "panels": [
             {
                 "id": 1,
@@ -208,6 +220,39 @@ CLUSTER_OVERVIEW_DASHBOARD = {
                     {"expr": "sum(kube_pod_container_resource_requests{resource=\"memory\"}) / sum(kube_node_status_allocatable{resource=\"memory\"}) * 100", "legendFormat": "", "refId": "A"}
                 ],
                 "fieldConfig": {"defaults": {"unit": "percent", "max": 100, "min": 0}},
+            },
+            {
+                "id": 13, "title": "Application CPU (millicores)", "type": "timeseries",
+                "gridPos": {"h": 8, "w": 12, "x": 0, "y": 36},
+                "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",container!=\"\",container!=\"POD\"}[2m])) by (pod) * 1000", "legendFormat": "{{pod}}", "refId": "A"}],
+            },
+            {
+                "id": 14, "title": "Application RAM (MiB)", "type": "timeseries",
+                "gridPos": {"h": 8, "w": 12, "x": 12, "y": 36},
+                "targets": [{"expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\",container!=\"\",container!=\"POD\"}) by (pod) / 1048576", "legendFormat": "{{pod}}", "refId": "A"}],
+            },
+            {
+                "id": 15, "title": "Ready / Desired replicas", "type": "timeseries",
+                "gridPos": {"h": 7, "w": 8, "x": 0, "y": 44},
+                "targets": [
+                    {"expr": "sum(kube_deployment_status_replicas_ready{namespace=~\"$namespace\"})", "legendFormat": "ready", "refId": "A"},
+                    {"expr": "sum(kube_deployment_spec_replicas{namespace=~\"$namespace\"})", "legendFormat": "desired", "refId": "B"},
+                ],
+            },
+            {
+                "id": 16, "title": "Pod restarts", "type": "timeseries",
+                "gridPos": {"h": 7, "w": 8, "x": 8, "y": 44},
+                "targets": [{"expr": "sum(kube_pod_container_status_restarts_total{namespace=~\"$namespace\"}) by (pod)", "legendFormat": "{{pod}}", "refId": "A"}],
+            },
+            {
+                "id": 17, "title": "Pod status", "type": "stat",
+                "gridPos": {"h": 7, "w": 8, "x": 16, "y": 44},
+                "targets": [{"expr": "sum(kube_pod_status_phase{namespace=~\"$namespace\"} == 1) by (phase)", "legendFormat": "{{phase}}", "refId": "A"}],
+            },
+            {
+                "id": 18, "title": "Deployment version / image digest", "type": "table",
+                "gridPos": {"h": 7, "w": 24, "x": 0, "y": 51},
+                "targets": [{"expr": "kube_pod_container_info{namespace=~\"$namespace\"}", "legendFormat": "{{pod}} {{image_id}}", "refId": "A", "format": "table", "instant": True}],
             },
         ],
     },

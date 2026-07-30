@@ -1,60 +1,49 @@
-# CICT Platform UI Prototype
+# CICT Delivery Platform
 
-Source mới trong repo hiện tại, ưu tiên **giao diện UI trước** để kịp demo với thầy. Phần backend/Ansible/Kubernetes thật được giữ dưới dạng thư mục module trống để bổ sung sau.
+Nền tảng Kubernetes tự quản cho application/container đa service: GitHub
+webhook, pipeline `SOURCE → BUILD → TEST → PUSH → DEPLOY → VERIFY`, deployment
+history/rollback, PVC, quota, HPA, Prometheus/Grafana, logs, alert/SMTP và audit.
 
-## Mục tiêu bản hiện tại
-
-- Trình bày được sản phẩm sẽ làm gì: quản lý server, cài Kubernetes bằng Ansible, deploy web/microservice, CI/CD, monitoring và audit log.
-- Có cấu trúc source rõ ràng để sau này bổ sung business/backend theo từng module.
-- Tận dụng hướng giao diện dashboard/server/website từ niên luận cũ nhưng tổ chức lại thành platform mới.
-
-## Chạy UI
+## Chạy local
 
 ```bash
-cd Platform
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python run.py
 ```
 
-Mở: `http://127.0.0.1:8000`.
-
-## Nếu gặp lỗi `Config has no attribute BASE_DIR`
-
-Lỗi này xuất hiện khi máy đang chạy lại source scaffold backend cũ hoặc file bị lệch phiên bản. Bản UI prototype hiện tại đã có `Config.BASE_DIR` tối thiểu để tránh lỗi này. Hãy chạy lại các bước sau:
+Mở terminal thứ hai để pipeline queued được xử lý:
 
 ```bash
-git status
-git pull
-cd Platform
 source .venv/bin/activate
-pip install -r requirements.txt
-python run.py
+python -m app.pipeline_worker
 ```
 
-Nếu vẫn lỗi, xóa cache Python rồi chạy lại:
+Web restart không xóa SQLite queue. Nếu worker bị dừng giữa một pipeline, worker
+mới đánh dấu run `Interrupted`; operator review rồi Retry để tạo run mới.
+
+Tài khoản development được seed cho ba role: Admin, Developer và Viewer. Không
+dùng password development trong production. Production yêu cầu
+`FLASK_SECRET_KEY`, password bootstrap mạnh và `COOKIE_SECURE=true`.
+
+## Kiểm tra
 
 ```bash
-find . -type d -name __pycache__ -prune -exec rm -rf {} +
-python run.py
+python -m unittest discover -s tests -v
+python -m compileall -q app tests scripts
+git diff --check
+kubectl kustomize k8s/platform | kubectl create --dry-run=client --validate=false -f -
 ```
 
-## Cấu trúc quan trọng
+## Tài liệu
 
-```text
-app/ui/                 # routes + mock data cho UI prototype
-app/templates/          # giao diện dashboard, server, cluster, app, deploy, CI/CD
-app/modules/            # module backend để trống, bổ sung sau
-ansible/playbooks/      # playbook để trống, bổ sung sau
-k8s/templates/          # manifest template để trống, bổ sung sau
-docs/                   # tài liệu mô tả mô hình và demo
-```
+- [Kiến trúc](docs/architecture.md)
+- [Deployment runbook](docs/deployment-runbook.md)
+- [Backup/restore](docs/backup-restore.md)
+- [Security/RBAC](docs/security-model.md)
+- [Nghiệm thu Giai đoạn 4](docs/phase4-production-acceptance.md)
+- [So sánh Vercel](docs/vercel-comparison.md)
 
-## Giai đoạn bổ sung sau
-
-1. Bổ sung database models và repository.
-2. Bổ sung Ansible inventory/playbook runner.
-3. Bổ sung Kubernetes client/kubectl wrapper.
-4. Bổ sung deploy/scale/logs thật.
-5. Bổ sung CI/CD webhook GitHub.
+Không commit `.env`, `instance/`, kubeconfig, populated Kubernetes Secret,
+registry credential, webhook secret hoặc backup chứa dữ liệu nhạy cảm.

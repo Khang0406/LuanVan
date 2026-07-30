@@ -2,7 +2,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h1>Tạo application</h1>
-    <p class="text-muted">Khai báo Docker image hoặc GitHub repository, cấu hình nhiều service với runtime, tài nguyên và autoscaling.</p>
+    <p class="text-muted">Multi-service, ConfigMap, Secrets, Storage, Health Probes, Network, Resources.</p>
   </div>
   <a class="btn btn-outline-secondary" href="{{ url_for('ui.applications') }}">← Danh sách</a>
 </div>
@@ -35,7 +35,7 @@
             <input class="form-control" name="namespace" value="{{ form.namespace or '' }}" placeholder="auto theo tên nếu để trống">
             {% else %}
             <input class="form-control" value="Tự động: user-{{ current_user.id }}-&lt;tên-app&gt;" readonly>
-            <div class="form-text">Namespace được hệ thống tự sinh để tách biệt application giữa các Developer.</div>
+            <div class="form-text">Namespace được hệ thống tự sinh.</div>
             {% endif %}
           </div>
           <div class="col-md-4">
@@ -51,8 +51,7 @@
           </div>
           <div class="col-md-4">
             <label class="form-label">Default Docker image</label>
-            <input class="form-control" name="docker_image" value="{{ form.docker_image or '' }}" placeholder="khi service không tự khai báo image">
-            <div class="form-text">Image mặc định nếu service không tự khai báo.</div>
+            <input class="form-control" name="docker_image" value="{{ form.docker_image or '' }}" placeholder="dùng image mặc định cho service">
           </div>
           <div class="col-md-6 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
             <label class="form-label">GitHub repository</label>
@@ -63,7 +62,7 @@
             <input class="form-control" name="default_branch" value="{{ form.default_branch or 'main' }}" placeholder="main">
           </div>
           <div class="col-md-3 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
-            <label class="form-label">Commit/ref (tuỳ chọn)</label>
+            <label class="form-label">Commit/ref</label>
             <input class="form-control" name="requested_ref" value="{{ form.requested_ref or '' }}" placeholder="v1.2.0 hoặc SHA">
           </div>
           <div class="col-md-3 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
@@ -81,43 +80,52 @@
               <option value="development" {{ 'selected' if form.deployment_mode == 'development' else '' }}>Development</option>
             </select>
           </div>
-          <div class="col-md-4 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
-            <label class="form-label">GitHub webhook secret</label>
-            <input class="form-control" type="password" name="webhook_secret" value="" autocomplete="new-password">
-            <div class="form-text">Lưu ngoài application/pipeline logs; endpoint: /webhooks/github/&lt;application-id&gt;</div>
-          </div>
           <div class="col-md-8 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
             <div class="form-check mt-4">
               <input class="form-check-input" type="checkbox" name="development_fallback_enabled" id="development-fallback"
                      {{ 'checked' if form.development_fallback_enabled else '' }}>
-              <label class="form-check-label" for="development-fallback">
-                Cho phép <strong>Development fallback</strong> (không phải production, không rollback bằng image)
-              </label>
+              <label class="form-check-label" for="development-fallback">Cho phép Development fallback</label>
             </div>
           </div>
           <div class="col-md-6">
             <label class="form-label">Mô tả</label>
-            <textarea class="form-control" name="description" rows="2" placeholder="Mô tả chức năng application">{{ form.description or '' }}</textarea>
-          </div>
-        </div>
-        <!-- Docker Registry is managed once by the Platform administrator. -->
-        <div class="row g-3 mt-1 github-only" style="display:{{ 'block' if form.source_type == 'github' else 'none' }};">
-          <div class="col-12">
-            <div class="alert alert-info mb-0">
-              Docker Registry được Admin cấu hình một lần ở trang CI/CD.
-              Application mới sẽ tự động kế thừa; developer không cần nhập Docker token.
-            </div>
+            <textarea class="form-control" name="description" rows="2" placeholder="Mô tả">{{ form.description or '' }}</textarea>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Shared resource defaults -->
+  <!-- ConfigMap -->
+  <div class="col-lg-6">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h5 class="mb-3">ConfigMap (environment dạng key=value, không nhạy cảm)</h5>
+        <textarea class="form-control" name="config_data" rows="5" placeholder="DB_HOST=mysql-service&#10;DB_PORT=3306&#10;APP_ENV=production&#10;REDIS_HOST=redis-service&#10;LOG_LEVEL=info" style="font-family:monospace;">{{ form.config_data or '' }}</textarea>
+        <div class="form-text mt-1">Mỗi dòng một key=value. Các service có thể dùng <code>configMapRef</code> để đọc.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secrets -->
+  <div class="col-lg-6">
+    <div class="card soft-card border-warning">
+      <div class="card-body p-4">
+        <h5 class="mb-3">Secrets (lưu ngoài manifest, không hiển thị lại sau khi lưu)</h5>
+        <label class="form-label">Secret keys (cách nhau dấu phẩy)</label>
+        <input class="form-control" name="secret_keys" value="{{ form.secret_keys or '' }}" placeholder="MYSQL_ROOT_PASSWORD,API_KEY,JWT_SECRET">
+        <label class="form-label mt-2">Secret values (cách nhau dấu phẩy, cùng thứ tự với keys)</label>
+        <input class="form-control" type="password" name="secret_values" value="" autocomplete="new-password" placeholder="password123,sk-xxxx,your-jwt-secret">
+        <div class="form-text mt-1">Giá trị sẽ được lưu file 0o600 riêng biệt, không bao giờ hiển thị lại trên UI hay logs.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resource defaults -->
   <div class="col-12">
     <div class="card soft-card">
       <div class="card-body p-4">
-        <h5 class="mb-3">Cấu hình tài nguyên mặc định (nếu service không tự khai báo riêng)</h5>
+        <h5 class="mb-3">Tài nguyên mặc định (nếu service không tự khai báo riêng)</h5>
         <div class="row g-3">
           <div class="col-md-3">
             <label class="form-label">CPU request</label>
@@ -137,15 +145,15 @@
           </div>
           <div class="col-md-4">
             <label class="form-label">Min replicas</label>
-            <input class="form-control" type="number" min="1" name="min_replicas" value="{{ form.min_replicas or 1 }}">
+            <input class="form-control" type="number" min="1" name="min_replicas" value="{{ form.min_replicas or 2 }}">
           </div>
           <div class="col-md-4">
             <label class="form-label">Max replicas</label>
-            <input class="form-control" type="number" min="1" name="max_replicas" value="{{ form.max_replicas or 3 }}">
+            <input class="form-control" type="number" min="1" name="max_replicas" value="{{ form.max_replicas or 5 }}">
           </div>
           <div class="col-md-4">
             <label class="form-label">CPU threshold %</label>
-            <input class="form-control" type="number" min="1" max="100" name="cpu_threshold" value="{{ form.cpu_threshold or 70 }}">
+            <input class="form-control" type="number" min="1" max="100" name="cpu_threshold" value="{{ form.cpu_threshold or 50 }}">
           </div>
           <div class="col-12">
             <div class="form-check">
@@ -171,13 +179,17 @@
             <div class="service-block border rounded p-3 mb-3 position-relative">
               <button type="button" class="btn-close position-absolute top-0 end-0 mt-2 me-2 remove-service-btn" aria-label="Xoá service"></button>
               <div class="row g-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="form-label">Tên service</label>
                   <input class="form-control service-name" name="service_names" placeholder="web" required>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="form-label">Docker image</label>
                   <input class="form-control service-image" name="service_images" placeholder="nginx:stable-alpine (để trống dùng default)">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Command (cách dấu phẩy)</label>
+                  <input class="form-control service-command" name="service_commands" placeholder="python,app.py">
                 </div>
                 <div class="col-md-3">
                   <label class="form-label">Port</label>
@@ -199,6 +211,16 @@
                   <label class="form-label">NodePort</label>
                   <input class="form-control service-node-port" name="service_node_ports" placeholder="30080">
                 </div>
+                <div class="col-md-3">
+                  <label class="form-label">Args (cách dấu phẩy)</label>
+                  <input class="form-control service-args" name="service_args" placeholder="--config,prod.yml">
+                </div>
+                <div class="col-md-3">
+                  <div class="form-check mt-4">
+                    <input class="form-check-input service-public" type="checkbox" name="service_publics" checked>
+                    <label class="form-check-label">Public (NodePort/Ingress)</label>
+                  </div>
+                </div>
                 <div class="col-12">
                   <label class="form-label">Environment variables</label>
                   <textarea class="form-control service-env" name="service_envs" rows="3" placeholder="KEY=value&#10;API_URL=https://example.com"></textarea>
@@ -207,18 +229,6 @@
             </div>
           </template>
         </div>
-
-        <div id="prefill-data"
-          {% if form and form.getlist('service_names') %}
-          data-names="{{ form.getlist('service_names') | join('|||') }}"
-          data-images="{{ form.getlist('service_images') | join('|||') }}"
-          data-ports="{{ form.getlist('service_ports') | join('|||') }}"
-          data-replicas="{{ form.getlist('service_replicas') | join('|||') }}"
-          data-types="{{ form.getlist('service_types') | join('|||') }}"
-          data-node-ports="{{ form.getlist('service_node_ports') | join('|||') }}"
-          data-envs="{{ form.getlist('service_envs') | join('|||') }}"
-          {% endif %}
-        ></div>
       </div>
     </div>
   </div>
@@ -231,19 +241,11 @@
 
 <script>
 (() => {
-  // Toggle GitHub-only fields when source_type changes
   const sourceSelect = document.querySelector('[name="source_type"]');
   if (sourceSelect) {
     sourceSelect.addEventListener('change', function () {
       const isGithub = this.value === 'github';
-      document.querySelectorAll('.github-only').forEach(el => {
-        el.style.display = isGithub ? 'block' : 'none';
-      });
-      // Enable/disable required fields
-      const githubUrlInput = document.querySelector('[name="github_url"]');
-      if (githubUrlInput) {
-        githubUrlInput.toggleAttribute('required', isGithub);
-      }
+      document.querySelectorAll('.github-only').forEach(el => { el.style.display = isGithub ? 'block' : 'none'; });
     });
   }
 
@@ -251,66 +253,55 @@
   const template = document.getElementById('service-template');
   const addBtn = document.getElementById('add-service-btn');
 
-  function createServiceBlock(name, image, port, replicas, svcType, nodePort, env) {
+  function createServiceBlock(data) {
     const clone = template.content.cloneNode(true);
     const block = clone.querySelector('.service-block');
-
-    block.querySelector('.service-name').value = name || '';
-    block.querySelector('.service-image').value = image || '';
-    block.querySelector('.service-port').value = port || 80;
-    block.querySelector('.service-replicas').value = replicas || 1;
-    if (svcType) block.querySelector('.service-type').value = svcType;
-    block.querySelector('.service-node-port').value = nodePort || '';
-    block.querySelector('.service-env').value = env || '';
-
+    block.querySelector('.service-name').value = data.name || '';
+    block.querySelector('.service-image').value = data.image || '';
+    block.querySelector('.service-command').value = data.command || '';
+    block.querySelector('.service-port').value = data.port || 80;
+    block.querySelector('.service-replicas').value = data.replicas || 1;
+    block.querySelector('.service-args').value = data.args || '';
+    if (data.type) block.querySelector('.service-type').value = data.type;
+    block.querySelector('.service-node-port').value = data.nodePort || '';
+    block.querySelector('.service-public').checked = data.public !== false;
+    block.querySelector('.service-env').value = data.env || '';
     block.querySelector('.remove-service-btn').addEventListener('click', function () {
-      if (container.querySelectorAll('.service-block').length > 1) {
-        block.remove();
-      }
+      if (container.querySelectorAll('.service-block').length > 1) { block.remove(); }
     });
-
     return block;
   }
 
   function addService(data) {
-    container.appendChild(createServiceBlock(
-      data ? data.name : '',
-      data ? data.image : '',
-      data ? data.port : 80,
-      data ? data.replicas : 1,
-      data ? data.type : 'NodePort',
-      data ? data.nodePort : '',
-      data ? data.env : ''
-    ));
+    container.appendChild(createServiceBlock(data || { name: '', image: '', command: '', port: 80, replicas: 1, type: 'NodePort', nodePort: '', args: '', public: true, env: '' }));
   }
 
-  // Initialize: 1 default service or prefill from validation
   const prefillEl = document.getElementById('prefill-data');
   const namesRaw = prefillEl ? (prefillEl.getAttribute('data-names') || '') : '';
   if (namesRaw) {
     const names = namesRaw.split('|||');
     const images = (prefillEl.getAttribute('data-images') || '').split('|||');
+    const commands = (prefillEl.getAttribute('data-commands') || '').split('|||');
     const ports = (prefillEl.getAttribute('data-ports') || '').split('|||');
     const replicasList = (prefillEl.getAttribute('data-replicas') || '').split('|||');
     const types = (prefillEl.getAttribute('data-types') || '').split('|||');
     const nodePorts = (prefillEl.getAttribute('data-node-ports') || '').split('|||');
+    const argsList = (prefillEl.getAttribute('data-args') || '').split('|||');
+    const publics = (prefillEl.getAttribute('data-publics') || '').split('|||');
     const envs = (prefillEl.getAttribute('data-envs') || '').split('|||');
     for (let i = 0; i < names.length; i++) {
       addService({
-        name: names[i] || '',
-        image: images[i] || '',
-        port: ports[i] || 80,
-        replicas: replicasList[i] || 1,
-        type: types[i] || 'NodePort',
-        nodePort: nodePorts[i] || '',
-        env: envs[i] || '',
+        name: names[i] || '', image: images[i] || '', command: commands[i] || '',
+        port: ports[i] || 80, replicas: replicasList[i] || 1, type: types[i] || 'NodePort',
+        nodePort: nodePorts[i] || '', args: argsList[i] || '',
+        public: publics[i] !== 'off', env: envs[i] || '',
       });
     }
   } else {
-    addService({ name: 'web', port: 80, replicas: 1, type: 'NodePort' });
+    addService({ name: 'web', port: 80, replicas: 1, type: 'NodePort', public: true });
   }
 
-  addBtn.addEventListener('click', () => addService({ port: 80, replicas: 1, type: 'NodePort' }));
+  addBtn.addEventListener('click', () => addService({ port: 80, replicas: 1, type: 'NodePort', public: true }));
 })();
 </script>
 {% endblock %}

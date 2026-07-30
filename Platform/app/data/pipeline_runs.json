@@ -692,7 +692,7 @@
     "id": "run-map-20260725132601",
     "application_id": "map",
     "application_name": "map",
-    "status": "Running",
+    "status": "Interrupted",
     "stages": [
       {
         "name": "SOURCE",
@@ -724,28 +724,28 @@
       },
       {
         "name": "DEPLOY",
-        "status": "Running",
-        "message": "Patching db.php configuration...",
+        "status": "Interrupted",
+        "message": "Pipeline interrupted by platform restart.",
         "started_at": "2026-07-25 13:27:11",
-        "finished_at": ""
+        "finished_at": "2026-07-28 13:55:23"
       },
       {
         "name": "VERIFY",
-        "status": "Waiting",
-        "message": "",
+        "status": "Skipped",
+        "message": "Skipped because the previous pipeline was interrupted.",
         "started_at": "",
-        "finished_at": ""
+        "finished_at": "2026-07-28 13:55:23"
       }
     ],
     "image": "php:8.2-apache",
     "created_at": "2026-07-25 13:26:01",
-    "updated_at": "2026-07-25 13:28:17"
+    "updated_at": "2026-07-28 13:55:23"
   },
   {
     "id": "run-map-20260725130538",
     "application_id": "map",
     "application_name": "map",
-    "status": "Running",
+    "status": "Interrupted",
     "stages": [
       {
         "name": "SOURCE",
@@ -777,28 +777,28 @@
       },
       {
         "name": "DEPLOY",
-        "status": "Running",
-        "message": "Patching db.php configuration...",
+        "status": "Interrupted",
+        "message": "Pipeline interrupted by platform restart.",
         "started_at": "2026-07-25 13:06:48",
-        "finished_at": ""
+        "finished_at": "2026-07-28 13:55:23"
       },
       {
         "name": "VERIFY",
-        "status": "Waiting",
-        "message": "",
+        "status": "Skipped",
+        "message": "Skipped because the previous pipeline was interrupted.",
         "started_at": "",
-        "finished_at": ""
+        "finished_at": "2026-07-28 13:55:23"
       }
     ],
     "image": "php:8.2-apache",
     "created_at": "2026-07-25 13:05:38",
-    "updated_at": "2026-07-25 13:09:47"
+    "updated_at": "2026-07-28 13:55:23"
   },
   {
     "id": "run-map-20260725124743",
     "application_id": "map",
     "application_name": "map",
-    "status": "Running",
+    "status": "Interrupted",
     "stages": [
       {
         "name": "SOURCE",
@@ -830,28 +830,28 @@
       },
       {
         "name": "DEPLOY",
-        "status": "Running",
-        "message": "Patching db.php configuration...",
+        "status": "Interrupted",
+        "message": "Pipeline interrupted by platform restart.",
         "started_at": "2026-07-25 12:48:55",
-        "finished_at": ""
+        "finished_at": "2026-07-28 13:55:23"
       },
       {
         "name": "VERIFY",
-        "status": "Waiting",
-        "message": "",
+        "status": "Skipped",
+        "message": "Skipped because the previous pipeline was interrupted.",
         "started_at": "",
-        "finished_at": ""
+        "finished_at": "2026-07-28 13:55:23"
       }
     ],
     "image": "php:8.2-apache",
     "created_at": "2026-07-25 12:47:43",
-    "updated_at": "2026-07-25 12:50:07"
+    "updated_at": "2026-07-28 13:55:23"
   },
   {
     "id": "run-map-20260725121938",
     "application_id": "map",
     "application_name": "map",
-    "status": "Running",
+    "status": "Interrupted",
     "stages": [
       {
         "name": "SOURCE",
@@ -883,22 +883,22 @@
       },
       {
         "name": "DEPLOY",
-        "status": "Running",
-        "message": "Patching db.php configuration...",
+        "status": "Interrupted",
+        "message": "Pipeline interrupted by platform restart.",
         "started_at": "2026-07-25 12:20:49",
-        "finished_at": ""
+        "finished_at": "2026-07-28 13:55:23"
       },
       {
         "name": "VERIFY",
-        "status": "Waiting",
-        "message": "",
+        "status": "Skipped",
+        "message": "Skipped because the previous pipeline was interrupted.",
         "started_at": "",
-        "finished_at": ""
+        "finished_at": "2026-07-28 13:55:23"
       }
     ],
     "image": "php:8.2-apache",
     "created_at": "2026-07-25 12:19:38",
-    "updated_at": "2026-07-25 12:23:19"
+    "updated_at": "2026-07-28 13:55:23"
   },
   {
     "id": "run-demo-nginx-20260724230605",
@@ -1694,5 +1694,273 @@
     "image": "php:8.2-apache",
     "created_at": "2026-07-08 15:38:01",
     "updated_at": "2026-07-08 15:42:19"
+  },
+  {
+    "id": "run-map-eb01521a-adee-4b67-a9f3-d987451536c9",
+    "application_id": "map",
+    "application_name": "map",
+    "status": "Failed",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "repository=https://github.com/Khang0406/map-project.git\nbranch=master\ncommit=54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0",
+        "started_at": "2026-07-28 16:24:42",
+        "finished_at": "2026-07-28 16:24:44"
+      },
+      {
+        "name": "BUILD",
+        "status": "Done",
+        "message": "Built 1 image(s): khang0406/map-web:54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0",
+        "started_at": "2026-07-28 16:24:44",
+        "finished_at": "2026-07-28 16:24:46"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: running",
+        "started_at": "2026-07-28 16:24:46",
+        "finished_at": "2026-07-28 16:24:49"
+      },
+      {
+        "name": "PUSH",
+        "status": "Failed",
+        "message": "web: ✗ push failed — Docker login failed: Error response from daemon: Get \"https://registry-1.docker.io/v2/\": unknown: ma",
+        "started_at": "2026-07-28 16:24:49",
+        "finished_at": "2026-07-28 16:24:50"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Skipped",
+        "message": "Skipped because PUSH failed.",
+        "started_at": "",
+        "finished_at": "2026-07-28 16:24:50"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Skipped",
+        "message": "Skipped because PUSH failed.",
+        "started_at": "",
+        "finished_at": "2026-07-28 16:24:50"
+      }
+    ],
+    "image": "",
+    "created_at": "2026-07-28 16:24:42",
+    "updated_at": "2026-07-28 16:24:50",
+    "trigger_type": "Manual",
+    "requested_ref": "54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0",
+    "commit_author": "",
+    "commit_message": "",
+    "actor": "admin",
+    "actor_id": 1,
+    "actor_role": "Admin",
+    "job_id": "job-20260728162442843114",
+    "repository": "https://github.com/Khang0406/map-project.git",
+    "branch": "master",
+    "commit_sha": "54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0",
+    "source_output": "Cloning into '.'...\nHEAD is now at 54cedb6 Initial commit: Map project - PHP + Leaflet.js",
+    "build_outputs": {
+      "web": "#0 building with \"default\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 289B done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/php:8.2-apache\n#2 DONE 0.0s\n\n#3 [internal] load .dockerignore\n#3 transferring context:\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [1/5] FROM docker.io/library/php:8.2-apache@sha256:848bd4a97499465e365eb4681142332a958701cb6d2fff77342f02699b81985f\n#4 resolve docker.io/library/php:8.2-apache@sha256:848bd4a97499465e365eb4681142332a958701cb6d2fff77342f02699b81985f 0.0s done\n#4 DONE 0.0s\n\n#5 [internal] load build context\n#5 transferring context: 111.72kB 0.0s done\n#5 DONE 0.1s\n\n#6 [2/5] WORKDIR /var/www/html\n#6 CACHED\n\n#7 [3/5] RUN apt-get update && apt-get install -y     libzip-dev zip     && docker-php-ext-install pdo pdo_mysql zip mysqli     && a2enmod rewrite\n#7 CACHED\n\n#8 [4/5] COPY . .\n#8 DONE 0.1s\n\n#9 [5/5] RUN chown -R www-data:www-data /var/www/html\n#9 DONE 0.4s\n\n#10 exporting to image\n#10 exporting layers\n#10 exporting layers 0.2s done\n#10 exporting manifest sha256:062af7d44d806d3bce1f2a39ec84975e859e48106ef5d26ba0eacccb3bee5830 0.0s done\n#10 exporting config sha256:3a8e44aa5495f3fec2b8a06b40a785a4149e76c259bd0a1187eedb6fb1fe9b1b 0.0s done\n#10 exporting attestation manifest sha256:ca23757b889fa7fb4fe868c303ebde7591eb910470e686a245b465083719b1d6 0.0s done\n#10 exporting manifest list sha256:434279c4fecd43a98f0d99807169ac895eda52691a3759ab0d975c5528bbabc0 0.0s done\n#10 naming to docker.io/khang0406/map-web:54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0\n#10 naming to docker.io/khang0406/map-web:54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0 done\n#10 unpacking to docker.io/khang0406/map-web:54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0 0.1s done\n#10 DONE 0.4s"
+    },
+    "service_images": [
+      {
+        "service": "web",
+        "image": "khang0406/map-web:54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0",
+        "digest": ""
+      }
+    ],
+    "finished_at": "2026-07-28 16:24:50"
+  },
+  {
+    "id": "run-demo-nginx-77d24b74-5177-4fae-91b0-f70bfa9b758d",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-28 16:29:53",
+        "finished_at": "2026-07-28 16:29:53"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-28 16:29:53"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-28 16:29:53",
+        "finished_at": "2026-07-28 16:29:54"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-28 16:29:54"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "deployment=v1 id=deployment-d7ffe40c-d1fb-41b3-a489-c4155f60069a\nnamespace/demo-nginx unchanged\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-28 16:29:54",
+        "finished_at": "2026-07-28 16:30:05"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "web 1/1 ready; URL=http://35.198.237.48:30146",
+        "started_at": "2026-07-28 16:30:06",
+        "finished_at": "2026-07-28 16:30:07"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-28 16:29:53",
+    "updated_at": "2026-07-28 16:30:07",
+    "trigger_type": "Manual",
+    "requested_ref": "",
+    "commit_author": "",
+    "commit_message": "",
+    "actor": "admin",
+    "actor_id": 1,
+    "actor_role": "Admin",
+    "job_id": "job-20260728162953623375",
+    "deployment_id": "deployment-d7ffe40c-d1fb-41b3-a489-c4155f60069a",
+    "deployment_version": 1,
+    "finished_at": "2026-07-28 16:30:07"
+  },
+  {
+    "id": "run-demo-nginx-bedf6819-c48a-4c51-b83d-02d6ef9a69b6",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-28 16:31:55",
+        "finished_at": "2026-07-28 16:31:55"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-28 16:31:55"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "Image not cached locally — will pull from registry",
+        "started_at": "2026-07-28 16:31:55",
+        "finished_at": "2026-07-28 16:31:56"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-28 16:31:56"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "deployment=v2 id=deployment-24a01cd8-063b-479f-9892-e52be99dfb69\nnamespace/demo-nginx unchanged\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-28 16:31:56",
+        "finished_at": "2026-07-28 16:32:07"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "web 1/1 ready; URL=http://35.198.237.48:30146",
+        "started_at": "2026-07-28 16:32:08",
+        "finished_at": "2026-07-28 16:32:10"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-28 16:31:54",
+    "updated_at": "2026-07-28 16:32:10",
+    "trigger_type": "Manual",
+    "requested_ref": "",
+    "commit_author": "",
+    "commit_message": "",
+    "actor": "admin",
+    "actor_id": 1,
+    "actor_role": "Admin",
+    "job_id": "job-20260728163154975288",
+    "deployment_id": "deployment-24a01cd8-063b-479f-9892-e52be99dfb69",
+    "deployment_version": 2,
+    "finished_at": "2026-07-28 16:32:10"
+  },
+  {
+    "id": "run-demo-nginx-fdedc9fc-6e40-40db-b7bc-7e48dda55776",
+    "application_id": "demo-nginx",
+    "application_name": "demo-nginx",
+    "status": "Success",
+    "stages": [
+      {
+        "name": "SOURCE",
+        "status": "Done",
+        "message": "Docker image: nginx:stable-alpine",
+        "started_at": "2026-07-28 16:35:04",
+        "finished_at": "2026-07-28 16:35:04"
+      },
+      {
+        "name": "BUILD",
+        "status": "Skipped",
+        "message": "Docker image provided — skip build",
+        "started_at": "",
+        "finished_at": "2026-07-28 16:35:04"
+      },
+      {
+        "name": "TEST",
+        "status": "Done",
+        "message": "web: running",
+        "started_at": "2026-07-28 16:35:04",
+        "finished_at": "2026-07-28 16:34:56"
+      },
+      {
+        "name": "PUSH",
+        "status": "Skipped",
+        "message": "Docker image from registry — skip push",
+        "started_at": "",
+        "finished_at": "2026-07-28 16:34:56"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "Done",
+        "message": "deployment=v4 id=deployment-5908805a-6adb-4228-a6c1-0769c771f98c\nnamespace/demo-nginx unchanged\ndeployment.apps/demo-nginx-web created\nservice/demo-nginx-web created",
+        "started_at": "2026-07-28 16:34:56",
+        "finished_at": "2026-07-28 16:35:06"
+      },
+      {
+        "name": "VERIFY",
+        "status": "Done",
+        "message": "web 1/1 ready; URL=http://35.198.237.48:30146",
+        "started_at": "2026-07-28 16:35:07",
+        "finished_at": "2026-07-28 16:35:08"
+      }
+    ],
+    "image": "nginx:stable-alpine",
+    "created_at": "2026-07-28 16:35:04",
+    "updated_at": "2026-07-28 16:35:08",
+    "trigger_type": "Manual",
+    "requested_ref": "",
+    "commit_author": "",
+    "commit_message": "",
+    "actor": "admin",
+    "actor_id": 1,
+    "actor_role": "Admin",
+    "job_id": "job-20260728163504567347",
+    "deployment_id": "deployment-5908805a-6adb-4228-a6c1-0769c771f98c",
+    "deployment_version": 4,
+    "finished_at": "2026-07-28 16:35:08"
   }
 ]

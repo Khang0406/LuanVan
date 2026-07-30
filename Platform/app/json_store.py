@@ -19,6 +19,10 @@ _SECRET_TEXT_PATTERNS = (
     re.compile(r"(?i)(--password(?:-stdin)?(?:=|\s+))(\S+)"),
     re.compile(r"(?i)\b(password|passwd|pwd|token|secret|api[_-]?key)\s*([=:])\s*([^\s,;]+)"),
     re.compile(r"(?i)(authorization\s*:\s*(?:bearer|basic)\s+)(\S+)"),
+    re.compile(
+        r"(?im)^(\s*[A-Za-z0-9_./-]*(?:password|passwd|pwd|token|secret|api[_-]?key|authorization)"
+        r"[A-Za-z0-9_./-]*\s*:\s*)(\S+)"
+    ),
 )
 
 STATUS_ALIASES = {
@@ -143,6 +147,7 @@ def mask_secrets(value: Any) -> Any:
     masked = _SECRET_TEXT_PATTERNS[0].sub(r"\1***", masked)
     masked = _SECRET_TEXT_PATTERNS[1].sub(r"\1\2***", masked)
     masked = _SECRET_TEXT_PATTERNS[2].sub(r"\1***", masked)
+    masked = _SECRET_TEXT_PATTERNS[3].sub(r"\1***", masked)
     return masked
 
 

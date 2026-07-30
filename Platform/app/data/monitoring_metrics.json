@@ -2,17 +2,17 @@
   "nodes": [
     {
       "name": "ubuntu-1",
-      "cpu_cores": 220.0,
+      "cpu_cores": 239.0,
       "cpu_percent": 11.0,
-      "memory_bytes": 1848639488.0,
-      "memory_percent": 22.0
+      "memory_bytes": 2000683008.0,
+      "memory_percent": 24.0
     },
     {
       "name": "ubuntu-2",
-      "cpu_cores": 325.0,
-      "cpu_percent": 16.0,
-      "memory_bytes": 967835648.0,
-      "memory_percent": 23.0
+      "cpu_cores": 46.0,
+      "cpu_percent": 2.0,
+      "memory_bytes": 1218445312.0,
+      "memory_percent": 29.0
     }
   ],
   "apps": [
@@ -57,8 +57,8 @@
   ],
   "summary": {
     "nodes": 2,
-    "node_cpu_pct": 13.5,
-    "node_ram_pct": 22.5,
+    "node_cpu_pct": 6.5,
+    "node_ram_pct": 26.5,
     "apps": 2,
     "total_pods": 3,
     "ready_pods": 3,

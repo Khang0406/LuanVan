@@ -40,6 +40,6 @@ USER 10001:10001
 
 EXPOSE 8000
 
-# One process is intentional: Phase 1 executes pipeline threads in-process.
-# Threads allow concurrent HTTP requests while a pipeline runs.
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "8", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "run:app"]
+# SQLite requires one web replica. Pipeline execution runs in a separate
+# container/process with ``python -m app.pipeline_worker``.
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "8", "--timeout", "120", "--graceful-timeout", "30", "--access-logfile", "-", "--error-logfile", "-", "run:app"]

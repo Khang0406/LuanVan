@@ -259,10 +259,27 @@ def application_metrics(applications: list[dict[str, Any]]) -> list[dict[str, An
         ns = item.get("metadata", {}).get("namespace", "")
         ns_pods.setdefault(ns, []).append(_parse_pod_status(item))
 
+    pod_usage: dict[str, dict[str, dict[str, float]]] = {}
+    ok_top, raw_top = _run_kubectl_capture(
+        "top", "pods", "--all-namespaces", "--no-headers"
+    )
+    if ok_top:
+        for line in raw_top.splitlines():
+            parts = line.split()
+            if len(parts) < 4:
+                continue
+            namespace, pod_name = parts[0], parts[1]
+            pod_usage.setdefault(namespace, {})[pod_name] = {
+                "cpu_millicores": _parse_cpu_to_m(parts[2]),
+                "memory_bytes": _parse_mem_to_bytes(parts[3]),
+            }
+
     result: list[dict[str, Any]] = []
     for app in applications:
         namespace = app.get("namespace", "")
         pods = ns_pods.get(namespace, [])
+        for pod in pods:
+            pod.update(pod_usage.get(namespace, {}).get(pod["name"], {}))
         total = len(pods)
         ready = sum(1 for p in pods if p.get("ready"))
         restarts = sum(p.get("restarts", 0) for p in pods)
@@ -273,6 +290,19 @@ def application_metrics(applications: list[dict[str, Any]]) -> list[dict[str, An
                 "total_pods": total,
                 "ready_pods": ready,
                 "restarts": restarts,
+                "cpu_millicores": round(sum(p.get("cpu_millicores", 0) for p in pods), 2),
+                "memory_bytes": round(sum(p.get("memory_bytes", 0) for p in pods), 2),
+                "desired_replicas": sum(
+                    int(service.get("replicas", 1)) for service in app.get("services", [])
+                    if service.get("service_type") != "database"
+                ),
+                "deployment_version": app.get("current_deployment_id", ""),
+                "image_digests": [
+                    service.get("image_digest", "") for service in app.get("services", [])
+                    if service.get("image_digest")
+                ],
+                "hpas": [],
+                "metric_source": "kubectl metrics-server",
                 "status": "Healthy" if total > 0 and ready == total else "Degraded" if ready > 0 else "Down",
                 "pods": pods[:10],  # limit detail
             }
@@ -465,4 +495,14 @@ def _parse_pod_status(item: dict[str, Any]) -> dict[str, Any]:
     conditions = status.get("conditions", [])
     ready = any(c.get("type") == "Ready" and c.get("status") == "True" for c in conditions)
     restarts = sum(s.get("restartCount", 0) for s in status.get("containerStatuses", []))
-    return {"name": name, "phase": phase, "ready": ready, "restarts": restarts}
+    reasons = [
+        s.get("state", {}).get("waiting", {}).get("reason", "")
+        for s in status.get("containerStatuses", [])
+    ]
+    return {
+        "name": name,
+        "phase": phase,
+        "ready": ready,
+        "restarts": restarts,
+        "reason": next((reason for reason in reasons if reason), ""),
+    }

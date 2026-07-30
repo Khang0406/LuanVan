@@ -4,8 +4,16 @@
     <h1>{{ server.name }}</h1>
     <p class="text-muted mb-0">Chi tiết server và log kiểm tra/bootstrap gần nhất.</p>
   </div>
-  <div>
+  <div class="d-flex gap-2">
     <a class="btn btn-outline-secondary" href="{{ url_for('ui.servers') }}">← Danh sách server</a>
+    <form
+      method="post"
+      action="{{ url_for('ui.server_delete', server_id=server.id) }}"
+      onsubmit="return confirm('Xóa server này khỏi inventory Platform? Thao tác này không tắt máy và không gỡ node khỏi Kubernetes.');"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger" type="submit">Xóa server</button>
+    </form>
   </div>
 </div>
 

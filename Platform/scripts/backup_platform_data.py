@@ -1,14 +1,50 @@
 #!/usr/bin/env python3
-"""Create a consistent, permission-restricted Platform data backup."""
+"""Create a consistent backup without placing plaintext secrets in it."""
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
-import shutil
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
+
+
+SECRET_STORES = {
+    "application_secrets.json": "application",
+    "registry_credentials.json": "registry",
+    "webhook_secrets.json": "webhook",
+}
+
+
+def _read_object(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _secret_metadata(source_dir: Path) -> dict[str, Any]:
+    """Return references/keys only; never values, passwords or tokens."""
+    result: dict[str, Any] = {"format": 1, "stores": {}}
+    for filename, store_type in SECRET_STORES.items():
+        records = _read_object(source_dir / filename)
+        entries: list[dict[str, str]] = []
+        for reference, record in sorted(records.items()):
+            entry = {"reference": str(reference)}
+            if store_type == "application" and isinstance(record, dict):
+                entry["key"] = str(record.get("key", ""))
+            elif store_type == "registry" and isinstance(record, dict):
+                entry["registry"] = str(record.get("registry", ""))
+                entry["username"] = str(record.get("username", ""))
+            entries.append(entry)
+        result["stores"][store_type] = entries
+    return result
 
 
 def backup(source_dir: Path, destination_root: Path) -> Path:
@@ -25,18 +61,30 @@ def backup(source_dir: Path, destination_root: Path) -> Path:
     with sqlite3.connect(database) as source:
         with sqlite3.connect(destination / "app.db") as target:
             source.backup(target)
+            result = target.execute("PRAGMA integrity_check").fetchone()
+            if not result or result[0] != "ok":
+                raise RuntimeError("Backup database integrity check failed")
     (destination / "app.db").chmod(0o600)
 
-    for name in (
-        "registry_credentials.json",
-        "registry_credentials.json.bak",
-        "webhook_secrets.json",
-    ):
-        source_file = source_dir / name
-        if source_file.is_file():
-            target_file = destination / name
-            shutil.copy2(source_file, target_file)
-            target_file.chmod(0o600)
+    metadata_file = destination / "secret-metadata.json"
+    metadata_file.write_text(
+        json.dumps(_secret_metadata(source_dir), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    metadata_file.chmod(0o600)
+
+    manifest = {
+        "format": 1,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "database": "app.db",
+        "secret_backup": "metadata-only",
+        "secret_values_included": False,
+    }
+    manifest_file = destination / "backup-manifest.json"
+    manifest_file.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    manifest_file.chmod(0o600)
     return destination
 
 

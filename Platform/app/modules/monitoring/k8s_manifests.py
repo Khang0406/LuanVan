@@ -183,50 +183,50 @@ PROMETHEUS_RULES_YAML = textwrap.dedent("""\
     groups:
       - name: platform-alerts
         rules:
-          - alert: HighNodeCPUUsage
-            expr: avg(rate(node_cpu_seconds_total{mode!="idle"}[5m])) by (instance) * 100 > 80
-            for: 5m
-            labels:
-              severity: warning
-            annotations:
-              summary: "Node {{ $labels.instance }} CPU usage > 80%"
-              description: "CPU usage on {{ $labels.instance }} is {{ $value }}% for 5 minutes."
-
-          - alert: HighNodeMemoryUsage
-            expr: (1 - avg(node_memory_MemAvailable_bytes) by (instance) / avg(node_memory_MemTotal_bytes) by (instance)) * 100 > 90
+          - alert: NodeOffline
+            expr: kube_node_status_condition{condition="Ready",status="true"} == 0
             for: 5m
             labels:
               severity: critical
             annotations:
-              summary: "Node {{ $labels.instance }} memory usage > 90%"
-              description: "Memory usage on {{ $labels.instance }} is {{ $value }}%."
+              summary: "Node {{ $labels.node }} is offline"
+              description: "Node {{ $labels.node }} has not been Ready for 5 minutes."
 
-          - alert: PodFrequentlyRestarting
-            expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+          - alert: HighNodeResourceUsage
+            expr: avg(rate(node_cpu_seconds_total{mode!="idle"}[5m])) by (instance) * 100 > 80 or (1 - avg(node_memory_MemAvailable_bytes) by (instance) / avg(node_memory_MemTotal_bytes) by (instance)) * 100 > 90
             for: 5m
             labels:
               severity: warning
             annotations:
-              summary: "Pod {{ $labels.pod }} is restarting frequently"
-              description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted {{ $value }} times in 15m."
+              summary: "Node {{ $labels.instance }} CPU or RAM is high"
+              description: "Node resource usage is above the Phase 3 threshold."
 
-          - alert: PodNotReady
-            expr: kube_pod_status_ready{condition="false"} == 1
+          - alert: PodRestartOrCrashLoopBackOff
+            expr: increase(kube_pod_container_status_restarts_total[15m]) > 5 or kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
             for: 5m
             labels:
               severity: warning
             annotations:
-              summary: "Pod {{ $labels.pod }} is not Ready"
-              description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready for 5 minutes."
+              summary: "Pod {{ $labels.pod }} is restarting or CrashLoopBackOff"
+              description: "Pod {{ $labels.pod }} in {{ $labels.namespace }} requires attention."
 
-          - alert: DeploymentReplicasMismatch
-            expr: kube_deployment_spec_replicas != kube_deployment_status_replicas_available
-            for: 10m
+          - alert: ApplicationNoReadyReplica
+            expr: sum by (namespace, deployment) (kube_deployment_status_replicas_ready) == 0 and sum by (namespace, deployment) (kube_deployment_spec_replicas) > 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Application deployment {{ $labels.deployment }} has no Ready replica"
+              description: "Deployment {{ $labels.deployment }} in {{ $labels.namespace }} has zero Ready replicas."
+
+          - alert: HPAMaxReplicas
+            expr: kube_horizontalpodautoscaler_status_current_replicas == kube_horizontalpodautoscaler_spec_max_replicas
+            for: 2m
             labels:
               severity: warning
             annotations:
-              summary: "Deployment {{ $labels.deployment }} replicas mismatch"
-              description: "Expected {{ $labels.kube_deployment_spec_replicas }} replicas but {{ $labels.kube_deployment_status_replicas_available }} are available."
+              summary: "HPA {{ $labels.horizontalpodautoscaler }} reached max replicas"
+              description: "HPA in {{ $labels.namespace }} is at its configured maximum."
 """)
 
 

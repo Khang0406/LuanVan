@@ -2,9 +2,9 @@
 
 The platform historically stored delivery state in JSON files.  This module
 keeps those files as a compatibility mirror while making SQLite the durable,
-normalized source of truth.  It deliberately uses the standard ``sqlite3``
-module so background pipeline threads do not depend on a Flask application
-context.
+normalized source of truth. It deliberately uses the standard ``sqlite3``
+module so the standalone pipeline worker does not depend on a Flask
+application context.
 """
 
 from __future__ import annotations
@@ -14,8 +14,12 @@ import os
 import shutil
 import sqlite3
 import uuid
+from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
+
+import yaml
 
 from app.config import BASE_DIR
 from app.json_store import is_list_of_dicts, mask_secrets, read_json, write_json
@@ -212,6 +216,88 @@ def _payload(value: dict[str, Any]) -> str:
     return json.dumps(mask_secrets(value), ensure_ascii=False)
 
 
+_CONFIG_REFERENCE_FIELDS = {
+    "credential_ref",
+    "image_pull_secret",
+    "secret_name",
+    "secret_ref",
+    "secret_refs",
+    "secrets",
+}
+
+
+def _mask_configuration(value: Any) -> Any:
+    """Mask inline values while preserving non-sensitive Secret references."""
+    if isinstance(value, dict):
+        result: dict[str, Any] = {}
+        env_name = str(value.get("name", ""))
+        for key, item in value.items():
+            normalized_key = str(key).lower()
+            if normalized_key in _CONFIG_REFERENCE_FIELDS:
+                result[key] = deepcopy(item)
+            elif normalized_key in {
+                "password",
+                "passwd",
+                "pwd",
+                "token",
+                "api_key",
+                "authorization",
+            }:
+                result[key] = "***"
+            elif normalized_key == "value" and any(
+                marker in env_name.lower()
+                for marker in (
+                    "password",
+                    "passwd",
+                    "pwd",
+                    "token",
+                    "secret",
+                    "api_key",
+                    "authorization",
+                )
+            ):
+                result[key] = "***"
+            else:
+                result[key] = _mask_configuration(item)
+        return result
+    if isinstance(value, list):
+        return [_mask_configuration(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_mask_configuration(item) for item in value)
+    return value
+
+
+def _configuration_payload(value: dict[str, Any]) -> str:
+    return json.dumps(_mask_configuration(value), ensure_ascii=False)
+
+
+def _manifest_without_secrets(manifest: str) -> str:
+    if not manifest.strip():
+        return ""
+    try:
+        loaded_documents = [
+            document for document in yaml.safe_load_all(manifest) if document
+        ]
+    except yaml.YAMLError:
+        return mask_secrets(manifest)
+    if any(not isinstance(document, dict) for document in loaded_documents):
+        return mask_secrets(manifest)
+    documents = [
+        document
+        for document in loaded_documents
+        if document.get("kind") != "Secret"
+    ]
+    return yaml.safe_dump_all(documents, sort_keys=False)
+
+
+def _deployment_payload(deployment: dict[str, Any]) -> str:
+    safe_deployment = deepcopy(deployment)
+    manifest = _manifest_without_secrets(str(safe_deployment.pop("manifest", "")))
+    safe_deployment = mask_secrets(safe_deployment)
+    safe_deployment["manifest"] = manifest
+    return json.dumps(safe_deployment, ensure_ascii=False)
+
+
 def _decode(row: sqlite3.Row) -> dict[str, Any]:
     return json.loads(row["payload"])
 
@@ -351,7 +437,7 @@ def _upsert_application(
             application.get("dockerfile_path", "Dockerfile"),
             application.get("current_deployment_id"), application.get("status", "Draft"),
             application.get("url", ""), application.get("created_at", ""),
-            application.get("updated_at", ""), _payload(application),
+            application.get("updated_at", ""), _configuration_payload(application),
         ),
     )
     return cursor.rowcount
@@ -374,7 +460,7 @@ def _upsert_service(
             application_id, service["name"], service.get("image", ""),
             int(service.get("required", True)), int(service.get("container_port", 80)),
             service.get("service_type", "ClusterIP"), service.get("health_path", ""),
-            _payload(service),
+            _configuration_payload(service),
         ),
     )
     return cursor.rowcount
@@ -479,6 +565,40 @@ def list_pipeline_runs(
     with _connect(path) as connection:
         rows = connection.execute(query, params).fetchall()
     return [_decode(row) for row in rows]
+
+
+def claim_next_pipeline_run(
+    worker_id: str, path: Path | None = None
+) -> dict[str, Any] | None:
+    """Atomically claim the oldest queued run for one standalone worker."""
+    if not worker_id.strip():
+        raise ValueError("worker_id is required")
+    initialize_schema(path)
+    connection = _connect(path)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT payload FROM pipeline_runs WHERE status = 'Queued' "
+            "ORDER BY created_at ASC, id ASC LIMIT 1"
+        ).fetchone()
+        if not row:
+            connection.commit()
+            return None
+        run = _decode(row)
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        run["status"] = "Running"
+        run["worker_id"] = worker_id
+        run["claimed_at"] = now
+        run["updated_at"] = now
+        run["attempt"] = int(run.get("attempt", 0) or 0) + 1
+        _upsert_pipeline_run(connection, run)
+        connection.commit()
+        return run
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def has_active_pipeline(application_id: str, path: Path | None = None) -> bool:
@@ -599,6 +719,7 @@ def list_audit_logs(path: Path | None = None) -> list[dict[str, Any]]:
 
 
 def _upsert_deployment(connection: sqlite3.Connection, deployment: dict[str, Any]) -> None:
+    safe_manifest = _manifest_without_secrets(str(deployment.get("manifest", "")))
     connection.execute(
         """INSERT INTO deployments(
             id, version, application_id, pipeline_run_id, previous_deployment_id,
@@ -622,12 +743,12 @@ def _upsert_deployment(connection: sqlite3.Connection, deployment: dict[str, Any
             deployment.get("pipeline_run_id"), deployment.get("previous_deployment_id"),
             deployment.get("rollback_of_deployment_id"), deployment.get("repository", ""),
             deployment.get("branch", ""), deployment.get("commit_sha", ""),
-            deployment.get("manifest", ""), deployment.get("deployment_mode", "Production"),
+            safe_manifest, deployment.get("deployment_mode", "Production"),
             deployment.get("actor", "system"), deployment.get("actor_id"),
             deployment.get("namespace", ""), deployment.get("url", ""),
             deployment.get("verify_status", "Pending"), deployment.get("status", "Pending"),
             deployment.get("started_at", ""), deployment.get("finished_at", ""),
-            _payload(deployment),
+            _deployment_payload(deployment),
         ),
     )
 

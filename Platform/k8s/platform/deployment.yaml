@@ -7,7 +7,8 @@ metadata:
     app.kubernetes.io/name: platform
     app.kubernetes.io/part-of: delivery-platform
 spec:
-  # Phase 1 uses SQLite and in-process pipeline threads. Keep exactly one pod.
+  # SQLite is shared by one web process and one worker process in this pod.
+  # Do not scale this Deployment above one replica.
   replicas: 1
   strategy:
     type: Recreate
@@ -20,13 +21,14 @@ spec:
         app.kubernetes.io/name: platform
         app.kubernetes.io/part-of: delivery-platform
     spec:
+      terminationGracePeriodSeconds: 60
       serviceAccountName: platform
       securityContext:
         fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: platform
-          image: docker.io/PLATFORM_ORG/delivery-platform:PHASE1_TAG
+          image: docker.io/PLATFORM_ORG/delivery-platform:PLATFORM_IMAGE_TAG
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
@@ -59,6 +61,34 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: platform-data
+              mountPath: /var/lib/platform
+        - name: pipeline-worker
+          image: docker.io/PLATFORM_ORG/delivery-platform:PLATFORM_IMAGE_TAG
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "app.pipeline_worker"]
+          envFrom:
+            - configMapRef:
+                name: platform-config
+            - secretRef:
+                name: platform-runtime
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

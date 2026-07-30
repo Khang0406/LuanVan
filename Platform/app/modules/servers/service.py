@@ -7,7 +7,7 @@ from app.security import temporary_ansible_extra_vars
 
 from app.config import BASE_DIR
 
-from app.json_store import is_list_of_dicts, read_json, write_json
+from app.json_store import is_list_of_dicts, read_json, update_json, write_json
 DATA_DIR = BASE_DIR / "app" / "data"
 SERVERS_FILE = DATA_DIR / "servers.json"
 
@@ -117,6 +117,49 @@ def add_server(form: dict[str, Any]) -> dict[str, Any]:
 
 def find_server(server_id: str) -> dict[str, Any] | None:
     return next((server for server in load_servers() if server["id"] == server_id), None)
+
+
+def delete_server(server_id: str) -> dict[str, Any] | None:
+    """Remove one server from Platform inventory without touching the host.
+
+    The JSON update is performed under the store lock so concurrent inventory
+    changes cannot accidentally re-introduce a deleted record. Any generated
+    per-server Ansible inventory is local derived data and can be regenerated.
+    """
+    removed: dict[str, Any] | None = None
+
+    def remove_matching_server(
+        servers: list[dict[str, Any]],
+    ) -> list[dict[str, Any]] | None:
+        nonlocal removed
+        for index, server in enumerate(servers):
+            if server.get("id") == server_id:
+                removed = dict(server)
+                del servers[index]
+                return servers
+        return None
+
+    update_json(
+        SERVERS_FILE,
+        DEFAULT_SERVERS,
+        remove_matching_server,
+        is_list_of_dicts,
+    )
+    if removed is None:
+        return None
+
+    # Server IDs created by this service are filename-safe. Do not attempt
+    # cleanup for imported/legacy IDs that do not satisfy that invariant.
+    if removed.get("id") == make_server_id(str(removed.get("id", "")), ""):
+        inventory_file = DATA_DIR / f"ansible-{removed['id']}.ini"
+        try:
+            inventory_file.unlink(missing_ok=True)
+        except OSError:
+            # The inventory record has already been removed successfully. A
+            # stale derived file is harmless and will never be executed by UI.
+            pass
+
+    return removed
 
 
 def update_server(updated_server: dict[str, Any]) -> None:

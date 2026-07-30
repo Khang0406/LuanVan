@@ -15,7 +15,7 @@
         "container_port": 80,
         "replicas": 1,
         "service_type": "NodePort",
-        "node_port": "",
+        "node_port": "30146",
         "env": [],
         "cpu_request": "100m",
         "cpu_limit": "500m",
@@ -24,15 +24,322 @@
         "min_replicas": 1,
         "max_replicas": 3,
         "autoscaling": false,
-        "cpu_threshold": 70
+        "cpu_threshold": 70,
+        "image_digest": ""
       }
     ],
     "status": "Running",
-    "url": "http://35.198.237.48:30914",
-    "last_deployed_at": "2026-07-25 14:47:24",
+    "url": "http://35.198.237.48:30146",
+    "last_deployed_at": "2026-07-28 16:35:06",
     "created_at": "2026-06-29 17:03:51",
-    "updated_at": "2026-07-25 14:47:25",
+    "updated_at": "2026-07-28 16:38:19",
     "activity_logs": [
+      {
+        "time": "2026-07-28 16:38:19",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:31",
+        "type": "ROLLBACK",
+        "message": "Rollback to v1 succeeded as v5.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:31",
+        "type": "DEPLOYMENT",
+        "message": "Deployment v5 is Ready and is now current.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:29",
+        "type": "ROLLBACK",
+        "message": "Rollback v5 started from deployment v1.",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-28 16:35:08",
+        "type": "PIPELINE",
+        "message": "VERIFY: web 1/1 ready; URL=http://35.198.237.48:30146",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:08",
+        "type": "DEPLOYMENT",
+        "message": "Deployment v4 is Ready and is now current.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:07",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:06",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:06",
+        "type": "DEPLOYMENT",
+        "message": "Created deployment v4 (deployment-5908805a-6adb-4228-a6c1-0769c771f98c) in Production mode.",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-28 16:35:06",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:05",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:00",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: service \"demo-nginx-web\" deleted from demo-nginx namespace\ndeploy/demo-nginx-web: deployment.apps \"demo-nginx-web\" deleted from de",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:00",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:34:56",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-fdedc9fc-6e40-40db-b7bc-7e48dda55776: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:34:56",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-fdedc9fc-6e40-40db-b7bc-7e48dda55776: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:04",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-fdedc9fc-6e40-40db-b7bc-7e48dda55776: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:04",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-fdedc9fc-6e40-40db-b7bc-7e48dda55776: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:35:04",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-fdedc9fc-6e40-40db-b7bc-7e48dda55776 started (6 stages)",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-28 16:33:06",
+        "type": "ROLLBACK",
+        "message": "Rollback to v1 succeeded as v3.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:33:06",
+        "type": "DEPLOYMENT",
+        "message": "Deployment v3 is Ready and is now current.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:33:03",
+        "type": "ROLLBACK",
+        "message": "Rollback v3 started from deployment v1.",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-28 16:32:10",
+        "type": "PIPELINE",
+        "message": "VERIFY: web 1/1 ready; URL=http://35.198.237.48:30146",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:32:10",
+        "type": "DEPLOYMENT",
+        "message": "Deployment v2 is Ready and is now current.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:32:08",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:32:07",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:32:07",
+        "type": "DEPLOYMENT",
+        "message": "Created deployment v2 (deployment-24a01cd8-063b-479f-9892-e52be99dfb69) in Production mode.",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-28 16:32:07",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:32:05",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:32:00",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: service \"demo-nginx-web\" deleted from demo-nginx namespace\ndeploy/demo-nginx-web: deployment.apps \"demo-nginx-web\" deleted from de",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:32:00",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:31:56",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-bedf6819-c48a-4c51-b83d-02d6ef9a69b6: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:31:56",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-bedf6819-c48a-4c51-b83d-02d6ef9a69b6: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:31:55",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-bedf6819-c48a-4c51-b83d-02d6ef9a69b6: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:31:55",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-bedf6819-c48a-4c51-b83d-02d6ef9a69b6: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:31:55",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-bedf6819-c48a-4c51-b83d-02d6ef9a69b6 started (6 stages)",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-28 16:31:10",
+        "type": "CONFIG",
+        "message": "Đã lưu NodePort được Kubernetes cấp để giữ URL ổn định khi redeploy.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:30:07",
+        "type": "PIPELINE",
+        "message": "VERIFY: web 1/1 ready; URL=http://35.198.237.48:30146",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:30:07",
+        "type": "DEPLOYMENT",
+        "message": "Deployment v1 is Ready and is now current.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:30:06",
+        "type": "PIPELINE",
+        "message": "ServiceMonitor created: app-demo-nginx",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:30:05",
+        "type": "PIPELINE",
+        "message": "Deploy thành công lên K3s cluster",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:30:05",
+        "type": "DEPLOYMENT",
+        "message": "Created deployment v1 (deployment-d7ffe40c-d1fb-41b3-a489-c4155f60069a) in Production mode.",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-28 16:30:05",
+        "type": "DEPLOY",
+        "message": "Deploy application lên K3s thành công.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:30:04",
+        "type": "MANIFEST",
+        "message": "Generated Kubernetes manifest: /home/vpkhang-b2204938/projects/LuanVan/Platform/k8s/generated/demo-nginx.yaml",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:29:59",
+        "type": "PIPELINE",
+        "message": "Đã xoá workloads cũ: svc/demo-nginx-web: service \"demo-nginx-web\" deleted from demo-nginx namespace\ndeploy/demo-nginx-web: deployment.apps \"demo-nginx-web\" deleted from de",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:29:59",
+        "type": "DELETE",
+        "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:29:54",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-77d24b74-5177-4fae-91b0-f70bfa9b758d: PUSH stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:29:54",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-77d24b74-5177-4fae-91b0-f70bfa9b758d: TEST stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:29:53",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-77d24b74-5177-4fae-91b0-f70bfa9b758d: BUILD stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:29:53",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-77d24b74-5177-4fae-91b0-f70bfa9b758d: SOURCE stage completed",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:29:53",
+        "type": "PIPELINE",
+        "message": "Pipeline run-demo-nginx-77d24b74-5177-4fae-91b0-f70bfa9b758d started (6 stages)",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-26 16:14:05",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      },
       {
         "time": "2026-07-25 14:47:25",
         "type": "PIPELINE",
@@ -789,7 +1096,9 @@
         "message": "Người dùng truy vấn runtime logs của application.",
         "status": "Done"
       }
-    ]
+    ],
+    "current_deployment_id": "deployment-57309417-d24f-4042-91d8-e662abc029be",
+    "current_commit_sha": ""
   },
   {
     "id": "map",
@@ -802,7 +1111,7 @@
     "registry": {
       "url": "",
       "username": "Khang0406",
-      "password": "YOUR_GITHUB_TOKEN_HERE"
+      "credential_ref": "application:map"
     },
     "description": "Ứng dụng bản đồ tương tác",
     "services": [
@@ -828,8 +1137,92 @@
     "url": "http://35.198.237.48:30082",
     "last_deployed_at": "2026-07-25 16:05:55",
     "created_at": "2026-07-05 21:28:02",
-    "updated_at": "2026-07-25 16:06:42",
+    "updated_at": "2026-07-28 17:07:12",
     "activity_logs": [
+      {
+        "time": "2026-07-28 17:07:12",
+        "type": "LOGS",
+        "message": "Người dùng truy vấn runtime logs của application.",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:24:50",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-eb01521a-adee-4b67-a9f3-d987451536c9 stopped because PUSH failed.",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-28 16:24:50",
+        "type": "PIPELINE",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: Error response from daemon: Get \"https://registry-1.docker.io/v2/\": unknown: ma",
+        "status": "Failed"
+      },
+      {
+        "time": "2026-07-28 16:24:49",
+        "type": "PIPELINE",
+        "message": "TEST: web: running",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:24:46",
+        "type": "PIPELINE",
+        "message": "BUILD: Đã build 1 image thành công",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:24:46",
+        "type": "BUILD",
+        "message": "Đã build Docker image khang0406/map-web:54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0 cho web",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:24:44",
+        "type": "BUILD",
+        "message": "Development fallback: không tìm thấy Dockerfile; đã auto-generate cho web",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-28 16:24:44",
+        "type": "SCAN",
+        "message": "[frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes | Code: fetch('http://localhost/mapproject/backend/save-favorite.php', { | Gợi ý: Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-28 16:24:44",
+        "type": "SCAN",
+        "message": "[backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost | Code: $host = 'localhost'; | Gợi ý: Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-28 16:24:44",
+        "type": "SCAN",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-28 16:24:44",
+        "type": "PIPELINE",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "status": "Warning"
+      },
+      {
+        "time": "2026-07-28 16:24:44",
+        "type": "PIPELINE",
+        "message": "SOURCE: repository=https://github.com/Khang0406/map-project.git, branch=master, commit=54cedb6c1339d93dcb31fc1ae6100b0e6b1317e0",
+        "status": "Done"
+      },
+      {
+        "time": "2026-07-28 16:24:42",
+        "type": "PIPELINE",
+        "message": "Pipeline run-map-eb01521a-adee-4b67-a9f3-d987451536c9 started (6 stages)",
+        "status": "Running"
+      },
+      {
+        "time": "2026-07-28 16:17:39",
+        "type": "CONFIG",
+        "message": "Đã xác minh remote HEAD và chuẩn hóa default branch từ legacy default sang master.",
+        "status": "Done"
+      },
       {
         "time": "2026-07-25 16:06:42",
         "type": "PIPELINE",
@@ -911,7 +1304,7 @@
       {
         "time": "2026-07-25 16:05:44",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -953,13 +1346,13 @@
       {
         "time": "2026-07-25 16:05:36",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 16:05:36",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -1043,7 +1436,7 @@
       {
         "time": "2026-07-25 15:59:05",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -1085,13 +1478,13 @@
       {
         "time": "2026-07-25 15:58:53",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 15:58:53",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -1181,7 +1574,7 @@
       {
         "time": "2026-07-25 15:48:19",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -1223,13 +1616,13 @@
       {
         "time": "2026-07-25 15:48:12",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 15:48:12",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -1301,7 +1694,7 @@
       {
         "time": "2026-07-25 15:43:56",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -1343,13 +1736,13 @@
       {
         "time": "2026-07-25 15:42:43",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 15:42:43",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -1409,7 +1802,7 @@
       {
         "time": "2026-07-25 15:40:19",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -1451,13 +1844,13 @@
       {
         "time": "2026-07-25 15:39:09",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 15:39:09",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -1517,7 +1910,7 @@
       {
         "time": "2026-07-25 15:31:22",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -1559,13 +1952,13 @@
       {
         "time": "2026-07-25 15:30:11",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 15:30:11",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -1637,7 +2030,7 @@
       {
         "time": "2026-07-25 15:15:18",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -1679,13 +2072,13 @@
       {
         "time": "2026-07-25 15:14:08",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 15:14:08",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -1745,7 +2138,7 @@
       {
         "time": "2026-07-25 15:12:09",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -1787,13 +2180,13 @@
       {
         "time": "2026-07-25 15:10:56",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 15:10:56",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -1883,7 +2276,7 @@
       {
         "time": "2026-07-25 14:48:57",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -1925,13 +2318,13 @@
       {
         "time": "2026-07-25 14:47:48",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 14:47:48",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -2033,7 +2426,7 @@
       {
         "time": "2026-07-25 14:16:18",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -2075,13 +2468,13 @@
       {
         "time": "2026-07-25 14:15:09",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 14:15:09",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -2225,7 +2618,7 @@
       {
         "time": "2026-07-25 13:45:36",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -2267,13 +2660,13 @@
       {
         "time": "2026-07-25 13:44:28",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 13:44:28",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -2351,7 +2744,7 @@
       {
         "time": "2026-07-25 13:27:11",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -2393,13 +2786,13 @@
       {
         "time": "2026-07-25 13:26:03",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 13:26:03",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -2465,7 +2858,7 @@
       {
         "time": "2026-07-25 13:06:48",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -2507,13 +2900,13 @@
       {
         "time": "2026-07-25 13:05:39",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 13:05:39",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -2621,7 +3014,7 @@
       {
         "time": "2026-07-25 12:48:55",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -2663,13 +3056,13 @@
       {
         "time": "2026-07-25 12:47:45",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 12:47:45",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -2729,7 +3122,7 @@
       {
         "time": "2026-07-25 12:20:49",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -2771,13 +3164,13 @@
       {
         "time": "2026-07-25 12:19:40",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-25 12:19:40",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -2825,7 +3218,7 @@
       {
         "time": "2026-07-23 19:46:54",
         "type": "PIPELINE",
-        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=***",
         "status": "Done"
       },
       {
@@ -2927,7 +3320,7 @@
       {
         "time": "2026-07-23 19:44:20",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -2969,13 +3362,13 @@
       {
         "time": "2026-07-23 19:43:07",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-23 19:43:07",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -3017,7 +3410,7 @@
       {
         "time": "2026-07-21 10:49:22",
         "type": "PIPELINE",
-        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=***",
         "status": "Done"
       },
       {
@@ -3119,7 +3512,7 @@
       {
         "time": "2026-07-21 10:47:21",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -3161,13 +3554,13 @@
       {
         "time": "2026-07-21 10:46:08",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-21 10:46:08",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -3215,7 +3608,7 @@
       {
         "time": "2026-07-21 08:19:18",
         "type": "PIPELINE",
-        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=***",
         "status": "Done"
       },
       {
@@ -3317,7 +3710,7 @@
       {
         "time": "2026-07-21 08:15:34",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -3359,13 +3752,13 @@
       {
         "time": "2026-07-21 08:14:20",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-21 08:14:20",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -3407,7 +3800,7 @@
       {
         "time": "2026-07-08 19:13:21",
         "type": "PIPELINE",
-        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=***",
         "status": "Done"
       },
       {
@@ -3527,13 +3920,13 @@
       {
         "time": "2026-07-08 19:08:58",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-08 19:08:58",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -3575,7 +3968,7 @@
       {
         "time": "2026-07-08 17:39:54",
         "type": "PIPELINE",
-        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=***",
         "status": "Done"
       },
       {
@@ -3677,7 +4070,7 @@
       {
         "time": "2026-07-08 17:36:07",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -3719,13 +4112,13 @@
       {
         "time": "2026-07-08 17:34:48",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-08 17:34:48",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -3761,7 +4154,7 @@
       {
         "time": "2026-07-08 17:22:15",
         "type": "PIPELINE",
-        "message": "Da patch db.php tren worker: host=map-mysql, password=luanvan123",
+        "message": "Da patch db.php tren worker: host=map-mysql, password=***",
         "status": "Done"
       },
       {
@@ -3857,7 +4250,7 @@
       {
         "time": "2026-07-08 17:20:52",
         "type": "PIPELINE",
-        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password via the CLI is insecure. Use --password-stdin.\nError ",
+        "message": "PUSH: Có image push thất bại: web: ✗ push failed — Docker login failed: WARNING! Using --password *** the CLI is insecure. Use --password-stdin.\nError ",
         "status": "Failed"
       },
       {
@@ -3899,13 +4292,13 @@
       {
         "time": "2026-07-08 17:19:42",
         "type": "SCAN",
-        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
+        "message": "[backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password | Code: $password=***; // Nếu có mật khẩu thì nhập vô đây | Gợi ý: Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy",
         "status": "Warning"
       },
       {
         "time": "2026-07-08 17:19:42",
         "type": "PIPELINE",
-        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password = ''; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
+        "message": "Phát hiện 3 vấn đề trong mã nguồn:\n⚠ [backend/db.php:4] Mật khẩu MySQL để trống ('') — kết nối sẽ thất bại nếu MySQL trên Kubernetes yêu cầu password\n   Code: $password=***; // Nếu có mật khẩu thì nhập vô đây\n   → Dùng getenv('DB_PASSWORD') ?: '' để đọc password từ biến môi trường được inject khi deploy\n⚠ [backend/db.php:2] Host MySQL hardcoded là 'localhost' — trong Kubernetes MySQL chạy pod riêng, không thể dùng localhost\n   Code: $host = 'localhost';\n   → Dùng getenv('DB_HOST') ?: 'localhost' để nhận host từ biến môi trường (platform tự inject)\n⚠ [frontend/js/map.js:347] URL hardcoded trỏ vào localhost — sẽ lỗi khi deploy lên Kubernetes\n   Code: fetch('http://localhost/mapproject/backend/save-favorite.php', {\n   → Dùng relative path (vd: '../backend/api.php') hoặc biến môi trường thay vì URL tuyệt đối localhost",
         "status": "Warning"
       },
       {
@@ -3926,6 +4319,11 @@
         "message": "Đã xoá workloads của application khỏi K3s (keeping namespace).",
         "status": "Done"
       }
-    ]
+    ],
+    "default_branch": "master",
+    "build_context": ".",
+    "dockerfile_path": "Dockerfile",
+    "deployment_mode": "production",
+    "development_fallback_enabled": false
   }
 ]

@@ -58,10 +58,7 @@ def create_app(config_class=Config):
         Path(app.instance_path).mkdir(parents=True, exist_ok=True)
         db.create_all()
         from .delivery_store import migrate_default_json_state
-        from .modules.pipeline.engine import recover_interrupted_pipeline_runs
-
         migrate_default_json_state()
-        recover_interrupted_pipeline_runs()
         _seed_default_users()
 
     @app.route("/")
@@ -81,16 +78,36 @@ def create_app(config_class=Config):
 
     @app.get("/readyz")
     def readyz():
-        """Readiness probe for the durable application database."""
+        """Check databases, writable data directory and essential configuration."""
         try:
+            from pathlib import Path
+
             db.session.execute(text("SELECT 1"))
-            from .delivery_store import check_database
+            from .delivery_store import check_database, database_path
 
             check_database()
+            data_dir = Path(os.getenv("PLATFORM_DATA_DIR", database_path().parent))
+            data_dir.mkdir(parents=True, exist_ok=True)
+            probe = data_dir / ".readyz-write-probe"
+            probe.touch(exist_ok=True)
+            probe.unlink(missing_ok=True)
+            if app.config.get("PLATFORM_ENV") == "production":
+                required = ("SECRET_KEY", "SQLALCHEMY_DATABASE_URI")
+                if any(not app.config.get(name) for name in required):
+                    raise RuntimeError("essential production configuration missing")
         except Exception:
-            app.logger.exception("Readiness database check failed")
-            return jsonify({"status": "not_ready", "database": "failed"}), 503
-        return jsonify({"status": "ready", "database": "ok"}), 200
+            app.logger.warning("Readiness dependency check failed")
+            return jsonify({
+                "status": "not_ready",
+                "database": "failed",
+                "data_directory": "failed",
+            }), 503
+        return jsonify({
+            "status": "ready",
+            "database": "ok",
+            "data_directory": "ok",
+            "configuration": "ok",
+        }), 200
 
     return app
 
@@ -126,6 +143,10 @@ def _seed_default_users() -> None:
     dev = User(username="dev", role="Developer")
     dev.set_password("dev123")
     db.session.add(dev)
+
+    viewer = User(username="viewer", role="Viewer")
+    viewer.set_password("viewer123")
+    db.session.add(viewer)
 
     db.session.commit()
 

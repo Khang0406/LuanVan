@@ -113,7 +113,8 @@ classDiagram
 
 ## 3. Luồng thực thi CI/CD Pipeline (Sequence Diagram)
 
-Hệ thống có Pipeline Engine (`engine.py`) chạy ngầm bằng `threading.Thread` đi qua 6 bước (Stages): SOURCE, BUILD, TEST, PUSH, DEPLOY, VERIFY.
+Hệ thống có Pipeline Worker process riêng, nhận task bền vững từ SQLite queue
+và chạy 6 bước (Stages): SOURCE, BUILD, TEST, PUSH, DEPLOY, VERIFY.
 
 ```mermaid
 sequenceDiagram

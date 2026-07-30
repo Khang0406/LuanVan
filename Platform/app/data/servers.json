@@ -10,12 +10,12 @@
     "ssh_user": "vpkhang-b2204938",
     "ssh_port": 22,
     "ssh_key_path": "~/.ssh/id_ed25519",
-    "last_check": "2026-07-24 22:51:44",
-    "last_output": "ubuntu-1 | SUCCESS => {\"ansible_facts\": {\"discovered_interpreter_python\": \"/usr/bin/python3\"},\"changed\": false,\"ping\": \"pong\"}",
+    "last_check": "2026-07-30 15:47:00",
+    "last_output": "ubuntu-1",
     "ssh_status": "OK",
     "ansible_status": "OK (pong)",
     "sudo_status": "Ready",
-    "preview": "SSH OK · Ansible OK (pong) · Sudo Ready · 2026-07-24 22:51:44",
+    "preview": "SSH OK · Ansible OK (pong) · Sudo Ready · 2026-07-30 15:47:00",
     "cluster_id": "cluster-260724230429"
   },
   {
@@ -29,12 +29,12 @@
     "ssh_user": "vpkhang-b2204938",
     "ssh_port": 22,
     "ssh_key_path": "~/.ssh/id_ed25519",
-    "last_check": "2026-07-24 22:51:47",
-    "last_output": "ubuntu-2 | SUCCESS => {\"ansible_facts\": {\"discovered_interpreter_python\": \"/usr/bin/python3\"},\"changed\": false,\"ping\": \"pong\"}",
-    "ssh_status": "Failed",
+    "last_check": "2026-07-30 15:47:00",
+    "last_output": "ubuntu-2",
+    "ssh_status": "OK",
     "ansible_status": "OK (pong)",
     "sudo_status": "Ready",
-    "preview": "SSH Failed · Ansible OK (pong) · Sudo Ready · 2026-07-24 22:51:47",
+    "preview": "SSH OK · Ansible OK (pong) · Sudo Ready · 2026-07-30 15:47:00",
     "cluster_id": "cluster-260724230429"
   },
   {
@@ -48,12 +48,12 @@
     "ssh_user": "vpkhang-b2204938",
     "ssh_port": 22,
     "ssh_key_path": "~/.ssh/id_ed25519",
-    "last_check": "2026-07-24 22:51:50",
-    "last_output": "ubuntu-3 | SUCCESS => {\"ansible_facts\": {\"discovered_interpreter_python\": \"/usr/bin/python3\"},\"changed\": false,\"ping\": \"pong\"}",
-    "ssh_status": "Failed",
+    "last_check": "2026-07-30 15:47:01",
+    "last_output": "ubuntu-3",
+    "ssh_status": "OK",
     "ansible_status": "OK (pong)",
     "sudo_status": "Ready",
-    "preview": "SSH Failed · Ansible OK (pong) · Sudo Ready · 2026-07-24 22:51:50",
+    "preview": "SSH OK · Ansible OK (pong) · Sudo Ready · 2026-07-30 15:47:01",
     "cluster_id": "cluster-260724230429"
   }
 ]
