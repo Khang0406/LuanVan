@@ -26,6 +26,8 @@ spec:
         app.kubernetes.io/name: demo-nginx-web
         app.kubernetes.io/part-of: demo-nginx
     spec:
+      imagePullSecrets:
+        - name: demo-nginx-registry
       containers:
         - name: web
           image: nginx:stable-alpine

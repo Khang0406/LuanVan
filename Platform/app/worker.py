@@ -15,6 +15,9 @@ import os
 
 from celery import Celery
 from celery.signals import worker_ready
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BROKER_URL = os.getenv(
     "REDIS_URL", os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
