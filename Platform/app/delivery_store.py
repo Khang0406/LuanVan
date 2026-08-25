@@ -34,6 +34,26 @@ def database_path() -> Path:
     return Path(configured).expanduser() if configured else DEFAULT_DATABASE_PATH
 
 
+def _use_postgres(path: Path | None = None) -> bool:
+    """Select the PostgreSQL backend when DATABASE_URL is a postgres URL and no
+    explicit SQLite path is given.
+
+    An explicit ``path`` is the unit-test contract and always means SQLite, so
+    the existing 100+ SQLite tests are unaffected by production PostgreSQL.
+    """
+    if path is not None:
+        return False
+    url = os.getenv("DATABASE_URL", "").strip().lower()
+    return url.startswith("postgresql") or url.startswith("postgres")
+
+
+def _pg_backend():
+    """Lazily import the PostgreSQL backend to avoid a circular import."""
+    from app import delivery_store_pg
+
+    return delivery_store_pg
+
+
 def _connect(path: Path | None = None) -> sqlite3.Connection:
     target = path or database_path()
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -46,6 +66,8 @@ def _connect(path: Path | None = None) -> sqlite3.Connection:
 
 def check_database(path: Path | None = None) -> None:
     """Raise when the delivery database cannot be opened and queried."""
+    if _use_postgres(path):
+        return _pg_backend().check_database(path)
     initialize_schema(path)
     with _connect(path) as connection:
         connection.execute("SELECT 1").fetchone()
@@ -208,6 +230,8 @@ CREATE TABLE IF NOT EXISTS webhook_deliveries (
 
 
 def initialize_schema(path: Path | None = None) -> None:
+    if _use_postgres(path):
+        return _pg_backend().initialize_schema(path)
     with _connect(path) as connection:
         connection.executescript(SCHEMA)
 
@@ -327,6 +351,11 @@ def migrate_json_state(
     Inserts are keyed by stable record identifiers, so even deleting the
     migration marker and re-running the import cannot create duplicates.
     """
+    if _use_postgres(path):
+        return _pg_backend().migrate_json_state(
+            applications_file, pipeline_file, jobs_file, audit_file,
+            path=path, backup_dir=backup_dir,
+        )
     initialize_schema(path)
     files = [applications_file, pipeline_file, jobs_file, audit_file]
     default_backup_dir = Path(
@@ -398,6 +427,8 @@ def migrate_json_state(
 
 
 def migrate_default_json_state(path: Path | None = None) -> dict[str, int]:
+    if _use_postgres(path):
+        return _pg_backend().migrate_default_json_state(path)
     data_dir = BASE_DIR / "app" / "data"
     return migrate_json_state(
         data_dir / "applications.json",
@@ -467,6 +498,8 @@ def _upsert_service(
 
 
 def replace_applications(applications: list[dict[str, Any]], path: Path | None = None) -> None:
+    if _use_postgres(path):
+        return _pg_backend().replace_applications(applications, path)
     initialize_schema(path)
     ids = {application["id"] for application in applications}
     with _connect(path) as connection:
@@ -483,6 +516,8 @@ def replace_applications(applications: list[dict[str, Any]], path: Path | None =
 
 
 def list_applications(path: Path | None = None) -> list[dict[str, Any]]:
+    if _use_postgres(path):
+        return _pg_backend().list_applications(path)
     initialize_schema(path)
     with _connect(path) as connection:
         rows = connection.execute("SELECT payload FROM applications ORDER BY created_at").fetchall()
@@ -544,6 +579,8 @@ def _upsert_pipeline_stage(
 
 
 def upsert_pipeline_run(run: dict[str, Any], path: Path | None = None) -> None:
+    if _use_postgres(path):
+        return _pg_backend().upsert_pipeline_run(run, path)
     initialize_schema(path)
     with _connect(path) as connection:
         _upsert_pipeline_run(connection, run)
@@ -555,6 +592,8 @@ def upsert_pipeline_run(run: dict[str, Any], path: Path | None = None) -> None:
 def list_pipeline_runs(
     application_id: str | None = None, path: Path | None = None
 ) -> list[dict[str, Any]]:
+    if _use_postgres(path):
+        return _pg_backend().list_pipeline_runs(application_id, path)
     initialize_schema(path)
     query = "SELECT payload FROM pipeline_runs"
     params: tuple[Any, ...] = ()
@@ -567,10 +606,49 @@ def list_pipeline_runs(
     return [_decode(row) for row in rows]
 
 
+def get_pipeline_run(run_id: str, path: Path | None = None) -> dict[str, Any] | None:
+    """Load a single pipeline run by id (used by the Celery worker)."""
+    if _use_postgres(path):
+        return _pg_backend().get_pipeline_run(run_id, path)
+    initialize_schema(path)
+    with _connect(path) as connection:
+        row = connection.execute(
+            "SELECT payload FROM pipeline_runs WHERE id = ?", (run_id,)
+        ).fetchone()
+    return _decode(row) if row else None
+
+
+def mark_pipeline_running(
+    run_id: str, worker_id: str, path: Path | None = None
+) -> dict[str, Any] | None:
+    """Transition a queued run to Running, recording worker/attempt metadata.
+
+    Celery's broker already guarantees single delivery; this only mirrors the
+    observability fields the old SQLite claim loop used to write.
+    """
+    if _use_postgres(path):
+        return _pg_backend().mark_pipeline_running(run_id, worker_id, path)
+    run = get_pipeline_run(run_id, path=path)
+    if not run:
+        return None
+    if run.get("status") == "Running":
+        return run
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    run["status"] = "Running"
+    run["worker_id"] = worker_id
+    run["claimed_at"] = now
+    run["updated_at"] = now
+    run["attempt"] = int(run.get("attempt", 0) or 0) + 1
+    upsert_pipeline_run(run, path=path)
+    return run
+
+
 def claim_next_pipeline_run(
     worker_id: str, path: Path | None = None
 ) -> dict[str, Any] | None:
     """Atomically claim the oldest queued run for one standalone worker."""
+    if _use_postgres(path):
+        return _pg_backend().claim_next_pipeline_run(worker_id, path)
     if not worker_id.strip():
         raise ValueError("worker_id is required")
     initialize_schema(path)
@@ -602,6 +680,8 @@ def claim_next_pipeline_run(
 
 
 def has_active_pipeline(application_id: str, path: Path | None = None) -> bool:
+    if _use_postgres(path):
+        return _pg_backend().has_active_pipeline(application_id, path)
     initialize_schema(path)
     with _connect(path) as connection:
         row = connection.execute(
@@ -613,6 +693,8 @@ def has_active_pipeline(application_id: str, path: Path | None = None) -> bool:
 
 def reserve_pipeline_run(run: dict[str, Any], path: Path | None = None) -> None:
     """Atomically enforce per-application and platform-wide pipeline limits."""
+    if _use_postgres(path):
+        return _pg_backend().reserve_pipeline_run(run, path)
     initialize_schema(path)
     connection = _connect(path)
     try:
@@ -672,6 +754,8 @@ def _upsert_job(
 
 
 def replace_jobs(jobs: list[dict[str, Any]], path: Path | None = None) -> None:
+    if _use_postgres(path):
+        return _pg_backend().replace_jobs(jobs, path)
     initialize_schema(path)
     with _connect(path) as connection:
         for job in jobs:
@@ -679,6 +763,8 @@ def replace_jobs(jobs: list[dict[str, Any]], path: Path | None = None) -> None:
 
 
 def list_jobs(path: Path | None = None) -> list[dict[str, Any]]:
+    if _use_postgres(path):
+        return _pg_backend().list_jobs(path)
     initialize_schema(path)
     with _connect(path) as connection:
         rows = connection.execute("SELECT payload FROM jobs ORDER BY created_at DESC").fetchall()
@@ -705,6 +791,8 @@ def _upsert_audit(
 
 
 def replace_audit_logs(logs: list[dict[str, Any]], path: Path | None = None) -> None:
+    if _use_postgres(path):
+        return _pg_backend().replace_audit_logs(logs, path)
     initialize_schema(path)
     with _connect(path) as connection:
         for audit in logs:
@@ -712,6 +800,8 @@ def replace_audit_logs(logs: list[dict[str, Any]], path: Path | None = None) -> 
 
 
 def list_audit_logs(path: Path | None = None) -> list[dict[str, Any]]:
+    if _use_postgres(path):
+        return _pg_backend().list_audit_logs(path)
     initialize_schema(path)
     with _connect(path) as connection:
         rows = connection.execute("SELECT payload FROM audit_logs ORDER BY created_at DESC").fetchall()
@@ -776,6 +866,8 @@ def create_deployment_record(
     deployment: dict[str, Any], path: Path | None = None
 ) -> dict[str, Any]:
     """Allocate an application-scoped version and insert atomically."""
+    if _use_postgres(path):
+        return _pg_backend().create_deployment_record(deployment, path)
     initialize_schema(path)
     connection = _connect(path)
     try:
@@ -803,6 +895,8 @@ def create_deployment_record(
 def update_deployment_record(
     deployment: dict[str, Any], path: Path | None = None
 ) -> dict[str, Any]:
+    if _use_postgres(path):
+        return _pg_backend().update_deployment_record(deployment, path)
     initialize_schema(path)
     with _connect(path) as connection:
         _upsert_deployment(connection, deployment)
@@ -811,6 +905,8 @@ def update_deployment_record(
 
 
 def get_deployment(deployment_id: str, path: Path | None = None) -> dict[str, Any] | None:
+    if _use_postgres(path):
+        return _pg_backend().get_deployment(deployment_id, path)
     initialize_schema(path)
     with _connect(path) as connection:
         row = connection.execute(
@@ -822,6 +918,8 @@ def get_deployment(deployment_id: str, path: Path | None = None) -> dict[str, An
 def list_deployments(
     application_id: str | None = None, path: Path | None = None
 ) -> list[dict[str, Any]]:
+    if _use_postgres(path):
+        return _pg_backend().list_deployments(application_id, path)
     initialize_schema(path)
     query = "SELECT payload FROM deployments"
     params: tuple[Any, ...] = ()
@@ -842,6 +940,10 @@ def claim_webhook_delivery(
     metadata: dict[str, Any],
     path: Path | None = None,
 ) -> bool:
+    if _use_postgres(path):
+        return _pg_backend().claim_webhook_delivery(
+            delivery_id, application_id, event_type, commit_sha, metadata, path
+        )
     initialize_schema(path)
     with _connect(path) as connection:
         cursor = connection.execute(

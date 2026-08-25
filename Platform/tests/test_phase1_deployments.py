@@ -111,6 +111,44 @@ class VerifyTests(unittest.TestCase):
         self.assertTrue(changed)
         self.assertEqual(application["services"][0]["node_port"], "30146")
 
+    def test_namespace_is_applied_before_registry_pull_secret(self):
+        application = self._application()
+        application["services"][0]["image"] = "example/map:v1"
+        order = []
+
+        def ensure_namespace(_application):
+            order.append("namespace")
+            return True, "namespace applied"
+
+        def ensure_pull_secret(_application, _registry):
+            order.append("pull-secret")
+            return True, "imagePullSecret applied"
+
+        with patch.object(kubectl, "ensure_application_namespace", side_effect=ensure_namespace), \
+                patch.object(kubectl, "_get_registry_config", return_value={"username": "ci", "password": "token"}), \
+                patch.object(kubectl, "_has_valid_registry_credentials", return_value=True), \
+                patch.object(kubectl, "ensure_registry_pull_secret", side_effect=ensure_pull_secret), \
+                patch.object(kubectl, "write_manifest", return_value=Path("/tmp/map.yaml")), \
+                patch.object(kubectl, "run_kubectl", return_value=(True, "applied")), \
+                patch.object(kubectl, "discover_application_url", return_value="http://node:30082"), \
+                patch.object(kubectl, "save_application"), \
+                patch.object(kubectl, "add_activity"):
+            success, _ = kubectl.deploy_application(application)
+
+        self.assertTrue(success)
+        self.assertEqual(order, ["namespace", "pull-secret"])
+
+    def test_namespace_apply_uses_application_identity(self):
+        application = self._application()
+        with patch.object(kubectl, "run_kubectl", return_value=(True, "applied")) as run:
+            success, message = kubectl.ensure_application_namespace(application)
+
+        self.assertTrue(success)
+        self.assertEqual(message, "namespace applied")
+        payload = json.loads(run.call_args.kwargs["stdin"])
+        self.assertEqual(payload["metadata"]["name"], "map")
+        self.assertEqual(payload["metadata"]["labels"]["platform/application"], "map")
+
 
 class DeploymentAndRollbackTests(unittest.TestCase):
     def setUp(self):

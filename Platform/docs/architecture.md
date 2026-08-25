@@ -8,8 +8,11 @@ flowchart LR
     GitHub -->|HMAC webhook| Web[Flask Web / Gunicorn]
     Admin[Admin] --> Web
     Viewer[Viewer] --> Web
-    Web -->|enqueue| SQLite[(SQLite + task queue)]
-    Worker[Pipeline Worker] -->|atomic claim| SQLite
+    Web -->|enqueue Celery| Redis[(Redis broker)]
+    Web --> PostgreSQL[(PostgreSQL)]
+    Worker[Celery Worker] -->|SELECT FOR UPDATE SKIP LOCKED| PostgreSQL
+    Worker -->|publish Pub/Sub| Redis
+    Redis -->|claim task| Worker
     Worker --> Source[SOURCE]
     Source --> Build[BUILD]
     Build --> Test[TEST]
@@ -20,39 +23,44 @@ flowchart LR
     K8s --> Verify[VERIFY]
     K8s --> Monitoring[Prometheus / Grafana / HPA / Logs]
     Web --> Monitoring
-    SQLite --> Backup[Backup SQLite + secret metadata]
+    Web -->|SSE realtime| Redis
+    PostgreSQL --> Backup[Backup PostgreSQL + secret metadata]
     SecretStore[(Secret stores on PVC)] -. values excluded .-> Backup
 ```
 
 ## Ranh giới process và dữ liệu
 
-- Gunicorn chạy đúng một web worker process theo topology SQLite hiện tại. Web
-  xác thực, kiểm tra CSRF/RBAC, render UI và ghi pipeline ở trạng thái `Queued`.
-- `python -m app.pipeline_worker` là process riêng. Worker dùng transaction
-  `BEGIN IMMEDIATE` để claim duy nhất task cũ nhất rồi chạy
-  `SOURCE → BUILD → TEST → PUSH → DEPLOY → VERIFY`.
-- Web restart không đọc hoặc thay đổi queue. Khi worker mới khởi động, run còn
-  `Running` được kết thúc ở trạng thái `Interrupted`; retry là thao tác có chủ
-  ý, tạo run mới. Run `Queued` vẫn nguyên vẹn và được worker nhận.
-- SQLite là nguồn dữ liệu chuẩn cho application, pipeline, stage, deployment,
-  job, audit và webhook delivery. JSON cũ chỉ phục vụ migration/tương thích.
-- SQLite, application secret store, registry credential store và webhook secret
-  store nằm trên cùng PVC `/var/lib/platform`.
+- **PostgreSQL** (`DATABASE_URL`) là nguồn dữ liệu chuẩn cho application, pipeline,
+  stage, deployment, job, audit, webhook delivery và users. **SQLite** vẫn là
+  backend fallback cho dev/test (khi truyền `path=` tường minh hoặc chưa đặt
+  `DATABASE_URL`); JSON cũ chỉ phục vụ migration/tương thích.
+- Web xác thực, kiểm tra CSRF/RBAC, render UI và ghi pipeline ở trạng thái
+  `Queued` (qua `reserve_pipeline_run` dùng `pg_advisory_xact_lock`).
+- **Celery Worker** (`celery -A app.worker.celery_app worker`) là process riêng,
+  nhận task qua **Redis broker**, chạy `SOURCE → BUILD → TEST → PUSH → DEPLOY → VERIFY`.
+  Tiến trình được publish realtime qua Redis Pub/Sub → SSE.
+- Web restart không đổi queue. Khi worker khởi động, run còn `Running` được kết
+  thúc ở trạng thái `Interrupted`; retry là thao tác có chủ ý, tạo run mới.
+- Application secret store, registry credential store và webhook secret store nằm
+  trên cùng PVC `/var/lib/platform`.
 
 ## Giới hạn đồng thời
 
-`reserve_pipeline_run` khóa ghi SQLite để giữ một active pipeline trên mỗi
-application và `PIPELINE_MAX_CONCURRENT` trên toàn Platform. Manifest production
-đặt giới hạn bằng `1`. Không chạy nhiều worker hoặc nhiều replica web khi còn
-dùng SQLite; hướng phát triển là PostgreSQL + Redis/Celery hoặc queue managed.
+`reserve_pipeline_run` giữ một active pipeline trên mỗi application và
+`PIPELINE_MAX_CONCURRENT` trên toàn Platform. Với SQLite (dev/test), giới hạn này
+được ép bằng `BEGIN IMMEDIATE` và chỉ chạy được 1 worker/1 web replica. Với
+PostgreSQL (`DATABASE_URL`), giới hạn dùng `pg_advisory_xact_lock`, queue chạy
+qua **Celery + Redis** nên có thể mở nhiều worker (`--concurrency`) và nhiều web
+replica. Tiến trình deploy được đẩy realtime qua Redis Pub/Sub + SSE
+(`/api/v1/pipeline/<id>/events`).
 
 ## Runtime production
 
 Một Pod `Recreate`, một PVC `ReadWriteOnce`, hai container:
 
 1. `platform`: Gunicorn, `/healthz`, `/readyz`.
-2. `pipeline-worker`: worker SQLite, Docker CLI qua SSH tới build worker và
-   `kubectl` qua ServiceAccount.
+2. `pipeline-worker`: Celery worker (Redis broker, PostgreSQL backend), Docker CLI
+   qua SSH tới build worker và `kubectl` qua ServiceAccount.
 
 Cả hai chạy UID/GID 10001, non-root, seccomp `RuntimeDefault`, drop toàn bộ
 capability và có resource requests/limits. Pod có 60 giây graceful termination.

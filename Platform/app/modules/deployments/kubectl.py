@@ -60,6 +60,10 @@ def deploy_application(application: dict[str, Any]) -> tuple[bool, str]:
         save_application(application)
         return False, "Chưa có Docker image cho application. Vui lòng trigger pipeline từ CI/CD để build trước."
 
+    namespace_ok, namespace_message = ensure_application_namespace(application)
+    if not namespace_ok:
+        return False, f"Không tạo được namespace: {namespace_message}"
+
     registry_config = _get_registry_config(application)
     if _has_valid_registry_credentials(registry_config):
         secret_ok, secret_message = ensure_registry_pull_secret(application, registry_config)
@@ -129,6 +133,26 @@ def deploy_application(application: dict[str, Any]) -> tuple[bool, str]:
     add_activity(application, "DEPLOY", f"Deploy application thất bại sau {max_retries} lần thử: {last_output[:300]}", "Failed")
     save_application(application)
     return False, last_output
+
+
+def ensure_application_namespace(application: dict[str, Any]) -> tuple[bool, str]:
+    """Create the application namespace before applying namespaced resources."""
+    namespace = application["namespace"]
+    manifest = json.dumps({
+        "apiVersion": "v1",
+        "kind": "Namespace",
+        "metadata": {
+            "name": namespace,
+            "labels": {
+                "managed-by": "luanvan-platform",
+                "platform/application": application["id"],
+            },
+        },
+    })
+    success, output = run_kubectl(
+        ["apply", "--validate=false", "-f", "-"], timeout=45, stdin=manifest
+    )
+    return success, "namespace applied" if success else output
 
 
 def ensure_registry_pull_secret(

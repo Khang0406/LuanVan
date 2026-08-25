@@ -14,6 +14,7 @@ from .modules.auth.routes import auth_bp
 from .ui.mock_data import dashboard_stats
 from .ui.routes import ui_bp
 from .modules.pipeline.webhook import github_webhook_bp
+from .modules.api.routes import api_bp
 
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
@@ -47,6 +48,7 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(github_webhook_bp)
+    app.register_blueprint(api_bp)
 
     @login_manager.user_loader
     def load_user(user_id: str):

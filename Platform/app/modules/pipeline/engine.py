@@ -26,6 +26,7 @@ from app.delivery_store import (
 from app.json_store import is_list_of_dicts, mask_secrets, normalize_status, read_json, update_json, write_json
 from app.modules.monitoring.k8s_manifests import deploy_servicemonitor
 from app.modules.pipeline.build import build_from_github, test_docker_image
+from app.realtime import pipeline_stage, pipeline_status
 
 DATA_DIR = BASE_DIR / "app" / "data"
 PIPELINE_FILE = DATA_DIR / "pipeline_runs.json"
@@ -107,6 +108,13 @@ def _update_stage(run: dict[str, Any], stage_name: str, status: str, message: st
             break
     run["updated_at"] = now
     _save_pipeline_run(run)
+    pipeline_stage(
+        run.get("id", ""),
+        run.get("application_id", ""),
+        stage_name,
+        status,
+        mask_secrets(message),
+    )
     if status in {"Done", "Failed", "Skipped"}:
         try:
             from app.modules.audit.service import record_audit
@@ -168,6 +176,7 @@ def _stop_failed_pipeline(
     pipeline_run["finished_at"] = now
     pipeline_run["updated_at"] = now
     _save_pipeline_run(pipeline_run)
+    pipeline_status(pipeline_run.get("id", ""), pipeline_run.get("application_id", ""), "Failed")
     add_activity(
         application, "PIPELINE",
         f"Pipeline {pipeline_run['id']} stopped because {failed_stage} failed.", "Failed",
@@ -559,6 +568,11 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
 
     pipeline_run["finished_at"] = _now()
     _save_pipeline_run(pipeline_run)
+    pipeline_status(
+        pipeline_run.get("id", ""),
+        pipeline_run.get("application_id", ""),
+        pipeline_run["status"],
+    )
     save_application(application)
     _finish_pipeline_job(pipeline_run)
 
@@ -647,7 +661,23 @@ def trigger_pipeline(
     pipeline_run["job_id"] = job["id"]
     # Attach the Job ID to the reserved database record.
     _save_pipeline_run(pipeline_run)
-    add_activity(application, "PIPELINE", f"Pipeline {run_id} queued (6 stages)", "Pending")
+
+    # Enqueue to the Redis-backed Celery worker when available; otherwise the
+    # standalone SQLite polling worker picks the run up (existing behavior).
+    from app.redis_client import is_available as redis_available
+
+    if redis_available():
+        from app.worker import run_pipeline
+
+        run_pipeline.delay(pipeline_run["id"])
+        add_activity(
+            application, "PIPELINE",
+            f"Pipeline {run_id} đã vào Redis queue (Celery worker).", "Pending",
+        )
+    else:
+        add_activity(application, "PIPELINE", f"Pipeline {run_id} queued (6 stages)", "Pending")
+
+    pipeline_status(pipeline_run["id"], application_id, "Queued")
     save_application(application)
 
     return pipeline_run

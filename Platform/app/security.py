@@ -33,6 +33,10 @@ def validate_csrf() -> None:
         return
     if request.endpoint in CSRF_EXEMPT_ENDPOINTS:
         return
+    # The REST API is token/session authenticated and not form-driven; it
+    # performs its own authorization/scope checks on every endpoint.
+    if request.blueprint == "api":
+        return
 
     expected = session.get("_csrf_token", "")
     supplied = request.form.get("csrf_token", "") or request.headers.get("X-CSRF-Token", "")
