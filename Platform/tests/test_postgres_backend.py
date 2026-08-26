@@ -1,12 +1,12 @@
 """PostgreSQL backend integration tests.
 
-These tests run only when ``DATABASE_URL`` points at a live PostgreSQL server
-(e.g. the ``docker-compose.yml`` service). They are skipped by default so the
-normal SQLite test run stays green without external dependencies.
+These tests run only when ``POSTGRES_TEST_DATABASE_URL`` points at a disposable
+PostgreSQL database whose name ends in ``_test``. They are skipped by default
+so the normal SQLite test run stays green without external dependencies.
 
 Run::
 
-    DATABASE_URL=postgresql+psycopg2://platform:platform@localhost:5432/platform \
+    POSTGRES_TEST_DATABASE_URL=postgresql+psycopg2://platform:platform@localhost:5432/platform_test \
         python -m unittest tests.test_postgres_backend -v
 """
 
@@ -14,12 +14,27 @@ import os
 import threading
 import unittest
 import uuid
+from urllib.parse import urlparse
+
+# Integration tests must never reuse DATABASE_URL from the web/runtime process.
+# They run only when an explicit, clearly named disposable database is supplied.
+TEST_DATABASE_URL = os.getenv("POSTGRES_TEST_DATABASE_URL", "").strip()
+if TEST_DATABASE_URL:
+    parsed_test_url = TEST_DATABASE_URL.replace(
+        "postgresql+psycopg2", "postgresql"
+    )
+    database_name = urlparse(parsed_test_url).path.lstrip("/")
+    if not database_name.endswith("_test"):
+        raise RuntimeError(
+            "POSTGRES_TEST_DATABASE_URL must target a database ending in '_test'"
+        )
+    os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 from app.delivery_store import _use_postgres
 
 
 def _require_postgres() -> bool:
-    return _use_postgres(None)
+    return bool(TEST_DATABASE_URL) and _use_postgres(None)
 
 
 @unittest.skipUnless(_require_postgres(), "PostgreSQL not configured; skipping")
@@ -80,12 +95,81 @@ class PostgresBackendTests(unittest.TestCase):
 
         claimed = mark_pipeline_running(run["id"], "worker-x")
         self.assertEqual(claimed["status"], "Running")
+        self.assertIsNone(mark_pipeline_running(run["id"], "worker-y"))
+        from app.delivery_store import renew_pipeline_lease
+        self.assertFalse(renew_pipeline_lease(run["id"], "worker-y"))
+        self.assertTrue(renew_pipeline_lease(run["id"], "worker-x"))
         self.assertIsNone(claim_next_pipeline_run("worker-y"))
 
         # Per-application limit: a second queued run is rejected.
         duplicate = dict(run, id=f"run-{self.suffix}-2")
         with self.assertRaises(ValueError):
             reserve_pipeline_run(duplicate)
+
+    def test_duplicate_delivery_claims_exactly_once_under_concurrency(self):
+        from app.delivery_store import (
+            mark_pipeline_running,
+            replace_applications,
+            reserve_pipeline_run,
+        )
+
+        replace_applications([self._application()])
+        run = {
+            "id": f"redelivery-{self.suffix}",
+            "application_id": self.application_id,
+            "status": "Queued",
+            "trigger_type": "Manual",
+            "created_at": "2026-01-01",
+            "updated_at": "2026-01-01",
+            "stages": [],
+        }
+        reserve_pipeline_run(run)
+        barrier = threading.Barrier(2)
+        claims = []
+        lock = threading.Lock()
+
+        def claim(worker_id: str) -> None:
+            barrier.wait()
+            claimed = mark_pipeline_running(run["id"], worker_id, lease_seconds=60)
+            with lock:
+                claims.append(claimed)
+
+        threads = [threading.Thread(target=claim, args=(f"worker-{index}",)) for index in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertEqual(sum(claimed is not None for claimed in claims), 1)
+
+    def test_expired_lease_is_recovered(self):
+        from app.delivery_store import (
+            get_pipeline_run,
+            mark_pipeline_running,
+            recover_expired_pipeline_runs,
+            replace_applications,
+            reserve_pipeline_run,
+            upsert_pipeline_run,
+        )
+
+        replace_applications([self._application()])
+        run = {
+            "id": f"expired-{self.suffix}",
+            "application_id": self.application_id,
+            "status": "Queued",
+            "trigger_type": "Manual",
+            "created_at": "2026-01-01",
+            "updated_at": "2026-01-01",
+            "stages": [{"name": "BUILD", "status": "Running", "message": ""}],
+        }
+        reserve_pipeline_run(run)
+        mark_pipeline_running(run["id"], "dead-worker", lease_seconds=60)
+        expired = get_pipeline_run(run["id"])
+        expired["lease_expires_at"] = "2000-01-01T00:00:00Z"
+        upsert_pipeline_run(expired)
+
+        self.assertEqual(recover_expired_pipeline_runs(), 1)
+        self.assertEqual(get_pipeline_run(run["id"])["status"], "Interrupted")
 
     def test_deployment_versions_are_unique_under_concurrency(self):
         from app.delivery_store import create_deployment_record, list_deployments, replace_applications

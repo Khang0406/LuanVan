@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +32,7 @@ from app.delivery_store import (
     _backup_json_files,
     _configuration_payload,
     _deployment_payload,
+    _interrupt_expired_run,
     _manifest_without_secrets,
     _payload,
 )
@@ -197,11 +198,27 @@ def _database_url() -> str:
     return os.getenv("DATABASE_URL", "").strip()
 
 
+# Reuse a single SQLAlchemy engine + connection pool for the whole process.
+# Creating a new engine per call leaks a new pool (and its connections) each
+# time, which quickly exhausts PostgreSQL's connection limit.
+_engine_instance = None
+
+
 def _engine():
-    url = _database_url()
-    if not url:
-        raise RuntimeError("DATABASE_URL is required for the PostgreSQL backend")
-    return create_engine(url, pool_pre_ping=True, future=True)
+    global _engine_instance
+    if _engine_instance is None:
+        url = _database_url()
+        if not url:
+            raise RuntimeError("DATABASE_URL is required for the PostgreSQL backend")
+        _engine_instance = create_engine(
+            url,
+            pool_pre_ping=True,
+            future=True,
+            pool_size=5,
+            max_overflow=10,
+            pool_recycle=3600,
+        )
+    return _engine_instance
 
 
 def initialize_schema(path: Path | None = None) -> None:
@@ -624,23 +641,104 @@ def get_pipeline_run(run_id: str, path: Path | None = None) -> dict[str, Any] | 
     return json.loads(row["payload"]) if row else None
 
 
-def mark_pipeline_running(
-    run_id: str, worker_id: str, path: Path | None = None
-) -> dict[str, Any] | None:
-    run = get_pipeline_run(run_id, path=path)
-    if not run:
-        return None
-    if run.get("status") == "Running":
-        return run
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    run["status"] = "Running"
-    run["worker_id"] = worker_id
-    run["claimed_at"] = now
-    run["updated_at"] = now
-    run["attempt"] = int(run.get("attempt", 0) or 0) + 1
-    upsert_pipeline_run(run, path=path)
-    return run
+def _lease_seconds(value: int | None = None) -> int:
+    return value or max(30, int(os.getenv("PIPELINE_LEASE_SECONDS", "300")))
 
+
+def mark_pipeline_running(
+    run_id: str, worker_id: str, path: Path | None = None,
+    *, lease_seconds: int | None = None,
+) -> dict[str, Any] | None:
+    """Atomically change Queued to Running; duplicate deliveries get ``None``."""
+    if not worker_id.strip():
+        raise ValueError("worker_id is required")
+    lease_seconds = _lease_seconds(lease_seconds)
+    initialize_schema(path)
+    with _engine().begin() as conn:
+        row = conn.execute(
+            text(
+                "SELECT payload::text AS payload FROM pipeline_runs "
+                "WHERE id = :id AND status = 'Queued' FOR UPDATE"
+            ),
+            {"id": run_id},
+        ).mappings().first()
+        if not row:
+            return None
+        run = json.loads(row["payload"])
+        now = datetime.now(timezone.utc)
+        timestamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+        run.update({
+            "status": "Running",
+            "worker_id": worker_id,
+            "claimed_at": timestamp,
+            "heartbeat_at": timestamp,
+            "lease_expires_at": (now + timedelta(seconds=lease_seconds)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "updated_at": timestamp,
+            "attempt": int(run.get("attempt", 0) or 0) + 1,
+        })
+        _upsert_pipeline_run(conn, run)
+        return run
+
+
+def renew_pipeline_lease(
+    run_id: str, worker_id: str, path: Path | None = None,
+    *, lease_seconds: int | None = None,
+) -> bool:
+    """Extend an owned lease without replacing concurrently updated stage data."""
+    lease_seconds = _lease_seconds(lease_seconds)
+    initialize_schema(path)
+    now = datetime.now(timezone.utc)
+    heartbeat_at = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    lease_expires_at = (now + timedelta(seconds=lease_seconds)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    with _engine().begin() as conn:
+        result = conn.execute(
+            text("""UPDATE pipeline_runs
+                SET updated_at = :heartbeat_at,
+                    payload = jsonb_set(
+                        jsonb_set(
+                            jsonb_set(payload, '{heartbeat_at}', to_jsonb(CAST(:heartbeat_at AS text)), true),
+                            '{lease_expires_at}', to_jsonb(CAST(:lease_expires_at AS text)), true),
+                        '{updated_at}', to_jsonb(CAST(:heartbeat_at AS text)), true)
+                WHERE id = :id AND status = 'Running'
+                  AND payload->>'worker_id' = :worker_id"""),
+            {
+                "heartbeat_at": heartbeat_at,
+                "lease_expires_at": lease_expires_at,
+                "id": run_id,
+                "worker_id": worker_id,
+            },
+        )
+    return result.rowcount == 1
+
+
+def recover_expired_pipeline_runs(path: Path | None = None) -> int:
+    initialize_schema(path)
+    now = datetime.now(timezone.utc)
+    recovered = 0
+    with _engine().begin() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT payload::text AS payload FROM pipeline_runs "
+                "WHERE status = 'Running' FOR UPDATE SKIP LOCKED"
+            )
+        ).mappings().all()
+        for row in rows:
+            run = json.loads(row["payload"])
+            raw_expiry = str(run.get("lease_expires_at", ""))
+            if not raw_expiry:
+                continue
+            try:
+                expiry = datetime.fromisoformat(raw_expiry.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if expiry > now:
+                continue
+            recovered += 1
+            _interrupt_expired_run(run, now)
+            _upsert_pipeline_run(conn, run)
+            for position, stage in enumerate(run.get("stages", [])):
+                _upsert_pipeline_stage(conn, run["id"], position, stage)
+    return recovered
 
 def claim_next_pipeline_run(
     worker_id: str, path: Path | None = None

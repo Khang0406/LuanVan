@@ -210,3 +210,147 @@ PIPELINE_MAX_CONCURRENT=4
   `celery -A app.worker.celery_app worker --concurrency=4 --loglevel=info`
   (tương đương `python -m app.pipeline_worker` trước đây).
 - Muốn rollback về SQLite: xóa 2 dòng `DATABASE_URL`/`REDIS_URL` trong `.env` rồi restart.
+
+---
+
+## 8. Tối ưu & kiểm tra lần 2 (2026-08-25)
+
+### 8.1 Vấn đề phát hiện & xử lý
+
+| # | Vấn đề | Mức độ | Xử lý |
+|---|---|---|---|
+| 1 | `delivery_store_pg._engine()` tạo engine mới mỗi lần gọi → rò rỉ connection pool (PostgreSQL lên tới **26 connections** chỉ với web + 1 worker) | Cao | Cache engine thành **singleton** (`pool_size=5`, `max_overflow=10`, `pool_recycle=3600`) → còn **9 connections** |
+| 2 | API dùng bearer token gọi `find_accessible_application(..., current_user)` — `current_user` là anonymous → token hợp lệ vẫn bị trả **404** | Cao | Thêm `_ApiPrincipal` + `_principal()`: token → admin principal; thay `current_user` bằng `_principal()` ở mọi access check |
+| 3 | `app/worker.py` đặt `load_dotenv()` ở module level → khi `engine.trigger_pipeline` import `app.worker`, nó load `.env` làm lệch test (test chạy SQLite bị dispatch sang PG) | Cao | Bỏ `load_dotenv()` khỏi `app/worker.py`; tạo **`run_worker.py`** (entry script load `.env` trước khi start Celery) |
+
+### 8.2 Kết quả kiểm chứng
+
+- Test suite: **128/128 OK** (thêm 1 test bearer-token access; 4 test PG skip khi không có `DATABASE_URL`).
+- PostgreSQL connections: **26 → 9** (hết rò rỉ).
+- Bearer token giờ truy cập application đúng: `GET /api/v1/applications/demo-nginx` → 200 (trước là 404).
+- Web `/readyz` → `database: ok`; Celery worker chạy qua `python run_worker.py`.
+
+### 8.3 Cách chạy worker (mới)
+
+```bash
+python run_worker.py   # load .env rồi start Celery (khuyến nghị)
+```
+
+---
+
+## 9. Phase A.1 — Đợt 1: an toàn đa worker (2026-08-25)
+
+### 9.1 Atomic execution gate
+
+- `mark_pipeline_running()` giờ claim nguyên tử duy nhất khi run còn `Queued`.
+- Celery redelivery hoặc hai worker nhận cùng `run_id`: chỉ một worker claim
+  thành công; worker còn lại trả `not_claimed` và không chạy pipeline.
+- Cả SQLite fallback và PostgreSQL đều giữ cùng contract để unit test không lệch
+  production.
+
+### 9.2 Worker lease và heartbeat
+
+- Khi claim, run lưu `worker_id`, `claimed_at`, `heartbeat_at`,
+  `lease_expires_at` và tăng `attempt`.
+- Heartbeat chỉ cập nhật ba trường lease trực tiếp trong JSON/JSONB, không ghi
+  lại payload cũ nên không thể làm mất stage/log cập nhật đồng thời.
+- `worker_ready` không còn đóng toàn bộ run `Running`; chỉ run có lease hết hạn
+  mới chuyển `Interrupted`. Run legacy không có lease được giữ nguyên để tránh
+  nhận nhầm là worker chết.
+- Cấu hình: `PIPELINE_LEASE_SECONDS=300`,
+  `PIPELINE_HEARTBEAT_SECONDS=30`.
+
+### 9.3 Bằng chứng kiểm thử
+
+- Phase A API/worker tests: **15/15 OK**.
+- Full SQLite regression: **131 tests OK**, 4 PostgreSQL integration tests skip
+  đúng thiết kế khi không đặt `DATABASE_URL`.
+- PostgreSQL thật: **6/6 OK**, gồm claim đồng thời hai thread chỉ một thành
+  công, owner-only lease renewal, lease expiry recovery, version concurrency và
+  webhook idempotency.
+- PostgreSQL integration chỉ chạy khi có `POSTGRES_TEST_DATABASE_URL` và tên
+  database kết thúc bằng `_test`; test từ chối database runtime để tránh
+  `replace_applications()` xóa dữ liệu vận hành.
+
+---
+
+## 10. Phase A.2 — Hardening nền tảng dùng chung (2026-08-26)
+
+### 10.1 Mục tiêu và phạm vi
+
+Đợt này không thêm module nghiệp vụ mới. Thay đổi tập trung vào đường đi chung
+của Web, REST API và Celery worker: kiểm tra cấu hình, readiness dependency,
+correlation ID, hợp đồng lỗi API và giới hạn tài nguyên task.
+
+### 10.2 Thay đổi theo vấn đề
+
+| # | Trước tối ưu | Sau tối ưu | File |
+|---|---|---|---|
+| 1 | Production vẫn có thể khởi động với SQLite hoặc không có Redis | Khi `PLATFORM_ENV=production`, hệ thống từ chối khởi động nếu không dùng PostgreSQL, thiếu Redis, cookie không secure hoặc còn secret mặc định | `app/config.py` |
+| 2 | Bearer token ngắn có thể được chấp nhận trong production | Token được cấu hình phải dài tối thiểu 32 ký tự; token rỗng vẫn cho phép tắt machine authentication | `app/config.py` |
+| 3 | `/readyz` chỉ kiểm tra database và thư mục dữ liệu | Nếu `REDIS_URL` được đặt, readiness ping Redis thật; Redis hỏng trả HTTP 503 nên load balancer không chuyển traffic vào instance chưa sẵn sàng | `app/__init__.py`, `app/redis_client.py` |
+| 4 | Khó nối một lỗi UI/API với access log | Mỗi request có `X-Request-ID`, `Server-Timing` và một access log gồm method/path/status/duration/request_id | `app/observability.py`, `app/__init__.py` |
+| 5 | API success/error không mang mã truy vết | Envelope API giữ `data/error` để tương thích và thêm `meta.request_id`; error hỗ trợ `details` có cấu trúc | `app/modules/api/routes.py` |
+| 6 | Pipeline task có thể giữ worker vô hạn; result backend tăng không giới hạn | Thêm soft/hard time limit, Redis visibility timeout, broker reconnect vô hạn và TTL cho Celery result | `app/worker.py` |
+| 7 | Cấu hình mẫu để concurrency bằng 1 | Mẫu mới dùng 4 worker slot và khai báo đầy đủ lease, heartbeat, task timeout, visibility timeout, result expiry | `.env.example` |
+| 8 | Chưa có regression test riêng cho hardening | Thêm 5 test cho production guard, request ID, Redis readiness và Celery safety | `tests/test_phase_a_hardening.py` |
+
+### 10.3 Hợp đồng HTTP mới
+
+Mọi response Web/API có hai header:
+
+- `X-Request-ID`: dùng lại giá trị client gửi nếu hợp lệ, nếu không tự sinh UUID.
+- `Server-Timing: app;dur=<milliseconds>`: thời gian xử lý trong Flask.
+
+REST API giữ tương thích với client cũ:
+
+```json
+{
+  "data": {},
+  "error": null,
+  "meta": {
+    "request_id": "acceptance-request-1"
+  }
+}
+```
+
+Khi lỗi, `data=null`; `error` gồm `code`, `message` và có thể có
+`details`. Người vận hành dùng `meta.request_id` để tìm đúng access log.
+
+### 10.4 Cấu hình mới và giá trị mặc định
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---:|---|
+| `PIPELINE_MAX_CONCURRENT` | 4 trong file mẫu | Số task chạy đồng thời trên một worker |
+| `PIPELINE_TASK_SOFT_TIME_LIMIT` | 3300 giây | Báo timeout mềm để task có cơ hội kết thúc |
+| `PIPELINE_TASK_TIME_LIMIT` | 3600 giây | Worker cưỡng chế dừng task quá hạn |
+| `CELERY_VISIBILITY_TIMEOUT` | 7200 giây | Thời gian Redis giữ task đã giao trước khi redelivery |
+| `CELERY_RESULT_EXPIRES` | 86400 giây | Xóa result Celery sau 24 giờ |
+
+Ràng buộc: hard time limit luôn lớn hơn soft time limit trong `Config`.
+Lease/heartbeat vẫn là cơ chế phục hồi trạng thái pipeline bền vững; Celery
+timeout là lớp bảo vệ tài nguyên bổ sung.
+
+### 10.5 Kiểm thử và bằng chứng
+
+- Targeted hardening + API regression: **20/20 OK**.
+- Full suite: **138 tests**, **OK**, **6 skipped** (PostgreSQL integration chỉ
+  chạy khi đặt `POSTGRES_TEST_DATABASE_URL` trỏ tới database `*_test`).
+- Lần chạy đầu dùng biến `TEMP` của Windows/WSL làm 2 test chmod/path thất bại.
+  Chạy lại với `TMPDIR=/tmp TEMP=/tmp TMP=/tmp` đạt toàn bộ; đây là khác biệt
+  filesystem của môi trường test, không phải lỗi nghiệp vụ.
+- `git diff --check`: không có lỗi whitespace.
+
+### 10.6 Hạng mục chủ động chưa đưa vào đợt này
+
+Các việc sau cần một đợt thiết kế/migration riêng, không ghép vào hardening để
+tránh rủi ro dữ liệu đang phát triển:
+
+- Alembic và migration version cho cả bảng SQLAlchemy lẫn delivery schema.
+- API token đa người dùng lưu dạng hash, scope và expiry trong PostgreSQL.
+- Pagination/retention job, audit log, pipeline và deployment.
+- Cancel pipeline đang chạy và retry policy phân loại theo lỗi.
+- Chuẩn hóa toàn bộ status legacy trong dữ liệu cũ.
+
+Đây là backlog Phase A.3; ưu tiên tiếp theo nên là Alembic + pagination/retention,
+sau đó mới token registry và pipeline cancellation.

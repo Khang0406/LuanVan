@@ -8,6 +8,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from .config import Config
 from .db import db
 from .models import User
+from .observability import register_http_observability
 from .security import generate_csrf_token, validate_csrf
 from .modules.auth.admin import admin_bp
 from .modules.auth.routes import auth_bp
@@ -41,6 +42,7 @@ def create_app(config_class=Config):
 
     db.init_app(app)
     login_manager.init_app(app)
+    register_http_observability(app)
     app.before_request(validate_csrf)
     app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
@@ -88,6 +90,13 @@ def create_app(config_class=Config):
             from .delivery_store import check_database, database_path
 
             check_database()
+            redis_status = "disabled"
+            if os.getenv("REDIS_URL", "").strip():
+                from .redis_client import ping
+
+                if not ping():
+                    raise RuntimeError("Redis is configured but unavailable")
+                redis_status = "ok"
             data_dir = Path(os.getenv("PLATFORM_DATA_DIR", database_path().parent))
             data_dir.mkdir(parents=True, exist_ok=True)
             probe = data_dir / ".readyz-write-probe"
@@ -109,6 +118,7 @@ def create_app(config_class=Config):
             "database": "ok",
             "data_directory": "ok",
             "configuration": "ok",
+            "redis": redis_status,
         }), 200
 
     return app

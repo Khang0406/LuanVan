@@ -15,7 +15,7 @@ import shutil
 import sqlite3
 import uuid
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -618,30 +618,149 @@ def get_pipeline_run(run_id: str, path: Path | None = None) -> dict[str, Any] | 
     return _decode(row) if row else None
 
 
-def mark_pipeline_running(
-    run_id: str, worker_id: str, path: Path | None = None
-) -> dict[str, Any] | None:
-    """Transition a queued run to Running, recording worker/attempt metadata.
+def _lease_seconds(value: int | None = None) -> int:
+    return value or max(30, int(os.getenv("PIPELINE_LEASE_SECONDS", "300")))
 
-    Celery's broker already guarantees single delivery; this only mirrors the
-    observability fields the old SQLite claim loop used to write.
+
+def _lease_timestamp(now: datetime, seconds: int) -> str:
+    return (now + timedelta(seconds=seconds)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def mark_pipeline_running(
+    run_id: str, worker_id: str, path: Path | None = None,
+    *, lease_seconds: int | None = None,
+) -> dict[str, Any] | None:
+    """Atomically claim one queued run for ``worker_id``.
+
+    ``None`` means another delivery already claimed the run. Celery uses late
+    acknowledgements, so the durable store is the final execution gate.
     """
     if _use_postgres(path):
-        return _pg_backend().mark_pipeline_running(run_id, worker_id, path)
-    run = get_pipeline_run(run_id, path=path)
-    if not run:
-        return None
-    if run.get("status") == "Running":
+        return _pg_backend().mark_pipeline_running(
+            run_id, worker_id, path, lease_seconds=lease_seconds
+        )
+    if not worker_id.strip():
+        raise ValueError("worker_id is required")
+    lease_seconds = _lease_seconds(lease_seconds)
+    connection = _connect(path)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT payload FROM pipeline_runs WHERE id = ? AND status = 'Queued'",
+            (run_id,),
+        ).fetchone()
+        if not row:
+            connection.commit()
+            return None
+        run = _decode(row)
+        now = datetime.now(timezone.utc)
+        timestamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+        run.update({
+            "status": "Running",
+            "worker_id": worker_id,
+            "claimed_at": timestamp,
+            "heartbeat_at": timestamp,
+            "lease_expires_at": _lease_timestamp(now, lease_seconds),
+            "updated_at": timestamp,
+            "attempt": int(run.get("attempt", 0) or 0) + 1,
+        })
+        _upsert_pipeline_run(connection, run)
+        connection.commit()
         return run
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    run["status"] = "Running"
-    run["worker_id"] = worker_id
-    run["claimed_at"] = now
-    run["updated_at"] = now
-    run["attempt"] = int(run.get("attempt", 0) or 0) + 1
-    upsert_pipeline_run(run, path=path)
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def renew_pipeline_lease(
+    run_id: str, worker_id: str, path: Path | None = None,
+    *, lease_seconds: int | None = None,
+) -> bool:
+    """Extend an owned lease without replacing concurrently updated stage data."""
+    if _use_postgres(path):
+        return _pg_backend().renew_pipeline_lease(
+            run_id, worker_id, path, lease_seconds=lease_seconds
+        )
+    lease_seconds = _lease_seconds(lease_seconds)
+    now = datetime.now(timezone.utc)
+    heartbeat_at = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    lease_expires_at = _lease_timestamp(now, lease_seconds)
+    with _connect(path) as connection:
+        cursor = connection.execute(
+            """UPDATE pipeline_runs
+               SET updated_at = ?,
+                   payload = json_set(payload,
+                       '$.heartbeat_at', ?,
+                       '$.lease_expires_at', ?,
+                       '$.updated_at', ?)
+               WHERE id = ? AND status = 'Running'
+                 AND json_extract(payload, '$.worker_id') = ?""",
+            (heartbeat_at, heartbeat_at, lease_expires_at, heartbeat_at, run_id, worker_id),
+        )
+    return cursor.rowcount == 1
+
+
+def _interrupt_expired_run(run: dict[str, Any], now: datetime) -> dict[str, Any]:
+    timestamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    run.update({
+        "status": "Interrupted",
+        "finished_at": timestamp,
+        "updated_at": timestamp,
+        "last_error": "Pipeline worker lease expired.",
+    })
+    for stage in run.get("stages", []):
+        if stage.get("status") == "Running":
+            stage.update({
+                "status": "Interrupted",
+                "message": "Pipeline worker lease expired.",
+                "finished_at": timestamp,
+            })
+        elif stage.get("status") == "Waiting":
+            stage.update({
+                "status": "Skipped",
+                "message": "Skipped because the worker lease expired.",
+                "finished_at": timestamp,
+            })
     return run
 
+
+def recover_expired_pipeline_runs(path: Path | None = None) -> int:
+    """Interrupt only running tasks whose explicit worker lease has expired."""
+    if _use_postgres(path):
+        return _pg_backend().recover_expired_pipeline_runs(path)
+    now = datetime.now(timezone.utc)
+    recovered = 0
+    connection = _connect(path)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        rows = connection.execute(
+            "SELECT payload FROM pipeline_runs WHERE status = 'Running'"
+        ).fetchall()
+        for row in rows:
+            run = _decode(row)
+            raw_expiry = str(run.get("lease_expires_at", ""))
+            if not raw_expiry:
+                continue
+            try:
+                expiry = datetime.fromisoformat(raw_expiry.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if expiry > now:
+                continue
+            recovered += 1
+            _interrupt_expired_run(run, now)
+            _upsert_pipeline_run(connection, run)
+            for position, stage in enumerate(run.get("stages", [])):
+                _upsert_pipeline_stage(connection, run["id"], position, stage)
+        connection.commit()
+        return recovered
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 def claim_next_pipeline_run(
     worker_id: str, path: Path | None = None

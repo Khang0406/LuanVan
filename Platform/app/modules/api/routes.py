@@ -19,7 +19,7 @@ import secrets
 import time
 from datetime import datetime, timezone
 
-from flask import Blueprint, Response, abort, jsonify, request
+from flask import Blueprint, Response, abort, g, jsonify, request
 from flask_login import current_user
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
@@ -32,11 +32,22 @@ def _now() -> str:
 
 
 def _ok(data, status: int = 200):
-    return jsonify({"data": data, "error": None}), status
+    return jsonify({
+        "data": data,
+        "error": None,
+        "meta": {"request_id": getattr(g, "request_id", "")},
+    }), status
 
 
-def _error(code: str, message: str, status: int):
-    return jsonify({"data": None, "error": {"code": code, "message": message}}), status
+def _error(code: str, message: str, status: int, details=None):
+    error = {"code": code, "message": message}
+    if details is not None:
+        error["details"] = details
+    return jsonify({
+        "data": None,
+        "error": error,
+        "meta": {"request_id": getattr(g, "request_id", "")},
+    }), status
 
 
 def _token_principal() -> bool:
@@ -49,6 +60,28 @@ def _token_principal() -> bool:
         return False
     supplied = header[len("Bearer "):].strip()
     return secrets.compare_digest(supplied, expected)
+
+
+class _ApiPrincipal:
+    """Synthetic admin principal used for bearer-token (machine) requests."""
+
+    role = "Admin"
+    is_authenticated = True
+    is_admin = True
+    id = None
+    username = "api-token"
+
+
+def _principal():
+    """Return the effective principal for scope checks.
+
+    Bearer-token requests carry no Flask-Login session, so ``current_user`` is
+    anonymous; substituting an admin principal lets token clients pass the
+    ownership/role checks that the web UI relies on.
+    """
+    if _token_principal():
+        return _ApiPrincipal()
+    return current_user
 
 
 def _is_authenticated() -> bool:
@@ -114,7 +147,7 @@ def api_applications():
     _require_auth()
     from app.modules.applications.service import load_accessible_applications
 
-    return _ok(load_accessible_applications(current_user))
+    return _ok(load_accessible_applications(_principal()))
 
 
 @api_bp.get("/applications/<application_id>")
@@ -122,7 +155,7 @@ def api_application(application_id):
     _require_auth()
     from app.modules.applications.service import find_accessible_application
 
-    application = find_accessible_application(application_id, current_user)
+    application = find_accessible_application(application_id, _principal())
     if not application:
         return _error("APPLICATION_NOT_FOUND", "Application không tồn tại.", 404)
     return _ok(application)
@@ -134,13 +167,14 @@ def api_trigger_pipeline(application_id):
     from app.modules.applications.service import find_accessible_application
     from app.modules.pipeline.engine import trigger_pipeline
 
-    application = find_accessible_application(application_id, current_user)
+    principal = _principal()
+    application = find_accessible_application(application_id, principal)
     if not application:
         return _error("APPLICATION_NOT_FOUND", "Application không tồn tại.", 404)
-    if getattr(current_user, "role", "") == "Viewer" and not _token_principal():
+    if getattr(principal, "role", "") == "Viewer":
         return _error("FORBIDDEN", "Viewer không thể trigger pipeline.", 403)
     try:
-        run = trigger_pipeline(application_id, actor=current_user)
+        run = trigger_pipeline(application_id, actor=principal)
     except ValueError as exc:
         return _error("PIPELINE_CONFLICT", str(exc), 409)
     return _ok(run, 202)
@@ -152,7 +186,7 @@ def api_application_pipeline(application_id):
     from app.modules.applications.service import find_accessible_application
     from app.modules.pipeline.engine import load_pipeline_runs
 
-    if not find_accessible_application(application_id, current_user):
+    if not find_accessible_application(application_id, _principal()):
         return _error("APPLICATION_NOT_FOUND", "Application không tồn tại.", 404)
     return _ok(load_pipeline_runs(application_id))
 
@@ -174,7 +208,7 @@ def api_pipeline_run(run_id):
     from app.modules.applications.service import find_application
 
     application = find_application(run.get("application_id", ""))
-    if not application or not can_access_application(application, current_user):
+    if not application or not can_access_application(application, _principal()):
         return _error("FORBIDDEN", "Không có quyền truy cập pipeline này.", 403)
     return _ok(run)
 
@@ -190,7 +224,7 @@ def api_pipeline_events(run_id):
     if not run:
         return _error("PIPELINE_NOT_FOUND", "Pipeline run không tồn tại.", 404)
     application = find_application(run.get("application_id", ""))
-    if not application or not can_access_application(application, current_user):
+    if not application or not can_access_application(application, _principal()):
         return _error("FORBIDDEN", "Không có quyền truy cập pipeline này.", 403)
 
     application_id = run.get("application_id", "")

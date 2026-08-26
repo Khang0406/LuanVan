@@ -47,6 +47,19 @@ def is_available() -> bool:
     return get_redis() is not None
 
 
+
+
+def ping() -> bool:
+    """Actively verify the cached Redis connection for readiness probes."""
+    client = get_redis()
+    if client is None:
+        return False
+    try:
+        return bool(client.ping())
+    except Exception:
+        return False
+
+
 def publish(channel: str, payload: Any) -> bool:
     """Publish a JSON payload to a channel. Returns False (silently) on failure."""
     client = get_redis()

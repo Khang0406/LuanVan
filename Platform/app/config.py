@@ -21,6 +21,13 @@ class Config:
     PIPELINE_MAX_CONCURRENT = max(
         1, int(os.getenv("PIPELINE_MAX_CONCURRENT", "1"))
     )
+    PIPELINE_TASK_SOFT_TIME_LIMIT = max(
+        60, int(os.getenv("PIPELINE_TASK_SOFT_TIME_LIMIT", "3300"))
+    )
+    PIPELINE_TASK_TIME_LIMIT = max(
+        PIPELINE_TASK_SOFT_TIME_LIMIT + 30,
+        int(os.getenv("PIPELINE_TASK_TIME_LIMIT", "3600")),
+    )
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
@@ -55,4 +62,18 @@ class Config:
         if not cls.SESSION_COOKIE_SECURE or not cls.REMEMBER_COOKIE_SECURE:
             raise RuntimeError(
                 "COOKIE_SECURE must be true when PLATFORM_ENV=production."
+            )
+        database_url = str(cls.SQLALCHEMY_DATABASE_URI or "").lower()
+        if not database_url.startswith(("postgresql://", "postgresql+")):
+            raise RuntimeError(
+                "DATABASE_URL must use PostgreSQL when PLATFORM_ENV=production."
+            )
+        if not os.getenv("REDIS_URL", "").strip():
+            raise RuntimeError(
+                "REDIS_URL must be configured when PLATFORM_ENV=production."
+            )
+        api_token = os.getenv("PLATFORM_API_TOKEN", "")
+        if api_token and len(api_token) < 32:
+            raise RuntimeError(
+                "PLATFORM_API_TOKEN must contain at least 32 characters in production."
             )

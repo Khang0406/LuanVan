@@ -6,7 +6,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-import fakeredis
 
 
 def _application(application_id: str = "phase5-app", user_id: int = 2) -> dict:
@@ -143,6 +142,24 @@ class ApiAuthTests(unittest.TestCase):
                 )
             self.assertEqual(response.status_code, 401)
 
+    def test_bearer_token_can_access_application(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            from app import create_app
+            from app.delivery_store import replace_applications
+
+            env = {**_environment(root), "PLATFORM_API_TOKEN": "phase5-secret-token"}
+            with patch.dict(os.environ, env):
+                application = create_app(_test_config(root))
+                replace_applications([_application()], root / "app.db")
+                client = application.test_client()
+                response = client.get(
+                    "/api/v1/applications/phase5-app",
+                    headers={"Authorization": "Bearer phase5-secret-token"},
+                )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.get_json()["data"]["id"], "phase5-app")
+
 
 class PipelineApiTests(unittest.TestCase):
     def test_trigger_and_read_pipeline_run(self):
@@ -238,6 +255,74 @@ class WorkerAndRealtimeTests(unittest.TestCase):
             self.assertEqual(stored["status"], "Running")
             self.assertIsNone(get_pipeline_run("missing", database))
 
+    def test_duplicate_claim_is_rejected_and_owner_controls_lease(self):
+        from app.delivery_store import (
+            mark_pipeline_running,
+            renew_pipeline_lease,
+            replace_applications,
+            reserve_pipeline_run,
+        )
+
+        with TemporaryDirectory() as directory:
+            database = Path(directory) / "app.db"
+            replace_applications([_application()], database)
+            queued = _run(run_id="run-duplicate")
+            queued["status"] = "Queued"
+            reserve_pipeline_run(queued, database)
+
+            first = mark_pipeline_running(
+                "run-duplicate", "worker-1", database, lease_seconds=60
+            )
+            second = mark_pipeline_running(
+                "run-duplicate", "worker-2", database, lease_seconds=60
+            )
+            self.assertIsNotNone(first)
+            self.assertIsNone(second)
+            self.assertFalse(renew_pipeline_lease("run-duplicate", "worker-2", database))
+            self.assertTrue(renew_pipeline_lease("run-duplicate", "worker-1", database))
+
+    def test_recovery_interrupts_only_expired_leases(self):
+        from app.delivery_store import (
+            get_pipeline_run,
+            mark_pipeline_running,
+            recover_expired_pipeline_runs,
+            replace_applications,
+            reserve_pipeline_run,
+            upsert_pipeline_run,
+        )
+
+        with TemporaryDirectory() as directory:
+            database = Path(directory) / "app.db"
+            replace_applications([
+                _application("expired-app"),
+                _application("active-app"),
+            ], database)
+            with patch.dict(os.environ, {"PIPELINE_MAX_CONCURRENT": "2"}):
+                for run_id, app_id in (("expired", "expired-app"), ("active", "active-app")):
+                    queued = _run(run_id=run_id, application_id=app_id)
+                    queued["status"] = "Queued"
+                    queued["stages"][0]["status"] = "Running"
+                    reserve_pipeline_run(queued, database)
+                    mark_pipeline_running(run_id, f"worker-{run_id}", database, lease_seconds=60)
+
+            expired = get_pipeline_run("expired", database)
+            expired["lease_expires_at"] = "2000-01-01T00:00:00Z"
+            upsert_pipeline_run(expired, database)
+
+            self.assertEqual(recover_expired_pipeline_runs(database), 1)
+            self.assertEqual(get_pipeline_run("expired", database)["status"], "Interrupted")
+            self.assertEqual(get_pipeline_run("active", database)["status"], "Running")
+
+    def test_celery_redelivery_does_not_execute_pipeline_twice(self):
+        from app.worker import run_pipeline
+
+        with patch("app.delivery_store.mark_pipeline_running", return_value=None), \
+             patch("app.modules.pipeline.engine._run_pipeline_safely") as execute:
+            result = run_pipeline.apply(args=["run-redelivered"], task_id="delivery-2").get()
+
+        self.assertEqual(result["status"], "not_claimed")
+        execute.assert_not_called()
+
     def test_realtime_helpers_are_safe_without_redis(self):
         from app.realtime import pipeline_log, pipeline_stage, pipeline_status
 
@@ -255,7 +340,7 @@ class WorkerAndRealtimeTests(unittest.TestCase):
             with patch.dict(os.environ, {"DELIVERY_DATABASE_PATH": str(database)}):
                 replace_applications([_application()], database)
 
-                fake = fakeredis.FakeRedis(decode_responses=True)
+                fake = object()
                 with patch("app.redis_client.get_redis", return_value=fake), \
                      patch("app.worker.run_pipeline.delay") as delay:
                     run = trigger_pipeline("phase5-app", actor=None)
