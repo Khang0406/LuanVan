@@ -1,17 +1,18 @@
 import os
 
-from flask import Flask, current_app, jsonify, redirect, render_template, url_for
+from flask import Flask, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import LoginManager, current_user, login_required
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .config import Config
-from .db import db
+from .db import assert_database_schema_current, db
 from .models import User
 from .observability import register_http_observability
 from .security import generate_csrf_token, validate_csrf
 from .modules.auth.admin import admin_bp
 from .modules.auth.routes import auth_bp
+from .modules.audit.service import record_audit
 from .ui.mock_data import dashboard_stats
 from .ui.routes import ui_bp
 from .modules.pipeline.webhook import github_webhook_bp
@@ -56,11 +57,35 @@ def create_app(config_class=Config):
     def load_user(user_id: str):
         return db.session.get(User, int(user_id))
 
+    @app.before_request
+    def enforce_active_account():
+        if current_user.is_authenticated and not current_user.is_active:
+            username = current_user.username
+            logout_user()
+            session.clear()
+            record_audit(
+                "AUTH_SESSION_REJECTED",
+                username,
+                "FAILED",
+                "Phiên bị từ chối vì tài khoản không còn Active.",
+                user=username,
+            )
+            flash("Phiên đăng nhập không còn hiệu lực vì trạng thái tài khoản.", "warning")
+            if request.endpoint != "auth.login":
+                return redirect(url_for("auth.login"))
+
     with app.app_context():
         from pathlib import Path
 
         Path(app.instance_path).mkdir(parents=True, exist_ok=True)
-        db.create_all()
+        # Test databases remain self-contained. Runtime databases are managed
+        # exclusively by Alembic; silently creating partial production schema
+        # here would bypass migration history and make upgrades unsafe.
+        database_url = str(app.config.get("SQLALCHEMY_DATABASE_URI", ""))
+        if app.config.get("TESTING") or database_url.startswith("sqlite:"):
+            db.create_all()
+        else:
+            assert_database_schema_current()
         from .delivery_store import migrate_default_json_state
         migrate_default_json_state()
         _seed_default_users()
@@ -87,6 +112,7 @@ def create_app(config_class=Config):
             from pathlib import Path
 
             db.session.execute(text("SELECT 1"))
+            assert_database_schema_current()
             from .delivery_store import check_database, database_path
 
             check_database()

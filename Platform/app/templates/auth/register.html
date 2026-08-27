@@ -67,6 +67,13 @@
                    placeholder="Chọn tên đăng nhập" required autofocus minlength="3">
           </div>
           <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email"
+                   value="{{ request.form.get('email', '') }}"
+                   placeholder="ban@example.com" autocomplete="email" required maxlength="254">
+            <div class="form-text">Hệ thống sẽ gửi liên kết kích hoạt đến địa chỉ này.</div>
+          </div>
+          <div class="mb-3">
             <label for="password" class="form-label">Mật khẩu</label>
             <input type="password" class="form-control" id="password" name="password"
                    placeholder="Ít nhất 8 ký tự" required minlength="8">

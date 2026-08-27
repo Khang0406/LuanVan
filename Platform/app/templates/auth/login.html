@@ -62,8 +62,8 @@
         <form method="post">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
-            <label for="username" class="form-label">Tên đăng nhập</label>
-            <input type="text" class="form-control" id="username" name="username" placeholder="admin hoặc dev" required autofocus>
+            <label for="username" class="form-label">Tên đăng nhập hoặc email</label>
+            <input type="text" class="form-control" id="username" name="username" placeholder="Tên đăng nhập hoặc email" required autofocus>
           </div>
           <div class="mb-3">
             <label for="password" class="form-label">Mật khẩu</label>
@@ -73,6 +73,9 @@
         </form>
         <div class="text-end mt-2">
           <a href="{{ url_for('auth.forgot_password') }}" class="small text-muted">Quên mật khẩu?</a>
+        </div>
+        <div class="text-end mt-1">
+          <a href="{{ url_for('auth.resend_verification') }}" class="small text-muted">Gửi lại email xác minh</a>
         </div>
       </div>
     </div>

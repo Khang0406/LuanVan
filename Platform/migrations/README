@@ -1,0 +1,5 @@
+Alembic migration environment for the Platform control-plane database.
+
+Do not edit an applied revision. Create a new revision instead. Production
+schema changes must be preceded by a PostgreSQL backup and followed by
+``python scripts/manage_database.py check``.

@@ -1,5 +1,103 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.3.2 — Tài khoản và xác minh email (2026-08-27)
+
+### Thay đổi schema
+
+- Thêm revision `0002_account_email_verification`.
+- `users` có thêm `email`, `status`, `email_verified_at`, `status_changed_at`.
+- Thêm bảng `email_verification_tokens` với foreign key cascade, hash unique,
+  thời hạn, thời điểm sử dụng, thời điểm tạo và IP yêu cầu.
+- Hai user legacy (`admin`, `dev`) được giữ `Active`, email `NULL`; không tạo
+  email giả và không buộc xác minh lại sau migration.
+
+### Backend và bảo mật
+
+- Đăng ký mới tạo user `PendingVerification`; chỉ `Active` mới đăng nhập được.
+- Email được chuẩn hóa lowercase và kiểm tra unique; đăng nhập hỗ trợ username
+  hoặc email.
+- Token ngẫu nhiên 256 bit, database chỉ giữ SHA-256; token một lần, có hạn và
+  token cũ bị thu hồi khi resend.
+- Resend có cooldown, giới hạn theo user/IP và phản hồi trung tính để chống dò
+  email.
+- SMTP hỗ trợ STARTTLS hoặc SSL, optional authentication và timeout; exception
+  không lộ host, username hay password.
+- SMTP lỗi không rollback tài khoản/token đã tạo.
+- Session của tài khoản không còn `Active` bị từ chối và xóa.
+- Production bắt buộc public URL HTTPS, `SMTP_HOST` và `SMTP_FROM`.
+
+### Web/UI và audit
+
+- Form đăng ký có email; trang chờ xác minh và trang gửi lại email.
+- Login hiển thị trạng thái chưa xác minh và liên kết resend.
+- Admin user list hiển thị email, trạng thái tài khoản.
+- Audit các sự kiện đăng ký, gửi/resend, xác minh, từ chối login/session; không
+  ghi raw token hoặc SMTP credential.
+
+### File chính
+
+- `migrations/versions/0002_account_email_verification.py`
+- `app/models.py`
+- `app/email_service.py`
+- `app/modules/auth/service.py`
+- `app/modules/auth/routes.py`
+- `app/templates/auth/{register,verification_sent,resend_verification,login}.html`
+- `tests/test_phase_a32_email_verification.py`
+- `docs/phase-a32-email-verification.md`
+
+### Migration production và backup
+
+- Backup trước migration:
+  `instance/platform-pre-a32-20260827-114952.dump`, mode `0600`, PostgreSQL
+  custom format, SHA-256
+  `12ed2ae9ba7dbc077c5d6166b4315ae330793909cf555eb3516202ca130a0e0d`.
+- Nâng PostgreSQL `0001_platform_baseline → 0002_account_email_verification`
+  bằng transactional DDL.
+- `alembic check`: không có schema drift.
+- Sau migration còn đủ 3 application, 44 pipeline run, 10 deployment, 108
+  audit log, 2 user; bảng token ban đầu có 0 record.
+- `/healthz`, `/readyz`, `/auth/register` đều trả 200; ba application vẫn là
+  `ctu-cinema`, `demo-nginx`, `map`.
+
+### Kiểm thử
+
+- 7 test A.3.2: đăng ký/xác minh/login, token dùng lại, token hết hạn, SMTP lỗi,
+  resend rate limit, chống dò email, Locked session/login, SMTP TLS/login và
+  production configuration.
+- Toàn bộ suite: 147 test đạt; 6 PostgreSQL test skip khi không cấu hình `_test`.
+- PostgreSQL integration riêng: 6/6 đạt sau migration `0002`.
+- PostgreSQL `platform_test`: downgrade `0002 → 0001 → 0002` thành công và số
+  application không đổi.
+- SMTP thật chưa được cấu hình; transport được kiểm chứng bằng SMTP mock, không
+  có email ngoài hệ thống được gửi trong lần triển khai này.
+
+## Phase A.3.1 — Alembic và database baseline (2026-08-27)
+
+- Thêm Alembic và revision `0001_platform_baseline`, bao phủ `users` cùng 10
+  bảng delivery hiện hữu.
+- Database mới được dựng hoàn toàn bằng `python scripts/manage_database.py upgrade`.
+- Database hiện hữu được kiểm tra bảng/cột rồi `adopt-existing`; thao tác chỉ
+  ghi `alembic_version`, không tạo lại bảng hoặc sửa dữ liệu nghiệp vụ.
+- Web và worker PostgreSQL không còn tự tạo schema. Cả hai từ chối chạy khi
+  revision chưa ở `head`; `/readyz` cũng kiểm tra migration revision.
+- Autogenerate bảo vệ các bảng SQLAlchemy Core khỏi bị đề xuất drop.
+- Script migration SQLite → PostgreSQL chuyển sang dựng schema bằng Alembic.
+- Thêm runbook backup, upgrade, check và downgrade tại
+  `docs/database-migrations.md`.
+
+Nghiệm thu:
+
+- PostgreSQL hiện hữu ở revision `0001_platform_baseline` và `alembic check`
+  không phát hiện schema drift.
+- Sau khi adopt còn đủ 3 application (`ctu-cinema`, `demo-nginx`, `map`), 44
+  pipeline run, 10 deployment, 108 audit log và 2 user.
+- Backup trước baseline:
+  `instance/platform-pre-alembic-20260827-104528.dump` (PostgreSQL custom dump,
+  SHA-256 `f039b8e2d3bc79df90f996789ac05a0f536a3ca934cdebd1e1d69c7cd9c003c3`).
+- Toàn bộ 140 test mặc định đạt (6 PostgreSQL test được skip khi không cấu hình
+  database `_test`); chạy riêng PostgreSQL integration đạt 6/6. Migration còn
+  được kiểm tra riêng trên SQLite trắng và bằng vòng downgrade → upgrade.
+
 > Ngày: 2026-08-25
 > Phạm vi: Control Plane — **PostgreSQL + Redis + Celery + Realtime (SSE) + REST API**
 > Tài liệu thiết kế: `docs/phase-a-postgresql-redis-design.md`

@@ -39,6 +39,16 @@ def _require_postgres() -> bool:
 
 @unittest.skipUnless(_require_postgres(), "PostgreSQL not configured; skipping")
 class PostgresBackendTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # The disposable PostgreSQL test database follows the same migration
+        # path as production; store operations no longer create tables.
+        from alembic import command
+        from alembic.config import Config
+
+        config = Config("alembic.ini")
+        command.upgrade(config, "head")
+
     def setUp(self):
         from app.delivery_store import initialize_schema
 

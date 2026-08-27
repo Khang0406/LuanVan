@@ -13,7 +13,9 @@
         <tr>
           <th>ID</th>
           <th>Username</th>
+          <th>Email</th>
           <th>Role</th>
+          <th>Trạng thái</th>
           <th>Ngày tạo</th>
           <th class="text-end">Thao tác</th>
         </tr>
@@ -23,11 +25,13 @@
         <tr>
           <td>{{ user.id }}</td>
           <td>{{ user.username }}</td>
+          <td>{{ user.email or '-' }}</td>
           <td>
             <span class="badge {% if user.is_admin %}bg-primary{% else %}bg-secondary{% endif %}">
               {{ user.role }}
             </span>
           </td>
+          <td><span class="badge {% if user.status == 'Active' %}bg-success{% elif user.status == 'PendingVerification' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ user.status }}</span></td>
           <td>{{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at else '-' }}</td>
           <td class="text-end">
             {% if user.id != current_user.id %}

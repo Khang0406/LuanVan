@@ -41,6 +41,28 @@ class Config:
     SESSION_COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
     REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
 
+    PLATFORM_PUBLIC_URL = os.getenv("PLATFORM_PUBLIC_URL", "").strip().rstrip("/")
+    SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
+    SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+    SMTP_STARTTLS = os.getenv("SMTP_STARTTLS", "true").lower() in {"1", "true", "yes"}
+    SMTP_SSL = os.getenv("SMTP_SSL", "false").lower() in {"1", "true", "yes"}
+    SMTP_TIMEOUT = max(1, int(os.getenv("SMTP_TIMEOUT", "10")))
+    EMAIL_VERIFICATION_TOKEN_TTL_SECONDS = max(
+        300, int(os.getenv("EMAIL_VERIFICATION_TOKEN_TTL_SECONDS", "3600"))
+    )
+    EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS = max(
+        1, int(os.getenv("EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS", "60"))
+    )
+    EMAIL_VERIFICATION_MAX_SENDS_PER_HOUR = max(
+        1, int(os.getenv("EMAIL_VERIFICATION_MAX_SENDS_PER_HOUR", "5"))
+    )
+    EMAIL_VERIFICATION_MAX_SENDS_PER_IP_HOUR = max(
+        1, int(os.getenv("EMAIL_VERIFICATION_MAX_SENDS_PER_IP_HOUR", "20"))
+    )
+
     # Prometheus & Grafana — monitoring stack URLs
     PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:30900")
     GRAFANA_URL = os.getenv("GRAFANA_URL", "http://localhost:30300")
@@ -71,6 +93,15 @@ class Config:
         if not os.getenv("REDIS_URL", "").strip():
             raise RuntimeError(
                 "REDIS_URL must be configured when PLATFORM_ENV=production."
+            )
+        if not cls.PLATFORM_PUBLIC_URL.startswith("https://"):
+            raise RuntimeError(
+                "PLATFORM_PUBLIC_URL must be an HTTPS URL in production."
+            )
+        if not cls.SMTP_HOST or not cls.SMTP_FROM:
+            raise RuntimeError(
+                "SMTP_HOST and SMTP_FROM are required for account verification "
+                "when PLATFORM_ENV=production."
             )
         api_token = os.getenv("PLATFORM_API_TOKEN", "")
         if api_token and len(api_token) < 32:

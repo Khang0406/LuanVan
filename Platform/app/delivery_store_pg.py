@@ -202,6 +202,7 @@ def _database_url() -> str:
 # Creating a new engine per call leaks a new pool (and its connections) each
 # time, which quickly exhausts PostgreSQL's connection limit.
 _engine_instance = None
+_schema_verified = False
 
 
 def _engine():
@@ -222,14 +223,41 @@ def _engine():
 
 
 def initialize_schema(path: Path | None = None) -> None:
+    """Verify that Alembic has provisioned the delivery schema.
+
+    Schema creation used to happen implicitly on every store operation. That
+    made schema drift invisible and bypassed migration history. Keep the public
+    function for compatibility, but make it a read-only readiness check.
+    """
+    global _schema_verified
+    if _schema_verified:
+        return
     with _engine().begin() as conn:
-        conn.execute(text(SCHEMA))
+        try:
+            conn.execute(text("SELECT 1 FROM applications LIMIT 0"))
+            from alembic.config import Config as AlembicConfig
+            from alembic.runtime.migration import MigrationContext
+            from alembic.script import ScriptDirectory
+
+            config = AlembicConfig(str(BASE_DIR / "alembic.ini"))
+            expected = ScriptDirectory.from_config(config).get_current_head()
+            current = MigrationContext.configure(conn).get_current_revision()
+            if current != expected:
+                raise RuntimeError(
+                    f"migration current={current or 'none'}, expected={expected}"
+                )
+        except Exception as exc:
+            raise RuntimeError(
+                "PostgreSQL schema is not initialized or is behind Alembic head. Run "
+                "'python scripts/manage_database.py upgrade'."
+            ) from exc
+    _schema_verified = True
 
 
 def check_database(path: Path | None = None) -> None:
-    initialize_schema(path)
     with _engine().begin() as conn:
         conn.execute(text("SELECT 1"))
+    initialize_schema(path)
 
 
 # ---------------------------------------------------------------------------

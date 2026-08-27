@@ -18,6 +18,7 @@ Tạo venv và chạy web app:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+python scripts/manage_database.py upgrade
 python run.py
 ```
 
@@ -52,6 +53,8 @@ kubectl kustomize k8s/platform | kubectl create --dry-run=client --validate=fals
 - [Kiến trúc](docs/architecture.md)
 - [Thiết kế Phase A — PostgreSQL + Redis + API](docs/phase-a-postgresql-redis-design.md)
 - [Nhật ký triển khai Phase A](docs/phase-a-implementation-log.md)
+- [Quản lý Alembic migration](docs/database-migrations.md)
+- [Phase A.3.2 — Xác minh email](docs/phase-a32-email-verification.md)
 - [Deployment runbook](docs/deployment-runbook.md)
 - [Backup/restore](docs/backup-restore.md)
 - [Security/RBAC](docs/security-model.md)

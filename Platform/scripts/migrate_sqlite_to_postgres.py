@@ -80,15 +80,19 @@ def main() -> None:
     audits = list_audit_logs(path=SQLITE_PATH)
 
     # --- 2. Recreate PostgreSQL schema (clean slate) ------------------------
+    from alembic import command
+    from alembic.config import Config
     from sqlalchemy import create_engine, text
-
-    from app.delivery_store_pg import SCHEMA
 
     engine = create_engine(DATABASE_URL, future=True)
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))
         conn.execute(text("CREATE SCHEMA public"))
-        conn.execute(text(SCHEMA))
+    alembic_config = Config(str(BASE_DIR / "alembic.ini"))
+    alembic_config.set_main_option(
+        "sqlalchemy.url", DATABASE_URL.replace("%", "%%")
+    )
+    command.upgrade(alembic_config, "head")
 
     # --- 3. Migrate delivery data -------------------------------------------
     from app.delivery_store_pg import (
@@ -118,7 +122,6 @@ def main() -> None:
     flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.init_app(flask_app)
     with flask_app.app_context():
-        db.create_all()
         if User.query.count() == 0:
             for user in users:
                 db.session.add(
