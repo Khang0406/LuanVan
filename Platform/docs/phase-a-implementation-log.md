@@ -7,6 +7,8 @@
 - Giữ checkpoint an toàn tại commit
   `17dba183337240eddd0815d5fda11562493b2c5c` trên branch `khang`.
 - Thử nghiệm độc lập trên branch `experiment/auth-framework`.
+- Sau khi SQLite regression, PostgreSQL integration và runtime smoke test đạt,
+  branch `khang` được fast-forward và push tại commit `272e34a`.
 - Không thay toàn bộ route bằng Flask-Security vì sẽ gây rủi ro tương thích hash
   Werkzeug, session numeric hiện tại, trạng thái tài khoản riêng và audit/token
   revocation của Platform.

@@ -2,8 +2,9 @@
 
 ## 1. Kết quả
 
-A.3.2 đã được viết lại trên nhánh thử nghiệm `experiment/auth-framework` theo
-hướng kết hợp ba framework chuyên trách:
+A.3.2 được thử nghiệm trên `experiment/auth-framework`, sau đó chuyển chính
+thức vào branch `khang` tại commit `272e34a` theo hướng kết hợp ba framework
+chuyên trách:
 
 | Thành phần | Trách nhiệm |
 |---|---|
