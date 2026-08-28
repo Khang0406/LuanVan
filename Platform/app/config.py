@@ -50,6 +50,33 @@ class Config:
     SMTP_STARTTLS = os.getenv("SMTP_STARTTLS", "true").lower() in {"1", "true", "yes"}
     SMTP_SSL = os.getenv("SMTP_SSL", "false").lower() in {"1", "true", "yes"}
     SMTP_TIMEOUT = max(1, int(os.getenv("SMTP_TIMEOUT", "10")))
+    # Flask-Mailman keeps the existing SMTP environment contract, so deployment
+    # secrets don't need to be renamed during this refactor.
+    MAIL_BACKEND = os.getenv(
+        "MAIL_BACKEND", "smtp" if SMTP_HOST else "console"
+    ).strip()
+    MAIL_SERVER = SMTP_HOST or "localhost"
+    MAIL_PORT = SMTP_PORT
+    MAIL_DEFAULT_SENDER = SMTP_FROM or None
+    MAIL_USERNAME = SMTP_USERNAME or None
+    MAIL_PASSWORD = SMTP_PASSWORD or None
+    MAIL_USE_TLS = SMTP_STARTTLS
+    MAIL_USE_SSL = SMTP_SSL
+    MAIL_TIMEOUT = SMTP_TIMEOUT
+
+    # Flask-Security-Too is used as the identity/token foundation. The existing
+    # application routes stay in place to preserve project-specific audit and UI.
+    SECURITY_PASSWORD_SALT = os.getenv("SECURITY_PASSWORD_SALT", "").strip()
+    SECURITY_CONFIRMABLE = True
+    SECURITY_REGISTERABLE = True
+    SECURITY_USERNAME_ENABLE = False
+    SECURITY_EMAIL_VALIDATOR_ARGS = {"check_deliverability": False}
+    SECURITY_RETURN_GENERIC_RESPONSES = True
+    SECURITY_AUTO_LOGIN_AFTER_CONFIRM = False
+    SECURITY_SEND_REGISTER_EMAIL = False
+    SECURITY_JOIN_USER_ROLES = False
+    RATELIMIT_STORAGE_URI = os.getenv("REDIS_URL", "memory://").strip() or "memory://"
+    RATELIMIT_HEADERS_ENABLED = True
     EMAIL_VERIFICATION_TOKEN_TTL_SECONDS = max(
         300, int(os.getenv("EMAIL_VERIFICATION_TOKEN_TTL_SECONDS", "3600"))
     )
@@ -102,6 +129,14 @@ class Config:
             raise RuntimeError(
                 "SMTP_HOST and SMTP_FROM are required for account verification "
                 "when PLATFORM_ENV=production."
+            )
+        if (
+            len(cls.SECURITY_PASSWORD_SALT) < 32
+            or cls.SECURITY_PASSWORD_SALT == cls.SECRET_KEY
+        ):
+            raise RuntimeError(
+                "SECURITY_PASSWORD_SALT must be a distinct secret of at least "
+                "32 characters in production."
             )
         api_token = os.getenv("PLATFORM_API_TOKEN", "")
         if api_token and len(api_token) < 32:

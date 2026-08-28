@@ -2,19 +2,20 @@
 from __future__ import annotations
 
 import hashlib
-import re
-import secrets
+import smtplib
 from datetime import datetime, timedelta, timezone
 from html import escape
 
 from flask import current_app
+from flask_mailman import BadHeaderError, EmailMultiAlternatives
+from flask_security.confirmable import (
+    confirm_email_token_status,
+    generate_confirmation_token,
+)
+from flask_security.mail_util import EmailValidateException, MailUtil
 
 from app.db import db
-from app.email_service import send_email
 from app.models import EmailVerificationToken, User
-
-
-EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 class VerificationRateLimited(RuntimeError):
@@ -32,12 +33,18 @@ def as_utc(value: datetime) -> datetime:
 
 
 def normalize_email(value: str) -> str:
-    return value.strip().lower()
+    try:
+        return MailUtil(current_app).validate(value.strip()).lower()
+    except EmailValidateException:
+        return value.strip().lower()
 
 
 def valid_email(value: str) -> bool:
-    normalized = normalize_email(value)
-    return len(normalized) <= 254 and bool(EMAIL_PATTERN.fullmatch(normalized))
+    try:
+        normalized = MailUtil(current_app).validate(value.strip()).lower()
+        return len(normalized) <= 254
+    except (EmailValidateException, ValueError):
+        return False
 
 
 def hash_token(raw_token: str) -> str:
@@ -85,7 +92,10 @@ def create_verification_token(user: User, request_ip: str = "") -> str:
         if recent_ip_count >= per_ip_limit:
             raise VerificationRateLimited(3600)
 
-    raw_token = secrets.token_urlsafe(32)
+    # Flask-Security signs both the stable user identity and current email hash.
+    # The database stores only SHA-256(raw_token), adding explicit revocation and
+    # resend invalidation on top of the framework's signed/expiring token.
+    raw_token = generate_confirmation_token(user)
     ttl = int(current_app.config.get("EMAIL_VERIFICATION_TOKEN_TTL_SECONDS", 3600))
     EmailVerificationToken.query.filter_by(user_id=user.id, used_at=None).update(
         {EmailVerificationToken.used_at: now}, synchronize_session=False
@@ -119,12 +129,23 @@ def send_verification_email(user: User, raw_token: str, verification_url: str) -
         f'<p><a href="{safe_url}">Xác minh địa chỉ email</a></p>'
         f"<p>Liên kết có hiệu lực {ttl_minutes} phút và chỉ dùng được một lần.</p>"
     )
-    return send_email(
-        user.email,
+    if not current_app.config.get("MAIL_DEFAULT_SENDER") and current_app.config.get("MAIL_BACKEND") != "locmem":
+        return False, "SMTP chưa được cấu hình."
+    message = EmailMultiAlternatives(
         "[CICT Platform] Xác minh địa chỉ email",
         text_body,
-        html_body,
+        to=[user.email],
     )
+    message.attach_alternative(html_body, "text/html")
+    try:
+        message.send()
+        return True, "Email đã được gửi."
+    except (BadHeaderError, OSError, smtplib.SMTPException):
+        current_app.logger.warning(
+            "Transactional email delivery failed",
+            extra={"recipient_domain": user.email.rsplit("@", 1)[-1]},
+        )
+        return False, "Không gửi được email; thông tin kết nối đã được ẩn."
 
 
 def verify_token(raw_token: str) -> tuple[User | None, str]:
@@ -145,11 +166,25 @@ def verify_token(raw_token: str) -> tuple[User | None, str]:
         db.session.commit()
         return token.user, "expired"
 
+    framework_expired, framework_invalid, framework_user = confirm_email_token_status(
+        raw_token
+    )
+    if framework_expired:
+        token.used_at = now
+        db.session.commit()
+        return token.user, "expired"
+    if framework_invalid or not framework_user or framework_user.id != token.user_id:
+        token.used_at = now
+        db.session.commit()
+        return token.user, "invalid"
+
     user = token.user
     token.used_at = now
     user.email_verified_at = now
+    user.confirmed_at = now
     if user.status == User.STATUS_PENDING:
         user.status = User.STATUS_ACTIVE
+        user.active = True
         user.status_changed_at = now
     EmailVerificationToken.query.filter(
         EmailVerificationToken.user_id == user.id,

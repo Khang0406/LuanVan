@@ -1,13 +1,16 @@
 import os
+from datetime import datetime, timezone
 
 from flask import Flask, current_app, flash, jsonify, redirect, render_template, request, session, url_for
-from flask_login import LoginManager, current_user, login_required
+from flask_login import current_user, login_required, logout_user
+from flask_security import SQLAlchemyUserDatastore
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .config import Config
 from .db import assert_database_schema_current, db
-from .models import User
+from .extensions import limiter, mail, security as identity_security
+from .models import SecurityRole, User
 from .observability import register_http_observability
 from .security import generate_csrf_token, validate_csrf
 from .modules.auth.admin import admin_bp
@@ -18,12 +21,6 @@ from .ui.routes import ui_bp
 from .modules.pipeline.webhook import github_webhook_bp
 from .modules.api.routes import api_bp
 
-login_manager = LoginManager()
-login_manager.login_view = "auth.login"
-login_manager.login_message = "Vui lòng đăng nhập để truy cập."
-login_manager.login_message_category = "warning"
-
-
 def create_app(config_class=Config):
     validate_production = getattr(config_class, "validate_production", None)
     if callable(validate_production):
@@ -31,6 +28,25 @@ def create_app(config_class=Config):
 
     app = Flask(__name__)
     app.config.from_object(config_class)
+    # Test/local config classes from older modules don't know about the new
+    # framework settings. Safe defaults keep those isolated apps self-contained.
+    app.config.setdefault(
+        "SECURITY_PASSWORD_SALT", f"{app.config['SECRET_KEY']}-email-confirmation"
+    )
+    if not app.config.get("SECURITY_PASSWORD_SALT"):
+        app.config["SECURITY_PASSWORD_SALT"] = (
+            f"{app.config['SECRET_KEY']}-email-confirmation"
+        )
+    app.config.setdefault("SECURITY_CONFIRMABLE", True)
+    app.config.setdefault("SECURITY_REGISTERABLE", True)
+    app.config.setdefault("SECURITY_USERNAME_ENABLE", False)
+    app.config.setdefault("SECURITY_EMAIL_VALIDATOR_ARGS", {"check_deliverability": False})
+    app.config.setdefault("SECURITY_RETURN_GENERIC_RESPONSES", True)
+    app.config.setdefault("SECURITY_AUTO_LOGIN_AFTER_CONFIRM", False)
+    app.config.setdefault("SECURITY_SEND_REGISTER_EMAIL", False)
+    app.config.setdefault("SECURITY_JOIN_USER_ROLES", False)
+    app.config.setdefault("MAIL_BACKEND", "locmem" if app.config.get("TESTING") else "console")
+    app.config.setdefault("RATELIMIT_STORAGE_URI", "memory://")
     proxy_count = int(app.config.get("TRUST_PROXY_COUNT", 0) or 0)
     if proxy_count:
         app.wsgi_app = ProxyFix(
@@ -42,7 +58,29 @@ def create_app(config_class=Config):
         )
 
     db.init_app(app)
-    login_manager.init_app(app)
+    mail.init_app(app)
+    limiter.init_app(app)
+    identity_security.init_app(
+        app,
+        SQLAlchemyUserDatastore(db, User, SecurityRole),
+        register_blueprint=False,
+    )
+    identity_security.login_manager.login_view = "auth.login"
+    identity_security.login_manager.login_message = "Vui lòng đăng nhập để truy cập."
+    identity_security.login_manager.login_message_category = "warning"
+
+    @identity_security.login_manager.unauthorized_handler
+    def unauthorized():
+        flash("Vui lòng đăng nhập để truy cập.", "warning")
+        return redirect(url_for("auth.login", next=request.full_path.rstrip("?")))
+
+    @identity_security.login_manager.user_loader
+    def load_user(identifier: str):
+        """Load framework sessions and preserve numeric sessions from A.3.1."""
+        user = User.query.filter_by(fs_uniquifier=identifier).first()
+        if user is None and identifier.isdigit():
+            user = db.session.get(User, int(identifier))
+        return user
     register_http_observability(app)
     app.before_request(validate_csrf)
     app.jinja_env.globals["csrf_token"] = generate_csrf_token
@@ -52,10 +90,6 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_bp)
     app.register_blueprint(github_webhook_bp)
     app.register_blueprint(api_bp)
-
-    @login_manager.user_loader
-    def load_user(user_id: str):
-        return db.session.get(User, int(user_id))
 
     @app.before_request
     def enforce_active_account():
@@ -168,21 +202,26 @@ def _seed_default_users() -> None:
                 "PLATFORM_ADMIN_PASSWORD must contain at least 12 characters "
                 "when bootstrapping a production database."
             )
-        admin = User(username=username, role="Admin")
+        admin = User(
+            username=username,
+            role="Admin",
+            confirmed_at=datetime.now(timezone.utc),
+        )
         admin.set_password(password)
         db.session.add(admin)
         db.session.commit()
         return
 
-    admin = User(username="admin", role="Admin")
+    confirmed_at = datetime.now(timezone.utc)
+    admin = User(username="admin", role="Admin", confirmed_at=confirmed_at)
     admin.set_password("admin123")
     db.session.add(admin)
 
-    dev = User(username="dev", role="Developer")
+    dev = User(username="dev", role="Developer", confirmed_at=confirmed_at)
     dev.set_password("dev123")
     db.session.add(dev)
 
-    viewer = User(username="viewer", role="Viewer")
+    viewer = User(username="viewer", role="Viewer", confirmed_at=confirmed_at)
     viewer.set_password("viewer123")
     db.session.add(viewer)
 

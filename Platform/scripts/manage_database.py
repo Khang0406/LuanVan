@@ -44,10 +44,15 @@ BASELINE_EXPECTED_COLUMNS = {
 EXPECTED_COLUMNS = {
     **BASELINE_EXPECTED_COLUMNS,
     "users": BASELINE_EXPECTED_COLUMNS["users"]
-    | {"email", "status", "email_verified_at", "status_changed_at"},
+    | {
+        "email", "status", "email_verified_at", "status_changed_at",
+        "fs_uniquifier", "active", "confirmed_at",
+    },
     "email_verification_tokens": {
         "id", "user_id", "token_hash", "expires_at", "used_at", "created_at", "request_ip"
     },
+    "security_roles": {"id", "name", "description"},
+    "security_user_roles": {"user_id", "role_id"},
 }
 
 

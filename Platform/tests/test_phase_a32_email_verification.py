@@ -6,7 +6,7 @@ import unittest
 from datetime import timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 
 def test_config(root: Path):
@@ -147,6 +147,26 @@ class EmailVerificationWorkflowTests(unittest.TestCase):
         with self.app.app_context():
             self.assertEqual(User.query.filter_by(username="new-user").one().status, User.STATUS_PENDING)
 
+    def test_database_hash_alone_cannot_make_a_tampered_framework_token_valid(self):
+        from app.db import db
+        from app.models import EmailVerificationToken, User
+        from app.modules.auth.service import hash_token
+
+        _response, sender = self.register()
+        raw_token = sender.call_args.args[1]
+        replacement = "A" if raw_token[0] != "A" else "B"
+        tampered = f"{replacement}{raw_token[1:]}"
+        with self.app.app_context():
+            EmailVerificationToken.query.one().token_hash = hash_token(tampered)
+            db.session.commit()
+        response = self.client.get(f"/auth/verify-email?token={tampered}")
+        self.assertIn("/auth/resend-verification", response.location)
+        with self.app.app_context():
+            self.assertEqual(
+                User.query.filter_by(username="new-user").one().status,
+                User.STATUS_PENDING,
+            )
+
     def test_resend_is_rate_limited_and_unknown_email_response_is_neutral(self):
         from app.models import EmailVerificationToken
 
@@ -171,6 +191,20 @@ class EmailVerificationWorkflowTests(unittest.TestCase):
         )
         self.assertIn(b"N\xe1\xba\xbfu email thu\xe1\xbb\x99c t\xc3\xa0i kho\xe1\xba\xa3n", unknown.data)
 
+    def test_resend_route_has_ip_rate_limit(self):
+        csrf = self.csrf("/auth/resend-verification")
+        for _index in range(20):
+            response = self.client.post(
+                "/auth/resend-verification",
+                data={"csrf_token": csrf, "email": "missing@example.com"},
+            )
+            self.assertEqual(response.status_code, 302)
+        limited = self.client.post(
+            "/auth/resend-verification",
+            data={"csrf_token": csrf, "email": "missing@example.com"},
+        )
+        self.assertEqual(limited.status_code, 429)
+
     def test_locked_or_disabled_account_cannot_login(self):
         from app.db import db
         from app.models import User
@@ -180,7 +214,7 @@ class EmailVerificationWorkflowTests(unittest.TestCase):
             user.set_password("strong-password")
             db.session.add(user)
             db.session.commit()
-            user_id = user.id
+            user_session_id = user.fs_uniquifier
         token = self.csrf("/auth/login")
         response = self.client.post(
             "/auth/login",
@@ -189,7 +223,7 @@ class EmailVerificationWorkflowTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
 
         with self.client.session_transaction() as session:
-            session["_user_id"] = str(user_id)
+            session["_user_id"] = user_session_id
             session["_fresh"] = True
         rejected_session = self.client.get("/dashboard")
         self.assertEqual(rejected_session.status_code, 302)
@@ -222,34 +256,42 @@ class TransactionalEmailTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "SMTP_HOST"):
                 Config.validate_production()
 
-    def test_smtp_uses_tls_login_and_keeps_password_out_of_message(self):
+        with patch.object(Config, "PLATFORM_ENV", "production"), \
+             patch.object(Config, "SECRET_KEY", "strong-secret"), \
+             patch.object(Config, "SESSION_COOKIE_SECURE", True), \
+             patch.object(Config, "REMEMBER_COOKIE_SECURE", True), \
+             patch.object(Config, "SQLALCHEMY_DATABASE_URI", "postgresql://db/platform"), \
+             patch.object(Config, "PLATFORM_PUBLIC_URL", "https://platform.example"), \
+             patch.object(Config, "SMTP_HOST", "smtp.example"), \
+             patch.object(Config, "SMTP_FROM", "platform@example.com"), \
+             patch.object(Config, "SECURITY_PASSWORD_SALT", ""), \
+             patch.dict(os.environ, {"REDIS_URL": "redis://redis/0"}):
+            with self.assertRaisesRegex(RuntimeError, "SECURITY_PASSWORD_SALT"):
+                Config.validate_production()
+
+    def test_flask_mailman_locmem_keeps_delivery_test_isolated(self):
         from flask import Flask
-        from app.email_service import send_email
+        from app.extensions import mail
+        from app.modules.auth.service import send_verification_email
+        from app.models import User
 
         app = Flask(__name__)
         app.config.update(
-            SMTP_HOST="smtp.example",
-            SMTP_PORT=587,
-            SMTP_FROM="platform@example.com",
-            SMTP_USERNAME="mailer",
-            SMTP_PASSWORD="smtp-secret-value",
-            SMTP_STARTTLS=True,
-            SMTP_SSL=False,
-            SMTP_TIMEOUT=5,
+            MAIL_BACKEND="locmem",
+            MAIL_DEFAULT_SENDER="platform@example.com",
+            EMAIL_VERIFICATION_TOKEN_TTL_SECONDS=3600,
         )
-        smtp = MagicMock()
-        smtp.return_value.__enter__.return_value = smtp.return_value
-        with app.app_context(), patch("app.email_service.smtplib.SMTP", smtp):
-            success, _reason = send_email(
-                "user@example.com", "Verify", "https://platform.test/verify?token=abc"
+        mail.init_app(app)
+        user = User(username="mail-user", email="user@example.com")
+        with app.app_context():
+            success, _reason = send_verification_email(
+                user, "raw-token", "https://platform.test/verify?token=raw-token"
             )
-        self.assertTrue(success)
-        client = smtp.return_value
-        client.starttls.assert_called_once()
-        client.login.assert_called_once_with("mailer", "smtp-secret-value")
-        message = client.send_message.call_args.args[0]
-        self.assertEqual(message["To"], "user@example.com")
-        self.assertNotIn("smtp-secret-value", message.as_string())
+            self.assertTrue(success)
+            self.assertEqual(len(app.extensions["mailman"].outbox), 1)
+            message = app.extensions["mailman"].outbox[0]
+            self.assertEqual(message.to, ["user@example.com"])
+            self.assertIn("raw-token", message.body)
 
 
 if __name__ == "__main__":

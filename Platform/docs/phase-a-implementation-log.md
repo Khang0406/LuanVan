@@ -1,6 +1,93 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
-## Phase A.3.2 — Tài khoản và xác minh email (2026-08-27)
+## Phase A.3.2 — Refactor xác minh email bằng framework (2026-08-27)
+
+### Quyết định sau thử nghiệm
+
+- Giữ checkpoint an toàn tại commit
+  `17dba183337240eddd0815d5fda11562493b2c5c` trên branch `khang`.
+- Thử nghiệm độc lập trên branch `experiment/auth-framework`.
+- Không thay toàn bộ route bằng Flask-Security vì sẽ gây rủi ro tương thích hash
+  Werkzeug, session numeric hiện tại, trạng thái tài khoản riêng và audit/token
+  revocation của Platform.
+- Chọn tích hợp hybrid: Flask-Security-Too cho identity + token ký,
+  Flask-Mailman cho email và Flask-Limiter + Redis cho rate limit.
+
+### Thay đổi kỹ thuật
+
+| Trước | Sau |
+|---|---|
+| Token ngẫu nhiên tự sinh | Token Flask-Security ký theo user identity + hash email |
+| Chỉ kiểm tra hash registry | Kiểm tra đồng thời hash registry, hạn dùng, chữ ký, user và email |
+| SMTP bằng `smtplib` tự viết | Flask-Mailman, email text/HTML, backend test `locmem` |
+| Rate limit chỉ bằng query database | Thêm Flask-Limiter theo IP, Redis storage dùng chung đa replica |
+| Session id là numeric user id | Session mới dùng `fs_uniquifier`, loader vẫn nhận session cũ |
+| Regex email đơn giản | `email-validator` qua Flask-Security, sau đó lowercase nhất quán |
+
+### Schema và migration
+
+- Thêm revision `0003_auth_framework_foundation`.
+- `users`: thêm `fs_uniquifier`, `active`, `confirmed_at`.
+- Thêm `security_roles` và `security_user_roles` để đáp ứng SQLAlchemy datastore;
+  đây chỉ là compatibility schema, không thay thế RBAC theo project ở A.4.
+- Backfill user legacy bằng UUID riêng, đồng bộ `active` từ `status` và đánh dấu
+  `confirmed_at` cho tài khoản Active; không sửa `password_hash`.
+- Migration dùng batch operation và UUID từ Python nên chạy được cả SQLite test
+  và PostgreSQL.
+- `scripts/manage_database.py check` đã biết các bảng/cột mới.
+
+### Cấu hình và production guard
+
+- Giữ nguyên contract `SMTP_*`, ánh xạ sang `MAIL_*` của Flask-Mailman.
+- `RATELIMIT_STORAGE_URI` mặc định lấy `REDIS_URL`; test dùng `memory://`.
+- Production yêu cầu `SECURITY_PASSWORD_SALT` độc lập, tối thiểu 32 ký tự và
+  không được trùng `FLASK_SECRET_KEY`.
+- Register giới hạn 10 POST/giờ/IP; resend giới hạn 20 POST/giờ/IP, ngoài
+  cooldown/giới hạn user/IP đã lưu trong database.
+
+### File thay đổi
+
+- Mới: `app/extensions.py`,
+  `migrations/versions/0003_auth_framework_foundation.py`.
+- Sửa: `.env.example`, `requirements.txt`, `app/__init__.py`, `app/config.py`,
+  `app/models.py`, `app/modules/auth/routes.py`,
+  `app/modules/auth/service.py`, `scripts/manage_database.py`, hai file test và
+  tài liệu A.3.2.
+- Xóa: `app/email_service.py`; Flask-Mailman thay thế transport tự viết.
+- Không đưa thay đổi runtime `app/data/servers.json` vào phạm vi triển khai.
+
+### Kiểm thử và trạng thái dữ liệu
+
+- Acceptance mới kiểm tra token bị sửa chữ ký vẫn thất bại ngay cả khi hash
+  database bị thay tương ứng.
+- Kiểm tra HTTP 429 theo IP, Mailman `locmem`, production signing salt và
+  backfill user legacy.
+- Migration test thực hiện database trắng, `0002 → 0003`, backfill và vòng
+  `head → base → head` thành công.
+- Full regression đạt; số liệu chính xác của lần chạy cuối được ghi trong tài
+  liệu `docs/phase-a32-email-verification.md`.
+- Ngày 2026-08-28, `platform_test` nâng `0002 → 0003`, 6/6 PostgreSQL
+  integration test đạt; vòng rollback `0003 → 0002 → 0003` cũng đạt.
+- Runtime `platform` được xác nhận ở revision `0003`, còn đủ 2 user, 3
+  application, 44 pipeline run và 10 deployment. `admin`/`dev` đều Active,
+  identity field đã backfill đầy đủ.
+- Backup runtime: `instance/platform-pre-auth-framework-20260828-130120.dump`,
+  SHA-256
+  `384ccddff7e89ee2efacc94d4f50e9f26b5c23db8d8dc14222ebb679ee97b18f`.
+- Smoke HTTP đạt cho health, readiness, register/login, dashboard và application
+  list; đăng nhập legacy thành công, ba application cũ còn đủ. Celery worker kết
+  nối Redis và ready với concurrency 4.
+
+### Rollback
+
+- Code checkpoint: `17dba183337240eddd0815d5fda11562493b2c5c`.
+- Schema rollback: downgrade về `0002_account_email_verification` trước khi quay
+  lại code cũ, hoặc phục hồi PostgreSQL backup.
+
+## Phase A.3.2 — Lần triển khai thủ công ban đầu (checkpoint, 2026-08-27)
+
+> Phần dưới ghi lại trạng thái trước refactor để đối chiếu. Implement hiện tại
+> dùng framework theo mục phía trên; `app/email_service.py` đã được thay thế.
 
 ### Thay đổi schema
 

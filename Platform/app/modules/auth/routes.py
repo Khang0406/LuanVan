@@ -7,6 +7,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 
 from app.db import db
+from app.extensions import limiter
 from app.models import User
 from app.modules.audit.service import record_audit
 from app.modules.auth.service import (
@@ -162,6 +163,7 @@ def change_password():
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
+@limiter.limit("10/hour", methods=["POST"])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
@@ -190,6 +192,7 @@ def register():
                 email=email,
                 role="Developer",
                 status=User.STATUS_PENDING,
+                active=False,
             )
             user.set_password(password)
             db.session.add(user)
@@ -222,6 +225,7 @@ def register():
 
 
 @auth_bp.route("/resend-verification", methods=["GET", "POST"])
+@limiter.limit("20/hour", methods=["POST"])
 def resend_verification():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
