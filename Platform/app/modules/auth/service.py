@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import smtplib
+import uuid
 from datetime import datetime, timedelta, timezone
 from html import escape
 
@@ -13,12 +14,22 @@ from flask_security.confirmable import (
     generate_confirmation_token,
 )
 from flask_security.mail_util import EmailValidateException, MailUtil
+from flask_security.recoverable import (
+    generate_reset_password_token,
+    reset_password_token_status,
+)
 
 from app.db import db
-from app.models import EmailVerificationToken, User
+from app.models import EmailVerificationToken, PasswordResetToken, User
 
 
 class VerificationRateLimited(RuntimeError):
+    def __init__(self, retry_after: int):
+        self.retry_after = max(1, retry_after)
+        super().__init__(f"Thử lại sau {self.retry_after} giây.")
+
+
+class PasswordResetRateLimited(RuntimeError):
     def __init__(self, retry_after: int):
         self.retry_after = max(1, retry_after)
         super().__init__(f"Thử lại sau {self.retry_after} giây.")
@@ -146,6 +157,204 @@ def send_verification_email(user: User, raw_token: str, verification_url: str) -
             extra={"recipient_domain": user.email.rsplit("@", 1)[-1]},
         )
         return False, "Không gửi được email; thông tin kết nối đã được ẩn."
+
+
+def create_password_reset_token(user: User, request_ip: str = "") -> str:
+    """Create a signed, one-time reset token while persisting only its hash."""
+    if not user.email:
+        raise ValueError("Tài khoản chưa có email.")
+
+    # Serialize requests for the same account so concurrent resend calls can't
+    # both pass cooldown checks and leave two live tokens.
+    user = User.query.filter_by(id=user.id).with_for_update().one()
+    now = utcnow()
+    cooldown = int(current_app.config.get("PASSWORD_RESET_COOLDOWN_SECONDS", 60))
+    one_hour_ago = now - timedelta(hours=1)
+    latest = (
+        PasswordResetToken.query.filter_by(user_id=user.id)
+        .order_by(PasswordResetToken.created_at.desc())
+        .first()
+    )
+    if latest:
+        elapsed = (now - as_utc(latest.created_at)).total_seconds()
+        if elapsed < cooldown:
+            raise PasswordResetRateLimited(int(cooldown - elapsed) + 1)
+
+    per_user_limit = int(current_app.config.get("PASSWORD_RESET_MAX_SENDS_PER_HOUR", 5))
+    if PasswordResetToken.query.filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.created_at >= one_hour_ago,
+    ).count() >= per_user_limit:
+        raise PasswordResetRateLimited(3600)
+
+    if request_ip:
+        per_ip_limit = int(
+            current_app.config.get("PASSWORD_RESET_MAX_SENDS_PER_IP_HOUR", 20)
+        )
+        if PasswordResetToken.query.filter(
+            PasswordResetToken.request_ip == request_ip,
+            PasswordResetToken.created_at >= one_hour_ago,
+        ).count() >= per_ip_limit:
+            raise PasswordResetRateLimited(3600)
+
+    raw_token = generate_reset_password_token(user)
+    ttl = int(current_app.config.get("PASSWORD_RESET_TOKEN_TTL_SECONDS", 3600))
+    PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).update(
+        {PasswordResetToken.used_at: now}, synchronize_session=False
+    )
+    db.session.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_token(raw_token),
+            expires_at=now + timedelta(seconds=ttl),
+            request_ip=request_ip[:45],
+        )
+    )
+    db.session.commit()
+    return raw_token
+
+
+def send_password_reset_email(
+    user: User, raw_token: str, reset_url: str
+) -> tuple[bool, str]:
+    ttl_minutes = int(current_app.config.get("PASSWORD_RESET_TOKEN_TTL_SECONDS", 3600)) // 60
+    safe_username = escape(user.username)
+    safe_url = escape(reset_url, quote=True)
+    text_body = (
+        f"Xin chào {user.username},\n\n"
+        "Bạn đã yêu cầu đặt lại mật khẩu CICT Platform:\n"
+        f"{reset_url}\n\n"
+        f"Liên kết có hiệu lực {ttl_minutes} phút và chỉ dùng được một lần.\n"
+        "Nếu bạn không yêu cầu thao tác này, hãy bỏ qua email."
+    )
+    html_body = (
+        f"<p>Xin chào <strong>{safe_username}</strong>,</p>"
+        "<p>Bạn đã yêu cầu đặt lại mật khẩu CICT Platform.</p>"
+        f'<p><a href="{safe_url}">Đặt lại mật khẩu</a></p>'
+        f"<p>Liên kết có hiệu lực {ttl_minutes} phút và chỉ dùng được một lần.</p>"
+    )
+    if not current_app.config.get("MAIL_DEFAULT_SENDER") and current_app.config.get("MAIL_BACKEND") != "locmem":
+        return False, "SMTP chưa được cấu hình."
+    message = EmailMultiAlternatives(
+        "[CICT Platform] Đặt lại mật khẩu",
+        text_body,
+        to=[user.email],
+    )
+    message.attach_alternative(html_body, "text/html")
+    try:
+        message.send()
+        return True, "Email đặt lại mật khẩu đã được gửi."
+    except (BadHeaderError, OSError, smtplib.SMTPException):
+        current_app.logger.warning(
+            "Password reset email delivery failed",
+            extra={"recipient_domain": user.email.rsplit("@", 1)[-1]},
+        )
+        return False, "Không gửi được email; thông tin kết nối đã được ẩn."
+
+
+def _checked_password_reset_token(
+    raw_token: str,
+) -> tuple[PasswordResetToken | None, User | None, str]:
+    if not raw_token or len(raw_token) > 512:
+        return None, None, "invalid"
+    token = (
+        PasswordResetToken.query.filter_by(token_hash=hash_token(raw_token))
+        .with_for_update()
+        .first()
+    )
+    if not token:
+        return None, None, "invalid"
+    now = utcnow()
+    if token.used_at is not None:
+        return token, token.user, "used"
+    if as_utc(token.expires_at) <= now:
+        token.used_at = now
+        db.session.commit()
+        return token, token.user, "expired"
+
+    framework_expired, framework_invalid, framework_user = (
+        reset_password_token_status(raw_token)
+    )
+    if framework_expired:
+        token.used_at = now
+        db.session.commit()
+        return token, token.user, "expired"
+    if framework_invalid or not framework_user or framework_user.id != token.user_id:
+        token.used_at = now
+        db.session.commit()
+        return token, token.user, "invalid"
+    return token, framework_user, "valid"
+
+
+def inspect_password_reset_token(raw_token: str) -> tuple[User | None, str]:
+    _token, user, outcome = _checked_password_reset_token(raw_token)
+    return user, outcome
+
+
+def revoke_user_sessions(user: User) -> None:
+    """Rotate Flask-Security's stable session identity for every active session."""
+    user.fs_uniquifier = uuid.uuid4().hex
+
+
+def clear_login_failures(user: User, *, commit: bool = True) -> None:
+    user.failed_login_count = 0
+    user.failed_login_window_started_at = None
+    user.locked_until = None
+    if commit:
+        db.session.commit()
+
+
+def temporary_lock_remaining(user: User) -> int:
+    if not user.locked_until:
+        return 0
+    remaining = int((as_utc(user.locked_until) - utcnow()).total_seconds())
+    if remaining > 0:
+        return remaining
+    clear_login_failures(user)
+    return 0
+
+
+def register_login_failure(user: User) -> tuple[int, int]:
+    """Record a failed password and return (failure count, lock seconds)."""
+    # Prevent lost increments when multiple login attempts arrive together.
+    user = User.query.filter_by(id=user.id).with_for_update().one()
+    now = utcnow()
+    window_seconds = int(current_app.config.get("LOGIN_FAILURE_WINDOW_SECONDS", 900))
+    max_attempts = int(current_app.config.get("LOGIN_MAX_FAILED_ATTEMPTS", 5))
+    lockout_seconds = int(current_app.config.get("LOGIN_LOCKOUT_SECONDS", 900))
+    window_start = user.failed_login_window_started_at
+    if not window_start or (now - as_utc(window_start)).total_seconds() >= window_seconds:
+        user.failed_login_count = 1
+        user.failed_login_window_started_at = now
+    else:
+        user.failed_login_count = int(user.failed_login_count or 0) + 1
+
+    remaining = 0
+    if user.failed_login_count >= max_attempts:
+        user.locked_until = now + timedelta(seconds=lockout_seconds)
+        remaining = lockout_seconds
+    db.session.commit()
+    return user.failed_login_count, remaining
+
+
+def reset_password_with_token(
+    raw_token: str, new_password: str
+) -> tuple[User | None, str]:
+    token, user, outcome = _checked_password_reset_token(raw_token)
+    if outcome != "valid" or not token or not user:
+        return user, outcome
+
+    now = utcnow()
+    token.used_at = now
+    user.set_password(new_password)
+    revoke_user_sessions(user)
+    clear_login_failures(user, commit=False)
+    PasswordResetToken.query.filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.used_at.is_(None),
+    ).update({PasswordResetToken.used_at: now}, synchronize_session=False)
+    db.session.commit()
+    return user, "reset"
 
 
 def verify_token(raw_token: str) -> tuple[User | None, str]:

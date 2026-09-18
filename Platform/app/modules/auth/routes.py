@@ -11,11 +11,20 @@ from app.extensions import limiter
 from app.models import User
 from app.modules.audit.service import record_audit
 from app.modules.auth.service import (
+    PasswordResetRateLimited,
     VerificationRateLimited,
+    clear_login_failures,
+    create_password_reset_token,
     create_verification_token,
+    inspect_password_reset_token,
     mask_email,
     normalize_email,
+    register_login_failure,
+    reset_password_with_token,
+    revoke_user_sessions,
+    send_password_reset_email,
     send_verification_email,
+    temporary_lock_remaining,
     valid_email,
     verify_token,
 )
@@ -37,6 +46,14 @@ def _verification_url(raw_token: str) -> str:
     public_url = str(current_app.config.get("PLATFORM_PUBLIC_URL", "")).rstrip("/")
     return f"{public_url}{path}" if public_url else url_for(
         "auth.verify_email", token=raw_token, _external=True
+    )
+
+
+def _password_reset_url(raw_token: str) -> str:
+    path = url_for("auth.reset_password", token=raw_token)
+    public_url = str(current_app.config.get("PLATFORM_PUBLIC_URL", "")).rstrip("/")
+    return f"{public_url}{path}" if public_url else url_for(
+        "auth.reset_password", token=raw_token, _external=True
     )
 
 
@@ -77,6 +94,7 @@ def role_required(*roles: str):
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("30/minute", methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
@@ -88,6 +106,23 @@ def login():
         user = User.query.filter(
             or_(User.username == username, User.email == normalized)
         ).first()
+
+        lock_remaining = temporary_lock_remaining(user) if user else 0
+        if user and lock_remaining:
+            record_audit(
+                "AUTH_LOGIN",
+                user.username,
+                "FAILED",
+                "Đăng nhập bị từ chối do tài khoản đang bị khóa tạm thời.",
+                user=user,
+                metadata={"retry_after_seconds": lock_remaining},
+            )
+            flash(
+                "Tài khoản đang bị khóa tạm thời do đăng nhập sai nhiều lần. "
+                "Vui lòng thử lại sau.",
+                "danger",
+            )
+            return render_template("auth/login.html"), 429
 
         if user and user.check_password(password):
             if user.status == User.STATUS_PENDING:
@@ -108,6 +143,8 @@ def login():
                 )
                 flash("Tài khoản hiện không được phép đăng nhập.", "danger")
                 return render_template("auth/login.html"), 403
+            if user.failed_login_count:
+                clear_login_failures(user)
             session.clear()
             login_user(user, remember=True)
             record_audit("AUTH_LOGIN", user.username, "SUCCESS", f"User {user.username} đăng nhập thành công.", user=user)
@@ -115,7 +152,30 @@ def login():
             flash(f"Đăng nhập thành công. Xin chào {user.username} ({user.role}).", "success")
             return redirect(next_page or url_for("dashboard"))
 
-        record_audit("AUTH_LOGIN", username or "unknown", "FAILED", "Tên đăng nhập hoặc mật khẩu không đúng.", user=username or "anonymous")
+        failure_count = 0
+        newly_locked_for = 0
+        if user and user.status not in {User.STATUS_LOCKED, User.STATUS_DISABLED}:
+            failure_count, newly_locked_for = register_login_failure(user)
+        record_audit(
+            "AUTH_LOGIN",
+            getattr(user, "username", username or "unknown"),
+            "FAILED",
+            "Tên đăng nhập hoặc mật khẩu không đúng.",
+            user=user or username or "anonymous",
+            metadata={
+                "failed_attempts": failure_count,
+                "temporarily_locked": bool(newly_locked_for),
+            },
+        )
+        if newly_locked_for:
+            record_audit(
+                "AUTH_ACCOUNT_TEMP_LOCKED",
+                user.username,
+                "SUCCESS",
+                "Tài khoản bị khóa tạm thời do đăng nhập sai liên tiếp.",
+                user=user,
+                metadata={"lockout_seconds": newly_locked_for},
+            )
         flash("Tên đăng nhập hoặc mật khẩu không đúng.", "danger")
 
     return render_template("auth/login.html")
@@ -131,11 +191,88 @@ def logout():
     return redirect(url_for("auth.login"))
 
 
-@auth_bp.route("/forgot-password")
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit("10/hour", methods=["POST"])
 def forgot_password():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
+    if request.method == "POST":
+        email = normalize_email(request.form.get("email", ""))
+        user = User.query.filter_by(email=email).first() if valid_email(email) else None
+        if user and user.status == User.STATUS_ACTIVE:
+            try:
+                raw_token = create_password_reset_token(user, _request_ip())
+                sent, reason = send_password_reset_email(
+                    user, raw_token, _password_reset_url(raw_token)
+                )
+            except PasswordResetRateLimited as exc:
+                sent, reason = False, str(exc)
+            record_audit(
+                "AUTH_PASSWORD_RESET_REQUESTED",
+                user.username,
+                "SUCCESS" if sent else "FAILED",
+                reason,
+                user=user,
+                metadata={"email_domain": email.rsplit("@", 1)[-1]},
+            )
+        else:
+            record_audit(
+                "AUTH_PASSWORD_RESET_REQUESTED",
+                "unknown",
+                "SUCCESS",
+                "Phản hồi trung tính cho email không tồn tại/không hoạt động.",
+            )
+        flash(
+            "Nếu email thuộc tài khoản đang hoạt động và chưa vượt giới hạn, "
+            "hệ thống đã gửi liên kết đặt lại mật khẩu.",
+            "info",
+        )
+        return redirect(url_for("auth.login"))
     return render_template("auth/forgot_password.html")
+
+
+@auth_bp.route("/reset-password", methods=["GET", "POST"])
+@limiter.limit("20/hour", methods=["POST"])
+def reset_password():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard"))
+    raw_token = request.values.get("token", "")
+    user, outcome = inspect_password_reset_token(raw_token)
+    if outcome != "valid" or not user:
+        record_audit(
+            "AUTH_PASSWORD_RESET",
+            getattr(user, "username", "unknown"),
+            "FAILED",
+            f"Token đặt lại mật khẩu không hợp lệ: {outcome}.",
+            user=user or "anonymous",
+        )
+        flash("Liên kết đặt lại mật khẩu không hợp lệ, đã dùng hoặc hết hạn.", "danger")
+        return redirect(url_for("auth.forgot_password"))
+
+    if request.method == "POST":
+        new_password = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+        if len(new_password) < 8:
+            flash("Mật khẩu mới phải có ít nhất 8 ký tự.", "danger")
+        elif new_password != confirm:
+            flash("Mật khẩu xác nhận không khớp.", "danger")
+        else:
+            reset_user, reset_outcome = reset_password_with_token(
+                raw_token, new_password
+            )
+            if reset_outcome == "reset" and reset_user:
+                record_audit(
+                    "AUTH_PASSWORD_RESET",
+                    reset_user.username,
+                    "SUCCESS",
+                    "Mật khẩu được đặt lại; toàn bộ phiên cũ đã bị thu hồi.",
+                    user=reset_user,
+                )
+                flash("Đặt lại mật khẩu thành công. Hãy đăng nhập lại.", "success")
+                return redirect(url_for("auth.login"))
+            flash("Liên kết đặt lại mật khẩu không còn hiệu lực.", "danger")
+            return redirect(url_for("auth.forgot_password"))
+    return render_template("auth/reset_password.html", reset_token=raw_token)
 
 
 @auth_bp.route("/change-password", methods=["GET", "POST"])
@@ -153,11 +290,23 @@ def change_password():
         elif new_pw != confirm_pw:
             flash("Mật khẩu xác nhận không khớp.", "danger")
         else:
+            user = current_user._get_current_object()
+            username = user.username
             current_user.set_password(new_pw)
+            revoke_user_sessions(user)
+            clear_login_failures(user, commit=False)
             db.session.commit()
-            record_audit("AUTH_CHANGE_PASSWORD", current_user.username, "SUCCESS", "User đổi mật khẩu.")
-            flash("Đổi mật khẩu thành công.", "success")
-            return redirect(url_for("dashboard"))
+            record_audit(
+                "AUTH_CHANGE_PASSWORD",
+                username,
+                "SUCCESS",
+                "User đổi mật khẩu; toàn bộ phiên cũ đã bị thu hồi.",
+                user=user,
+            )
+            logout_user()
+            session.clear()
+            flash("Đổi mật khẩu thành công. Hãy đăng nhập lại.", "success")
+            return redirect(url_for("auth.login"))
 
     return render_template("auth/change_password.html")
 

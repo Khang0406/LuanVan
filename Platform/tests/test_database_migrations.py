@@ -28,6 +28,7 @@ class DatabaseMigrationTests(unittest.TestCase):
             self.assertTrue({
                 "alembic_version", "users", "applications", "pipeline_runs",
                 "email_verification_tokens", "security_roles", "security_user_roles",
+                "password_reset_tokens",
             } <= tables)
 
     def test_framework_migration_backfills_legacy_identity(self):

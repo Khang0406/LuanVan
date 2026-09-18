@@ -47,8 +47,12 @@ EXPECTED_COLUMNS = {
     | {
         "email", "status", "email_verified_at", "status_changed_at",
         "fs_uniquifier", "active", "confirmed_at",
+        "failed_login_count", "failed_login_window_started_at", "locked_until",
     },
     "email_verification_tokens": {
+        "id", "user_id", "token_hash", "expires_at", "used_at", "created_at", "request_ip"
+    },
+    "password_reset_tokens": {
         "id", "user_id", "token_hash", "expires_at", "used_at", "created_at", "request_ip"
     },
     "security_roles": {"id", "name", "description"},

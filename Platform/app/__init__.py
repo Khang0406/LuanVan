@@ -38,6 +38,7 @@ def create_app(config_class=Config):
             f"{app.config['SECRET_KEY']}-email-confirmation"
         )
     app.config.setdefault("SECURITY_CONFIRMABLE", True)
+    app.config.setdefault("SECURITY_RECOVERABLE", True)
     app.config.setdefault("SECURITY_REGISTERABLE", True)
     app.config.setdefault("SECURITY_USERNAME_ENABLE", False)
     app.config.setdefault("SECURITY_EMAIL_VALIDATOR_ARGS", {"check_deliverability": False})

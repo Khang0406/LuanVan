@@ -68,6 +68,7 @@ class Config:
     # application routes stay in place to preserve project-specific audit and UI.
     SECURITY_PASSWORD_SALT = os.getenv("SECURITY_PASSWORD_SALT", "").strip()
     SECURITY_CONFIRMABLE = True
+    SECURITY_RECOVERABLE = True
     SECURITY_REGISTERABLE = True
     SECURITY_USERNAME_ENABLE = False
     SECURITY_EMAIL_VALIDATOR_ARGS = {"check_deliverability": False}
@@ -88,6 +89,27 @@ class Config:
     )
     EMAIL_VERIFICATION_MAX_SENDS_PER_IP_HOUR = max(
         1, int(os.getenv("EMAIL_VERIFICATION_MAX_SENDS_PER_IP_HOUR", "20"))
+    )
+    PASSWORD_RESET_TOKEN_TTL_SECONDS = max(
+        300, int(os.getenv("PASSWORD_RESET_TOKEN_TTL_SECONDS", "3600"))
+    )
+    PASSWORD_RESET_COOLDOWN_SECONDS = max(
+        1, int(os.getenv("PASSWORD_RESET_COOLDOWN_SECONDS", "60"))
+    )
+    PASSWORD_RESET_MAX_SENDS_PER_HOUR = max(
+        1, int(os.getenv("PASSWORD_RESET_MAX_SENDS_PER_HOUR", "5"))
+    )
+    PASSWORD_RESET_MAX_SENDS_PER_IP_HOUR = max(
+        1, int(os.getenv("PASSWORD_RESET_MAX_SENDS_PER_IP_HOUR", "20"))
+    )
+    LOGIN_MAX_FAILED_ATTEMPTS = max(
+        2, int(os.getenv("LOGIN_MAX_FAILED_ATTEMPTS", "5"))
+    )
+    LOGIN_FAILURE_WINDOW_SECONDS = max(
+        60, int(os.getenv("LOGIN_FAILURE_WINDOW_SECONDS", "900"))
+    )
+    LOGIN_LOCKOUT_SECONDS = max(
+        60, int(os.getenv("LOGIN_LOCKOUT_SECONDS", "900"))
     )
 
     # Prometheus & Grafana — monitoring stack URLs

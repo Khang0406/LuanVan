@@ -1,5 +1,71 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.3.3 — Bảo mật đăng nhập và khôi phục tài khoản (2026-09-18)
+
+### Kết quả triển khai
+
+- Thêm quy trình quên/đặt lại mật khẩu bằng email, thay trang “liên hệ Admin”
+  trước đây.
+- Token reset do Flask-Security ký, database chỉ giữ SHA-256, có hạn, dùng một
+  lần và token cũ bị thu hồi khi gửi lại.
+- Phản hồi forgot-password trung tính, không cho biết email có tồn tại hay trạng
+  thái tài khoản.
+- Thêm giới hạn theo IP bằng Flask-Limiter và cooldown/giới hạn theo user/IP
+  trong database.
+- Khóa hàng user khi tăng bộ đếm và tạo token để chống race condition giữa các
+  request đồng thời trên PostgreSQL.
+- Đếm đăng nhập sai theo cửa sổ thời gian; mặc định 5 lần/15 phút sẽ khóa tạm
+  15 phút. Khóa tạm không ghi đè trạng thái `Locked`/`Disabled` của Admin.
+- Đổi mật khẩu, reset bằng email hoặc Admin reset đều xoay `fs_uniquifier`, làm
+  toàn bộ session cũ hết hiệu lực.
+- Mật khẩu tạm do Admin tạo chuyển từ 8 ký tự hex sang
+  `secrets.token_urlsafe(12)` và không được ghi vào audit.
+- Bổ sung audit cho yêu cầu reset, kết quả reset và khóa tạm; raw token, mật
+  khẩu và SMTP credential không xuất hiện trong log.
+
+### Schema và migration
+
+- Thêm revision `0004_account_recovery_security`.
+- `users` thêm `failed_login_count`, `failed_login_window_started_at` và
+  `locked_until`.
+- Thêm `password_reset_tokens`, foreign key cascade và index cho user, hash,
+  expiry, created time.
+- `scripts/manage_database.py check` kiểm tra toàn bộ schema A.3.3.
+- Migration test đã kiểm tra database trắng và vòng
+  `head → base → head`, bao gồm downgrade `0004 → 0003`.
+
+### Web/UI và cấu hình
+
+- `/auth/forgot-password`: GET form, POST gửi yêu cầu với phản hồi trung tính.
+- `/auth/reset-password`: kiểm tra token và nhận mật khẩu mới.
+- Login có distributed IP rate limit và khóa tạm theo tài khoản.
+- Change password logout phiên hiện tại và revoke các phiên còn lại.
+- `.env.example` bổ sung TTL/cooldown/rate limit/lockout nhưng không chứa secret.
+
+### Kiểm thử ngày 2026-09-18
+
+```text
+Migration + A.3.2 + A.3.3: 21 tests OK
+Full regression:             159 tests OK, 6 PostgreSQL tests skipped
+Python compileall:           OK
+```
+
+Acceptance A.3.3 bao phủ token một lần/hết hạn/bị sửa chữ ký, phản hồi chống dò
+email, SMTP failure, resend cooldown, khóa tạm và hết khóa, đổi mật khẩu, mật
+khẩu cũ bị từ chối và thu hồi nhiều session.
+
+### Giới hạn môi trường hiện tại
+
+- PostgreSQL runtime tại `localhost:5432` không hoạt động trong lần kiểm tra này,
+  nên revision `0004` chưa được áp dụng lên database runtime.
+- Google Cloud VM/K3s hết credit nên không thực hiện smoke test deployment; A.3
+  không phụ thuộc cluster nhưng runtime Web/DB cần được bật lại để nghiệm thu.
+- Gmail App Password chưa được cấu hình; SMTP thật chưa thể gửi ra ngoài. Mail
+  transport đã được kiểm tra bằng backend `locmem`, còn nghiệm thu Gmail phải
+  thực hiện sau khi người quản trị cung cấp secret qua `.env`/Secret.
+
+Tài liệu chi tiết: `docs/phase-a33-account-security.md`.
+
 ## Phase A.3.2 — Refactor xác minh email bằng framework (2026-08-27)
 
 ### Quyết định sau thử nghiệm

@@ -207,10 +207,11 @@ Rollback code an toàn nhất là quay về checkpoint commit
 `17dba183337240eddd0815d5fda11562493b2c5c`. Không dùng reset trên database đã
 ghi dữ liệu mới; phải downgrade migration trước hoặc phục hồi backup.
 
-## 10. Phạm vi chưa làm
+## 10. Trạng thái tiếp nối
 
-- khóa tạm theo số lần login sai, reset password và revoke toàn bộ session thuộc
-  A.3.3;
-- Project Membership và RBAC theo project thuộc A.4;
-- SMTP thật chưa được cung cấp credential; runtime hiện kiểm tra workflow bằng
-  acceptance test và không gửi email ra ngoài.
+- Khóa tạm theo số lần login sai, reset password và revoke toàn bộ session đã
+  được triển khai tại A.3.3; xem `docs/phase-a33-account-security.md`.
+- Project Membership và RBAC theo project vẫn thuộc A.4, chưa triển khai.
+- SMTP thật chưa được cung cấp Gmail App Password; workflow, token và mail
+  transport đã được acceptance test bằng backend `locmem`, nhưng chưa thể ghi
+  nhận nghiệm thu gửi email ra Internet.

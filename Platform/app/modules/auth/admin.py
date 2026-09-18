@@ -7,6 +7,7 @@ from app.db import db
 from app.models import User
 from app.modules.audit.service import record_audit
 from app.modules.auth.routes import role_required
+from app.modules.auth.service import clear_login_failures, revoke_user_sessions
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -34,9 +35,16 @@ def user_reset(user_id):
         flash("Không thể tự reset mật khẩu của chính mình. Dùng chức năng Đổi mật khẩu.", "warning")
         return redirect(url_for("admin.user_list"))
 
-    new_password = secrets.token_hex(4)
+    new_password = secrets.token_urlsafe(12)
     user.set_password(new_password)
+    revoke_user_sessions(user)
+    clear_login_failures(user, commit=False)
     db.session.commit()
-    record_audit("USER_RESET_PASSWORD", user.username, "SUCCESS", f"Admin reset mật khẩu cho {user.username}.")
+    record_audit(
+        "USER_RESET_PASSWORD",
+        user.username,
+        "SUCCESS",
+        f"Admin reset mật khẩu cho {user.username}; toàn bộ phiên cũ đã bị thu hồi.",
+    )
     flash(f"Đã reset mật khẩu của {user.username}. Mật khẩu mới: {new_password}", "success")
     return redirect(url_for("admin.user_list"))

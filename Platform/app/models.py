@@ -53,6 +53,11 @@ class User(db.Model, UserMixin):
     role = db.Column(db.String(16), nullable=False, default="Developer")
     status = db.Column(db.String(32), nullable=False, default=STATUS_ACTIVE)
     email_verified_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    failed_login_count = db.Column(db.Integer, nullable=False, default=0)
+    failed_login_window_started_at = db.Column(
+        db.DateTime(timezone=True), nullable=True
+    )
+    locked_until = db.Column(db.DateTime(timezone=True), nullable=True)
     status_changed_at = db.Column(
         db.DateTime(timezone=True), nullable=False,
         default=lambda: datetime.now(timezone.utc)
@@ -61,6 +66,12 @@ class User(db.Model, UserMixin):
 
     verification_tokens = db.relationship(
         "EmailVerificationToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    password_reset_tokens = db.relationship(
+        "PasswordResetToken",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -124,6 +135,34 @@ class EmailVerificationToken(db.Model):
     request_ip = db.Column(db.String(45), nullable=False, default="")
 
     user = db.relationship("User", back_populates="verification_tokens")
+
+    @property
+    def is_used(self) -> bool:
+        return self.used_at is not None
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = "password_reset_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    token_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+    used_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+    request_ip = db.Column(db.String(45), nullable=False, default="")
+
+    user = db.relationship("User", back_populates="password_reset_tokens")
 
     @property
     def is_used(self) -> bool:
