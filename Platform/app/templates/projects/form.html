@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Tạo project - CICT Platform{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card soft-card">
+      <div class="card-body p-4">
+        <h2 class="mb-3">Tạo project</h2>
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label" for="name">Tên project *</label>
+            <input class="form-control" id="name" name="name" value="{{ form.name or '' }}" minlength="3" maxlength="120" required autofocus>
+            <div class="form-text">Slug được tự sinh và phải duy nhất toàn hệ thống.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="description">Mô tả</label>
+            <textarea class="form-control" id="description" name="description" maxlength="500" rows="4">{{ form.description or '' }}</textarea>
+          </div>
+          <button class="btn btn-primary" type="submit">Tạo project</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('projects.project_list') }}">Hủy</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

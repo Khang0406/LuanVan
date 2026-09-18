@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.name }} - CICT Platform{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1>{{ project.name }}</h1>
+    <div class="text-muted"><code>{{ project.slug }}</code> · {{ project.status }}</div>
+    <p class="mt-2">{{ project.description or 'Chưa có mô tả.' }}</p>
+  </div>
+  <form method="post" action="{{ url_for('projects.project_select') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="project_id" value="{{ project.id }}">
+    <button class="btn btn-outline-primary" type="submit">Chọn project này</button>
+  </form>
+</div>
+
+{% if can_manage %}
+<div class="card soft-card mb-4">
+  <div class="card-body p-4">
+    <h5>Thêm thành viên hiện có</h5>
+    <form class="row g-2" method="post" action="{{ url_for('projects.project_member_add', project_id=project.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-md-9"><input class="form-control" name="identity" placeholder="Username hoặc email" required></div>
+      <div class="col-md-3"><button class="btn btn-primary w-100" type="submit">Thêm thành viên</button></div>
+    </form>
+    <div class="form-text">A.4.1 thêm tài khoản đã tồn tại; lời mời email và role chi tiết được hoàn thiện ở A.4.2.</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card soft-card">
+  <div class="card-body p-0">
+    <div class="p-4 pb-2"><h5>Thành viên</h5></div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>User</th><th>Email</th><th>Trạng thái</th><th>Tham gia</th><th class="text-end">Thao tác</th></tr></thead>
+        <tbody>
+          {% for membership in project.memberships|sort(attribute='created_at') %}
+          <tr>
+            <td>{{ membership.user.username }} {% if membership.user_id == project.owner_user_id %}<span class="badge bg-primary">Owner</span>{% endif %}</td>
+            <td>{{ membership.user.email or '-' }}</td>
+            <td><span class="badge bg-{{ 'success' if membership.status == 'Active' else 'secondary' }}">{{ membership.status }}</span></td>
+            <td>{{ membership.created_at.strftime('%d/%m/%Y %H:%M') if membership.created_at else '-' }}</td>
+            <td class="text-end">
+              {% if can_manage and membership.user_id != project.owner_user_id %}
+              <form class="d-inline" method="post" action="{{ url_for('projects.project_member_status', project_id=project.id, membership_id=membership.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="status" value="{{ 'Disabled' if membership.status == 'Active' else 'Active' }}">
+                <button class="btn btn-sm btn-outline-warning" type="submit">{{ 'Vô hiệu hóa' if membership.status == 'Active' else 'Kích hoạt' }}</button>
+              </form>
+              <form class="d-inline" method="post" action="{{ url_for('projects.project_member_remove', project_id=project.id, membership_id=membership.id) }}" onsubmit="return confirm('Xóa thành viên này khỏi project?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

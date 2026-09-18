@@ -248,6 +248,11 @@ def collect_and_persist(
     app_metrics: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Persist and notify only Firing/Resolved transitions for stable fingerprints."""
+    scoped_application_ids = {
+        str(application.get("id"))
+        for application in applications
+        if application.get("id") is not None
+    }
     existing = load_alerts()
     latest: dict[str, dict[str, Any]] = {}
     for alert in existing:
@@ -265,6 +270,14 @@ def collect_and_persist(
 
     for fingerprint, previous in latest.items():
         if previous.get("state") != "Firing" or fingerprint in current_by_fingerprint:
+            continue
+        previous_application_id = str(previous.get("application_id") or "")
+        if (
+            previous_application_id
+            and previous_application_id not in scoped_application_ids
+        ):
+            # A project-scoped monitoring refresh cannot resolve another
+            # project's alert merely because that application was not loaded.
             continue
         resolved = dict(previous)
         resolved.update({

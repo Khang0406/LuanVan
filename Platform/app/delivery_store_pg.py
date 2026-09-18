@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS delivery_migrations (
 
 CREATE TABLE IF NOT EXISTS applications (
     id TEXT PRIMARY KEY,
+    project_id INTEGER NOT NULL DEFAULT 1,
     name TEXT NOT NULL,
     owner TEXT NOT NULL DEFAULT '',
     user_id INTEGER,
@@ -266,7 +267,7 @@ def check_database(path: Path | None = None) -> None:
 
 def _upsert_application(conn, application: dict[str, Any], *, insert_only: bool = False) -> int:
     conflict = "DO NOTHING" if insert_only else """DO UPDATE SET
-        name=EXCLUDED.name, owner=EXCLUDED.owner, user_id=EXCLUDED.user_id,
+        project_id=EXCLUDED.project_id, name=EXCLUDED.name, owner=EXCLUDED.owner, user_id=EXCLUDED.user_id,
         namespace=EXCLUDED.namespace, source_type=EXCLUDED.source_type,
         repository_url=EXCLUDED.repository_url, default_branch=EXCLUDED.default_branch,
         requested_ref=EXCLUDED.requested_ref, build_context=EXCLUDED.build_context,
@@ -276,16 +277,17 @@ def _upsert_application(conn, application: dict[str, Any], *, insert_only: bool 
         updated_at=EXCLUDED.updated_at, payload=EXCLUDED.payload"""
     result = conn.execute(
         text(f"""INSERT INTO applications(
-            id, name, owner, user_id, namespace, source_type, repository_url,
+            id, project_id, name, owner, user_id, namespace, source_type, repository_url,
             default_branch, requested_ref, build_context, dockerfile_path,
             current_deployment_id, status, url, created_at, updated_at, payload
-        ) VALUES (:id, :name, :owner, :user_id, :namespace, :source_type, :repository_url,
+        ) VALUES (:id, :project_id, :name, :owner, :user_id, :namespace, :source_type, :repository_url,
             :default_branch, :requested_ref, :build_context, :dockerfile_path,
             :current_deployment_id, :status, :url, :created_at, :updated_at,
             CAST(:payload AS JSONB))
         ON CONFLICT (id) {conflict}"""),
         {
             "id": application["id"],
+            "project_id": application.get("project_id", 1),
             "name": application.get("name", application["id"]),
             "owner": application.get("owner", ""),
             "user_id": application.get("user_id"),

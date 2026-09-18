@@ -46,7 +46,8 @@ class User(db.Model, UserMixin):
     # A synonym keeps every existing Werkzeug hash and database column intact.
     password = synonym("password_hash")
     fs_uniquifier = db.Column(
-        db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex
+        db.String(64), unique=True, nullable=False, index=True,
+        default=lambda: uuid.uuid4().hex,
     )
     active = db.Column(db.Boolean, nullable=False, default=True)
     confirmed_at = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -72,6 +73,13 @@ class User(db.Model, UserMixin):
     )
     password_reset_tokens = db.relationship(
         "PasswordResetToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    project_memberships = db.relationship(
+        "ProjectMembership",
+        foreign_keys="ProjectMembership.user_id",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -167,3 +175,102 @@ class PasswordResetToken(db.Model):
     @property
     def is_used(self) -> bool:
         return self.used_at is not None
+
+
+class Project(db.Model):
+    __tablename__ = "projects"
+
+    STATUS_ACTIVE = "Active"
+    STATUS_ARCHIVED = "Archived"
+    VALID_STATUSES = {STATUS_ACTIVE, STATUS_ARCHIVED}
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    description = db.Column(db.String(500), nullable=False, default="")
+    status = db.Column(db.String(20), nullable=False, default=STATUS_ACTIVE)
+    owner_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    owner = db.relationship("User", foreign_keys=[owner_user_id])
+    memberships = db.relationship(
+        "ProjectMembership",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    @validates("status")
+    def validate_status(self, _key: str, status: str) -> str:
+        if status not in self.VALID_STATUSES:
+            raise ValueError(f"Trạng thái project không hợp lệ: {status}")
+        return status
+
+
+class ProjectMembership(db.Model):
+    __tablename__ = "project_memberships"
+    __table_args__ = (
+        db.UniqueConstraint("project_id", "user_id", name="uq_project_membership"),
+    )
+
+    STATUS_ACTIVE = "Active"
+    STATUS_DISABLED = "Disabled"
+    VALID_STATUSES = {STATUS_ACTIVE, STATUS_DISABLED}
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(
+        db.Integer,
+        db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status = db.Column(db.String(20), nullable=False, default=STATUS_ACTIVE)
+    invited_by_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    project = db.relationship("Project", back_populates="memberships")
+    user = db.relationship(
+        "User", foreign_keys=[user_id], back_populates="project_memberships"
+    )
+    invited_by = db.relationship("User", foreign_keys=[invited_by_user_id])
+
+    @validates("status")
+    def validate_status(self, _key: str, status: str) -> str:
+        if status not in self.VALID_STATUSES:
+            raise ValueError(f"Trạng thái membership không hợp lệ: {status}")
+        return status

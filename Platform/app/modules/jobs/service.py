@@ -134,9 +134,26 @@ def record_completed_job(
     return finish_job(job["id"], success, output, output, steps) or job
 
 
-def load_accessible_jobs(user: Any, limit: int | None = 200) -> list[dict[str, Any]]:
+def load_accessible_jobs(
+    user: Any,
+    limit: int | None = 200,
+    *,
+    application_ids: set[str] | None = None,
+) -> list[dict[str, Any]]:
     jobs = load_jobs(limit=None)
-    if not getattr(user, "is_admin", False):
+    if application_ids is not None:
+        actor_id = getattr(user, "id", None)
+        is_admin = getattr(user, "is_admin", False)
+        jobs = [
+            job
+            for job in jobs
+            if (
+                job.get("metadata", {}).get("application_id") in application_ids
+                if job.get("metadata", {}).get("application_id")
+                else is_admin or job.get("actor_id") == actor_id
+            )
+        ]
+    elif not getattr(user, "is_admin", False):
         jobs = [job for job in jobs if job.get("actor_id") == getattr(user, "id", None)]
     jobs = sorted(jobs, key=lambda item: item.get("created_at", ""), reverse=True)
     return jobs[:limit] if limit else jobs

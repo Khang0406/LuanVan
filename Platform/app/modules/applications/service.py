@@ -29,6 +29,7 @@ def _default_applications() -> list[dict[str, Any]]:
     return [
         {
             "id": "demo-nginx",
+            "project_id": 1,
             "name": "demo-nginx",
             "owner": "team-demo",
             "namespace": "demo-nginx",
@@ -91,24 +92,72 @@ def save_applications(applications: list[dict[str, Any]]) -> None:
     replace_applications(applications)
 
 
-def can_access_application(application: dict[str, Any], user: Any) -> bool:
-    """Admins/Viewers can read all apps; Developers are isolated by ownership."""
+def can_access_application(
+    application: dict[str, Any], user: Any, project_id: int | None = None
+) -> bool:
+    """Authorize project-scoped apps, retaining legacy ownership compatibility."""
+    application_project_id = application.get("project_id")
+    if application_project_id is not None:
+        try:
+            application_project_id = int(application_project_id)
+        except (TypeError, ValueError):
+            return False
+        if project_id is not None and application_project_id != int(project_id):
+            return False
+        return application_project_id in _accessible_project_ids(user)
+
+    # Records from isolated unit tests or pre-A.4 SQLite stores have no project.
+    # Runtime migration 0005 assigns every persisted application a project.
     if getattr(user, "role", "") in {"Admin", "Viewer"}:
         return True
     return application.get("user_id") == getattr(user, "id", None)
 
 
-def load_accessible_applications(user: Any) -> list[dict[str, Any]]:
-    return [app for app in load_applications() if can_access_application(app, user)]
+def load_accessible_applications(
+    user: Any, project_id: int | None = None
+) -> list[dict[str, Any]]:
+    accessible_project_ids = _accessible_project_ids(user)
+    applications: list[dict[str, Any]] = []
+    for application in load_applications():
+        application_project_id = application.get("project_id")
+        if application_project_id is None:
+            if can_access_application(application, user, project_id=project_id):
+                applications.append(application)
+            continue
+        try:
+            application_project_id = int(application_project_id)
+        except (TypeError, ValueError):
+            continue
+        if project_id is not None and application_project_id != int(project_id):
+            continue
+        if application_project_id in accessible_project_ids:
+            applications.append(application)
+    return applications
+
+
+def _accessible_project_ids(user: Any) -> set[int]:
+    """Load the user's active project scope once to avoid per-app queries."""
+    from app.db import db
+    from app.models import Project, ProjectMembership
+
+    query = db.session.query(Project.id).filter(Project.status == Project.STATUS_ACTIVE)
+    if not getattr(user, "is_admin", False):
+        query = query.join(ProjectMembership).filter(
+            ProjectMembership.user_id == getattr(user, "id", None),
+            ProjectMembership.status == ProjectMembership.STATUS_ACTIVE,
+        )
+    return {project_id for (project_id,) in query.all()}
 
 
 def find_application(application_id: str) -> dict[str, Any] | None:
     return next((app for app in load_applications() if app["id"] == application_id), None)
 
 
-def find_accessible_application(application_id: str, user: Any) -> dict[str, Any] | None:
+def find_accessible_application(
+    application_id: str, user: Any, project_id: int | None = None
+) -> dict[str, Any] | None:
     application = find_application(application_id)
-    if application and can_access_application(application, user):
+    if application and can_access_application(application, user, project_id=project_id):
         return application
     return None
 
@@ -255,7 +304,9 @@ def _parse_services_from_form(form: dict[str, Any]) -> list[dict[str, Any]]:
     return services
 
 
-def create_application(form: dict[str, Any], user: Any) -> dict[str, Any]:
+def create_application(
+    form: dict[str, Any], user: Any, project_id: int | None = None
+) -> dict[str, Any]:
     name = form.get("name", "").strip()
     application_id = slugify(name)
     requested_namespace = form.get("namespace", "").strip()
@@ -321,6 +372,7 @@ def create_application(form: dict[str, Any], user: Any) -> dict[str, Any]:
 
     application = {
         "id": application_id,
+        **({"project_id": int(project_id)} if project_id is not None else {}),
         "name": name,
         "owner": owner,
         "user_id": user.id,

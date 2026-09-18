@@ -3,7 +3,12 @@ from app.modules.servers.service import load_servers
 
 
 def dashboard_stats(user):
-    applications = load_accessible_applications(user)
+    from app.modules.projects.service import get_active_project
+
+    project = get_active_project(user)
+    applications = load_accessible_applications(
+        user, project_id=project.id if project else None
+    ) if project else []
     servers = load_servers() if user.is_admin else []
     master_count = sum(1 for server in servers if server.get("role") == "Master")
     worker_count = sum(1 for server in servers if server.get("role") == "Worker")
@@ -17,7 +22,13 @@ def dashboard_stats(user):
         for run in load_pipeline_runs()
         if run.get("application_id") in application_ids and run.get("status") == "Running"
     )
-    running_infra_jobs = sum(1 for job in load_accessible_jobs(user, limit=None) if job.get("status") == "Running")
+    running_infra_jobs = sum(
+        1
+        for job in load_accessible_jobs(
+            user, limit=None, application_ids=application_ids
+        )
+        if job.get("status") == "Running"
+    )
     running_jobs = running_pipeline_jobs + running_infra_jobs
 
     return {

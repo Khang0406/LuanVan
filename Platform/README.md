@@ -56,6 +56,7 @@ kubectl kustomize k8s/platform | kubectl create --dry-run=client --validate=fals
 - [Quản lý Alembic migration](docs/database-migrations.md)
 - [Phase A.3.2 — Xác minh email](docs/phase-a32-email-verification.md)
 - [Phase A.3.3 — Bảo mật và khôi phục tài khoản](docs/phase-a33-account-security.md)
+- [Phase A.4.1 — Project và thành viên](docs/phase-a41-project-membership.md)
 - [Deployment runbook](docs/deployment-runbook.md)
 - [Backup/restore](docs/backup-restore.md)
 - [Security/RBAC](docs/security-model.md)

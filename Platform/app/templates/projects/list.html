@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Projects - CICT Platform{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1>Projects</h1>
+    <p class="text-muted mb-0">Mỗi project là một phạm vi thành viên và application riêng.</p>
+  </div>
+  {% if current_user.role in ['Admin', 'Developer'] %}
+  <a class="btn btn-primary" href="{{ url_for('projects.project_create') }}">+ Tạo project</a>
+  {% endif %}
+</div>
+<div class="row g-4">
+  {% for project in projects %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card soft-card h-100">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between">
+          <h4>{{ project.name }}</h4>
+          <span class="badge bg-{{ 'success' if project.status == 'Active' else 'secondary' }}">{{ project.status }}</span>
+        </div>
+        <div class="text-muted mb-2"><code>{{ project.slug }}</code></div>
+        <p>{{ project.description or 'Chưa có mô tả.' }}</p>
+        <div class="small text-muted mb-3">
+          Owner: {{ project.owner.username if project.owner else '-' }} · {{ project.memberships|selectattr('status', 'equalto', 'Active')|list|length }} thành viên
+        </div>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('projects.project_detail', project_id=project.id) }}">Chi tiết</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12"><div class="alert alert-warning">Bạn chưa thuộc project nào đang hoạt động.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}

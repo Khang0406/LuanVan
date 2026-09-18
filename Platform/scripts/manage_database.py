@@ -43,6 +43,7 @@ BASELINE_EXPECTED_COLUMNS = {
 
 EXPECTED_COLUMNS = {
     **BASELINE_EXPECTED_COLUMNS,
+    "applications": BASELINE_EXPECTED_COLUMNS["applications"] | {"project_id"},
     "users": BASELINE_EXPECTED_COLUMNS["users"]
     | {
         "email", "status", "email_verified_at", "status_changed_at",
@@ -57,6 +58,14 @@ EXPECTED_COLUMNS = {
     },
     "security_roles": {"id", "name", "description"},
     "security_user_roles": {"user_id", "role_id"},
+    "projects": {
+        "id", "name", "slug", "description", "status", "owner_user_id",
+        "created_at", "updated_at",
+    },
+    "project_memberships": {
+        "id", "project_id", "user_id", "status", "invited_by_user_id",
+        "created_at", "updated_at",
+    },
 }
 
 

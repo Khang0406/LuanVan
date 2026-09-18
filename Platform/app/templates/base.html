@@ -20,6 +20,7 @@
       <a class="nav-link" href="{{ url_for('ui.servers') }}">Server Inventory</a>
       <a class="nav-link" href="{{ url_for('ui.clusters') }}">Kubernetes Setup</a>
       {% endif %}
+      <a class="nav-link" href="{{ url_for('projects.project_list') }}">Projects</a>
       <a class="nav-link" href="{{ url_for('ui.applications') }}">Applications</a>
       <a class="nav-link" href="{{ url_for('ui.deployment_detail') }}">Deployments</a>
       <a class="nav-link" href="{{ url_for('ui.cicd') }}">CI/CD</a>
@@ -36,6 +37,16 @@
       <div class="topbar-title">Management Dashboard</div>
       <div class="user-chip">
         {% if current_user.is_authenticated %}
+          {% if available_projects %}
+          <form method="post" action="{{ url_for('projects.project_select') }}" class="d-inline-flex align-items-center me-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select class="form-select form-select-sm" name="project_id" onchange="this.form.submit()" aria-label="Project hiện tại">
+              {% for project in available_projects %}
+              <option value="{{ project.id }}" {{ 'selected' if active_project and active_project.id == project.id else '' }}>{{ project.name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+          {% endif %}
           {{ current_user.username }}
           <span class="badge bg-secondary ms-1">{{ current_user.role }}</span>
           <a href="{{ url_for('auth.change_password') }}" class="btn btn-sm btn-outline-secondary ms-1">Đổi MK</a>

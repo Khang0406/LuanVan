@@ -1,5 +1,81 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.4.1 — Project và thành viên (2026-09-18)
+
+### Đợt rà soát đồng bộ và tối ưu
+
+Sau khi hoàn thiện luồng chính, mã nguồn A.3–A.4.1 được rà soát lại theo phạm
+vi tenant, số truy vấn và khả năng nâng cấp dependency. Các điều chỉnh gồm:
+
+- gom truy vấn project membership thành một lần khi lọc danh sách application,
+  loại bỏ kiểu N+1 (mỗi application phát sinh thêm một truy vấn);
+- dùng lại danh sách project đã tải trong template context, không query hai lần
+  cho selector và active project trên cùng request;
+- project `Archived` bị loại khỏi phạm vi truy cập của cả member và Platform
+  Admin trên luồng application, tránh trạng thái danh sách và detail lệch nhau;
+- job gắn application được lọc theo project thay vì actor: đồng đội trong cùng
+  project nhìn thấy job liên quan, còn job project khác không bị lộ; job hạ tầng
+  không gắn application vẫn giữ nguyên giới hạn actor/Admin;
+- refresh monitoring theo một project không còn tự đánh dấu alert đang firing
+  của project khác thành `Resolved`;
+- ẩn server/node metrics và biểu đồ hạ tầng dùng chung khỏi project member;
+  application metrics theo project vẫn được giữ nguyên;
+- tạo project/thêm membership xử lý cả unique race ở database, rollback session
+  và trả lỗi nghiệp vụ thay vì làm request lỗi 500;
+- mọi lần từ chối đổi trạng thái/xóa owner cũng được ghi audit `FAILED`;
+- migration 0005 materialize danh sách application trước khi update JSONB trên
+  cùng connection, tránh cursor PostgreSQL bị invalid trong lúc duyệt;
+- A.3.2/A.3.3 chuyển khỏi API kiểm tra token đã deprecated của Flask-Security
+  sang `check_and_get_token_status`, vẫn kiểm tra `fs_uniquifier`, email/password
+  hash, hash token nội bộ, expiry và one-time use như trước.
+
+### Kết quả triển khai
+
+- Thêm mô hình `Project` và `ProjectMembership`; một user có thể thuộc nhiều
+  project, membership có trạng thái Active/Disabled.
+- Người tạo là owner; owner/Platform Admin thêm, kích hoạt, vô hiệu hóa hoặc xóa
+  thành viên. Owner không thể bị disable/xóa.
+- Thêm project selector trên topbar, lưu `active_project_id` trong session và
+  kiểm tra lại membership ở backend mỗi request.
+- Application mới bắt buộc gắn project hiện tại. Application list/detail cùng
+  deployment, job, CI/CD, monitoring application/alert được scope theo project.
+- API có `GET /api/v1/projects` và filter `project_id`; request tới project ngoài
+  membership trả 403.
+- Thêm audit cho tạo/chọn project và thay đổi membership.
+
+### Migration và bảo toàn dữ liệu
+
+- Thêm revision `0005_projects_memberships`.
+- Tạo `projects`, `project_memberships`; thêm foreign key/index
+  `applications.project_id`.
+- Tạo `default-project`, chọn Admin đầu tiên làm owner, thêm toàn bộ user hiện
+  hữu làm member và backfill toàn bộ application cũ.
+- Cập nhật đồng thời normalized column và JSON/JSONB payload nên service cũ
+  không mất `project_id` khi đọc.
+- Migration test xác nhận legacy user/application, database trắng và vòng
+  `head → base → head`.
+
+### Kiểm thử ngày 2026-09-18
+
+```text
+Identity + tenant targeted:   35 tests OK
+Full regression:              169 tests OK, 6 PostgreSQL tests skipped
+Python compileall:            OK
+Schema check revision 0005:   OK
+alembic check:                No new upgrade operations detected
+```
+
+### Giới hạn môi trường
+
+- PostgreSQL runtime tại `localhost:5432` chưa hoạt động nên revision 0005 chưa
+  được áp dụng lên dữ liệu thật; không tuyên bố runtime migration đã nghiệm thu.
+- Google Cloud/K3s hết credit không ảnh hưởng test A.4.1 local, nhưng chưa thể
+  smoke test deployment sau khi chọn project.
+- A.4.1 chưa phải RBAC chi tiết. Role/Permission theo membership thuộc A.4.2;
+  project-scoped hashed API token thuộc A.4.3.
+
+Tài liệu chi tiết: `docs/phase-a41-project-membership.md`.
+
 ## Phase A.3.3 — Bảo mật đăng nhập và khôi phục tài khoản (2026-09-18)
 
 ### Kết quả triển khai

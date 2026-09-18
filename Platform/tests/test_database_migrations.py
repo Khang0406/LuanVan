@@ -28,7 +28,7 @@ class DatabaseMigrationTests(unittest.TestCase):
             self.assertTrue({
                 "alembic_version", "users", "applications", "pipeline_runs",
                 "email_verification_tokens", "security_roles", "security_user_roles",
-                "password_reset_tokens",
+                "password_reset_tokens", "projects", "project_memberships",
             } <= tables)
 
     def test_framework_migration_backfills_legacy_identity(self):
@@ -63,6 +63,43 @@ class DatabaseMigrationTests(unittest.TestCase):
                 self.assertNotIn("users", inspect(create_engine(url)).get_table_names())
                 command.upgrade(config, "head")
             self.assertIn("users", inspect(create_engine(url)).get_table_names())
+
+    def test_project_migration_backfills_legacy_applications_and_memberships(self):
+        with TemporaryDirectory() as directory:
+            url = f"sqlite:///{Path(directory) / 'legacy-project.db'}"
+            config = self._config(url)
+            with patch.dict(os.environ, {"DATABASE_URL": url}):
+                command.upgrade(config, "0004_account_recovery_security")
+                engine = create_engine(url)
+                with engine.begin() as connection:
+                    connection.execute(text(
+                        "INSERT INTO users "
+                        "(username, password_hash, fs_uniquifier, active, role, status, "
+                        "failed_login_count, status_changed_at) VALUES "
+                        "('admin-old', 'hash', 'legacy-admin-id', 1, 'Admin', 'Active', 0, CURRENT_TIMESTAMP), "
+                        "('dev-old', 'hash', 'legacy-dev-id', 1, 'Developer', 'Active', 0, CURRENT_TIMESTAMP)"
+                    ))
+                    connection.execute(text(
+                        "INSERT INTO applications "
+                        "(id, name, namespace, source_type, payload) VALUES "
+                        "('legacy-app', 'Legacy App', 'legacy-app', 'docker', :payload)"
+                    ), {"payload": '{"id":"legacy-app","name":"Legacy App"}'})
+                command.upgrade(config, "head")
+            with create_engine(url).connect() as connection:
+                project = connection.execute(text(
+                    "SELECT id, slug, owner_user_id FROM projects"
+                )).one()
+                application = connection.execute(text(
+                    "SELECT project_id, payload FROM applications WHERE id = 'legacy-app'"
+                )).one()
+                memberships = connection.execute(text(
+                    "SELECT user_id, status FROM project_memberships ORDER BY user_id"
+                )).all()
+            self.assertEqual(project.slug, "default-project")
+            self.assertEqual(application.project_id, project.id)
+            self.assertIn('"project_id": 1', application.payload)
+            self.assertEqual(len(memberships), 2)
+            self.assertTrue(all(row.status == "Active" for row in memberships))
 
 
 if __name__ == "__main__":

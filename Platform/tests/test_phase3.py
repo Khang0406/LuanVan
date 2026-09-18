@@ -92,6 +92,31 @@ class AlertLifecycleTests(unittest.TestCase):
         self.assertEqual(["Firing", "Resolved"], [saved[1]["state"], saved[0]["state"]])
         self.assertEqual(2, send.call_count)
 
+    def test_project_refresh_does_not_resolve_another_projects_alert(self):
+        other_alert = {
+            "fingerprint": "other-project-alert",
+            "state": "Firing",
+            "application_id": "beta-app",
+            "message": "Beta is unhealthy",
+        }
+        saved = [other_alert]
+
+        def save(value):
+            saved[:] = value
+
+        with patch(
+            "app.modules.monitoring.alerting.load_alerts",
+            side_effect=lambda: list(saved),
+        ), patch(
+            "app.modules.monitoring.alerting.save_alerts", side_effect=save
+        ), patch("app.modules.monitoring.alerting.send_alert_email") as send:
+            collect_and_persist(
+                [{"id": "alpha-app"}], nodes=[], app_metrics=[]
+            )
+
+        self.assertEqual(saved, [other_alert])
+        send.assert_not_called()
+
     def test_five_platform_alert_concepts_are_detected(self):
         alerts = check_thresholds(
             [],

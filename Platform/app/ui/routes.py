@@ -63,7 +63,6 @@ from app.modules.monitoring.collector import (
 )
 from app.modules.monitoring.alerting import (
     acknowledge_alert,
-    alert_summary,
     collect_and_persist,
     get_prometheus_app_metrics,
     get_prometheus_node_metrics,
@@ -73,6 +72,7 @@ from app.modules.monitoring.grafana import get_grafana_embed_url
 from app.modules.monitoring.k8s_manifests import deploy_monitoring_stack
 from app.modules.monitoring.scaling import load_scale_events, record_scale_events
 from app.modules.auth.routes import role_required
+from app.modules.projects.service import get_active_project
 from app.modules.audit.service import load_audit_logs, record_audit
 from app.modules.jobs.service import load_accessible_jobs, pipeline_run_to_job, record_completed_job
 from app.registry_credentials import (
@@ -87,7 +87,12 @@ ui_bp = Blueprint("ui", __name__)
 
 
 def _get_authorized_application(application_id: str) -> dict[str, Any]:
-    application = find_accessible_application(application_id, current_user)
+    project = get_active_project(current_user)
+    application = find_accessible_application(
+        application_id,
+        current_user,
+        project_id=project.id if project else None,
+    )
     if not application:
         abort(404)
     return application
@@ -318,14 +323,21 @@ def cluster_detail():
 @ui_bp.route("/applications")
 @login_required
 def applications():
-    apps = load_accessible_applications(current_user)
-    return render_template("applications/list.html", applications=apps)
+    project = get_active_project(current_user)
+    apps = load_accessible_applications(
+        current_user, project_id=project.id if project else None
+    ) if project else []
+    return render_template("applications/list.html", applications=apps, project=project)
 
 
 @ui_bp.route("/applications/new", methods=["GET", "POST"])
 @login_required
 @role_required("Admin", "Developer")
 def application_form():
+    project = get_active_project(current_user)
+    if not project:
+        flash("Bạn cần tạo hoặc tham gia một project trước khi tạo application.", "warning")
+        return redirect(url_for("projects.project_list"))
     if request.method == "POST":
         required_fields = ["name", "owner"]
         missing_fields = [field for field in required_fields if not request.form.get(field, "").strip()]
@@ -352,7 +364,7 @@ def application_form():
             return render_template("applications/form.html", form=request.form)
 
         try:
-            application = create_application(request.form, current_user)
+            application = create_application(request.form, current_user, project.id)
         except ValueError as exc:
             record_audit("APPLICATION_CREATE", request.form.get("name", ""), "FAILED", str(exc))
             flash(str(exc), "danger")
@@ -713,13 +725,20 @@ def service_form():
 @ui_bp.route("/deployments/detail")
 @login_required
 def deployment_detail():
-    return render_template("deployments/detail.html", applications=load_accessible_applications(current_user))
+    project = get_active_project(current_user)
+    applications = load_accessible_applications(
+        current_user, project_id=project.id if project else None
+    ) if project else []
+    return render_template("deployments/detail.html", applications=applications)
 
 
 @ui_bp.route("/deployments/logs")
 @login_required
 def deployment_logs():
-    applications = load_accessible_applications(current_user)
+    project = get_active_project(current_user)
+    applications = load_accessible_applications(
+        current_user, project_id=project.id if project else None
+    ) if project else []
     if applications:
         return redirect(url_for("ui.application_logs", application_id=applications[0]["id"]))
     flash("Chưa có application để xem logs.", "warning")
@@ -729,11 +748,19 @@ def deployment_logs():
 @ui_bp.route("/jobs")
 @login_required
 def jobs():
-    application_ids = {app["id"] for app in load_accessible_applications(current_user)}
+    project = get_active_project(current_user)
+    application_ids = {
+        app["id"] for app in (
+            load_accessible_applications(current_user, project_id=project.id)
+            if project else []
+        )
+    }
     pipeline_jobs = [pipeline_run_to_job(run) for run in load_pipeline_runs()]
-    if not current_user.is_admin:
-        pipeline_jobs = [job for job in pipeline_jobs if job.get("metadata", {}).get("application_id") in application_ids]
-    jobs_data = load_accessible_jobs(current_user, limit=None) + pipeline_jobs
+    pipeline_jobs = [job for job in pipeline_jobs if job.get("metadata", {}).get("application_id") in application_ids]
+    stored_jobs = load_accessible_jobs(
+        current_user, limit=None, application_ids=application_ids
+    )
+    jobs_data = stored_jobs + pipeline_jobs
     jobs_data = sorted(jobs_data, key=lambda item: item.get("created_at", ""), reverse=True)
     selected_id = request.args.get("job")
     selected_job = next((job for job in jobs_data if job.get("id") == selected_id), None) if selected_id else None
@@ -744,7 +771,13 @@ def jobs():
 @ui_bp.route("/cicd")
 @login_required
 def cicd():
-    application_ids = {app["id"] for app in load_accessible_applications(current_user)}
+    project = get_active_project(current_user)
+    application_ids = {
+        app["id"] for app in (
+            load_accessible_applications(current_user, project_id=project.id)
+            if project else []
+        )
+    }
     runs = [
         run for run in load_pipeline_runs()
         if run.get("application_id") in application_ids
@@ -823,21 +856,25 @@ def _get_monitoring_data() -> dict[str, Any]:
 
     apps: list[dict[str, Any]] = []
     try:
-        apps = load_applications()
+        project = get_active_project(current_user)
+        apps = load_accessible_applications(
+            current_user, project_id=project.id if project else None
+        ) if project else []
     except Exception:
         pass
 
     # --- node metrics: Prometheus (node_exporter) → kubectl ---
     nodes: list[dict[str, Any]] = []
-    try:
-        nodes = get_prometheus_node_metrics()
-    except Exception:
-        pass
-    if not nodes:
+    if current_user.is_admin:
         try:
-            nodes = node_metrics()
+            nodes = get_prometheus_node_metrics()
         except Exception:
             pass
+        if not nodes:
+            try:
+                nodes = node_metrics()
+            except Exception:
+                pass
 
     # --- app metrics: Prometheus (kube-state-metrics) → kubectl ---
     app_metrics_list: list[dict[str, Any]] = []
@@ -872,9 +909,29 @@ def _get_monitoring_data() -> dict[str, Any]:
     except Exception:
         pass
 
+    application_ids = {app["id"] for app in apps}
+    all_alerts = [
+        alert for alert in all_alerts
+        if alert.get("application_id") in application_ids
+        or (current_user.is_admin and not alert.get("application_id"))
+    ]
+
     alert_counts: dict[str, int] = {"total": 0, "active": 0, "critical": 0, "warning": 0}
     try:
-        alert_counts = alert_summary()
+        latest: dict[str, dict[str, Any]] = {}
+        for alert in all_alerts:
+            latest.setdefault(alert.get("fingerprint", str(id(alert))), alert)
+        active_alerts = [
+            alert for alert in latest.values()
+            if alert.get("state", "Firing") == "Firing"
+            and not alert.get("acknowledged")
+        ]
+        alert_counts = {
+            "total": len(all_alerts),
+            "active": len(active_alerts),
+            "critical": sum(a.get("severity") == "CRITICAL" for a in active_alerts),
+            "warning": sum(a.get("severity") == "WARNING" for a in active_alerts),
+        }
     except Exception:
         pass
 
@@ -894,6 +951,7 @@ def _get_monitoring_data() -> dict[str, Any]:
     return {
         "nodes": nodes,
         "app_metrics": app_metrics_list,
+        "applications": apps,
         "summary": summary,
         "alerts": all_alerts,
         "alert_counts": alert_counts,
@@ -908,8 +966,8 @@ def monitoring():
     data = _get_monitoring_data()
     return render_template(
         "monitoring.html",
-        servers=load_servers(),
-        applications=load_applications(),
+        servers=load_servers() if current_user.is_admin else [],
+        applications=data.get("applications", []),
         nodes=data["nodes"],
         app_metrics=data["app_metrics"],
         summary=data["summary"],
@@ -942,6 +1000,12 @@ def monitoring_api_charts():
     import time
 
     empty = {"cpu": [], "memory": [], "network": [], "fetched_at": time.strftime("%H:%M:%S")}
+
+    # These series describe shared cluster nodes, not a project workload.
+    # Keep them Platform Admin-only until per-project Prometheus queries are
+    # introduced with monitoring:read in A.4.2.
+    if not current_user.is_admin:
+        return jsonify(empty)
 
     # --- try Prometheus first ---
     try:
@@ -1030,7 +1094,10 @@ def cp2chart(prom_result: list[dict[str, Any]]) -> list[dict[str, Any]]:
 @role_required("Admin")
 def monitoring_refresh():
     """Force refresh metrics snapshot."""
-    apps = load_applications()
+    project = get_active_project(current_user)
+    apps = load_accessible_applications(
+        current_user, project_id=project.id if project else None
+    ) if project else []
     save_snapshot(apps)
     collect_and_persist(apps)
     record_audit("MONITORING_REFRESH", "monitoring", "SUCCESS", "Đã làm mới metrics.")
@@ -1046,8 +1113,8 @@ def monitoring_grafana():
     grafana_embed = get_grafana_embed_url() or data.get("grafana_embed", "")
     return render_template(
         "monitoring.html",
-        servers=load_servers(),
-        applications=load_applications(),
+        servers=load_servers() if current_user.is_admin else [],
+        applications=data.get("applications", []),
         nodes=data["nodes"],
         app_metrics=data["app_metrics"],
         summary=data["summary"],
@@ -1173,7 +1240,7 @@ def monitoring_grafana_static_proxy(rest=""):
 def monitoring_alerts():
     """View all alert history."""
     data = _get_monitoring_data()
-    return render_template("monitoring.html", servers=load_servers(), applications=load_applications(),
+    return render_template("monitoring.html", servers=load_servers() if current_user.is_admin else [], applications=data.get("applications", []),
                            nodes=data["nodes"], app_metrics=data["app_metrics"],
                            summary=data["summary"], alerts=data["alerts"], alert_counts=data["alert_counts"])
 

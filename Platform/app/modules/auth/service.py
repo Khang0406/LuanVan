@@ -9,14 +9,15 @@ from html import escape
 
 from flask import current_app
 from flask_mailman import BadHeaderError, EmailMultiAlternatives
-from flask_security.confirmable import (
-    confirm_email_token_status,
-    generate_confirmation_token,
-)
+from flask_security.confirmable import generate_confirmation_token
 from flask_security.mail_util import EmailValidateException, MailUtil
 from flask_security.recoverable import (
     generate_reset_password_token,
-    reset_password_token_status,
+)
+from flask_security.utils import (
+    check_and_get_token_status,
+    get_within_delta,
+    verify_hash,
 )
 
 from app.db import db
@@ -252,6 +253,43 @@ def send_password_reset_email(
         return False, "Không gửi được email; thông tin kết nối đã được ẩn."
 
 
+def _framework_token_status(
+    raw_token: str, serializer_name: str, within_config: str
+) -> tuple[bool, bool, User | None, list | tuple | None]:
+    """Use Flask-Security's current token API and resolve its stable user ID."""
+    expired, invalid, data = check_and_get_token_status(
+        raw_token, serializer_name, get_within_delta(within_config)
+    )
+    user = None
+    if data and isinstance(data, (list, tuple)) and data[0]:
+        user = User.query.filter_by(fs_uniquifier=str(data[0])).first()
+    # Match Flask-Security's prior contract: an expired token with no matching
+    # user is treated as invalid rather than revealing stale identity data.
+    expired = bool(expired and user is not None)
+    invalid = bool(invalid or not user)
+    return expired, invalid, user, data
+
+
+def _confirmation_token_status(raw_token: str) -> tuple[bool, bool, User | None]:
+    expired, invalid, user, data = _framework_token_status(
+        raw_token, "confirm", "CONFIRM_EMAIL_WITHIN"
+    )
+    if not invalid and user:
+        if not data or len(data) < 2 or not verify_hash(data[1], user.email):
+            invalid = True
+    return expired, invalid, user
+
+
+def _password_reset_token_status(raw_token: str) -> tuple[bool, bool, User | None]:
+    expired, invalid, user, data = _framework_token_status(
+        raw_token, "reset", "RESET_PASSWORD_WITHIN"
+    )
+    if not invalid and user and user.password:
+        if not data or len(data) < 2 or not verify_hash(data[1], user.password):
+            invalid = True
+    return expired, invalid, user
+
+
 def _checked_password_reset_token(
     raw_token: str,
 ) -> tuple[PasswordResetToken | None, User | None, str]:
@@ -273,7 +311,7 @@ def _checked_password_reset_token(
         return token, token.user, "expired"
 
     framework_expired, framework_invalid, framework_user = (
-        reset_password_token_status(raw_token)
+        _password_reset_token_status(raw_token)
     )
     if framework_expired:
         token.used_at = now
@@ -375,8 +413,8 @@ def verify_token(raw_token: str) -> tuple[User | None, str]:
         db.session.commit()
         return token.user, "expired"
 
-    framework_expired, framework_invalid, framework_user = confirm_email_token_status(
-        raw_token
+    framework_expired, framework_invalid, framework_user = (
+        _confirmation_token_status(raw_token)
     )
     if framework_expired:
         token.used_at = now

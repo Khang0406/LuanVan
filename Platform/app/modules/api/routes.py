@@ -139,6 +139,18 @@ def api_servers():
 
 
 # ---------------------------------------------------------------------------
+# projects
+# ---------------------------------------------------------------------------
+
+@api_bp.get("/projects")
+def api_projects():
+    _require_auth()
+    from app.modules.projects.service import list_accessible_projects, project_to_dict
+
+    return _ok([project_to_dict(project) for project in list_accessible_projects(_principal())])
+
+
+# ---------------------------------------------------------------------------
 # applications
 # ---------------------------------------------------------------------------
 
@@ -146,8 +158,13 @@ def api_servers():
 def api_applications():
     _require_auth()
     from app.modules.applications.service import load_accessible_applications
+    from app.modules.projects.service import can_access_project
 
-    return _ok(load_accessible_applications(_principal()))
+    principal = _principal()
+    project_id = request.args.get("project_id", type=int)
+    if project_id is not None and not can_access_project(principal, project_id):
+        return _error("FORBIDDEN", "Không có quyền truy cập project này.", 403)
+    return _ok(load_accessible_applications(principal, project_id=project_id))
 
 
 @api_bp.get("/applications/<application_id>")

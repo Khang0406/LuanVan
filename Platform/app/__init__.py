@@ -15,6 +15,7 @@ from .observability import register_http_observability
 from .security import generate_csrf_token, validate_csrf
 from .modules.auth.admin import admin_bp
 from .modules.auth.routes import auth_bp
+from .modules.projects.routes import projects_bp
 from .modules.audit.service import record_audit
 from .ui.mock_data import dashboard_stats
 from .ui.routes import ui_bp
@@ -89,6 +90,7 @@ def create_app(config_class=Config):
     app.register_blueprint(ui_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(projects_bp)
     app.register_blueprint(github_webhook_bp)
     app.register_blueprint(api_bp)
 
@@ -124,6 +126,20 @@ def create_app(config_class=Config):
         from .delivery_store import migrate_default_json_state
         migrate_default_json_state()
         _seed_default_users()
+        from .modules.projects.service import ensure_default_project
+        ensure_default_project()
+
+    @app.context_processor
+    def project_navigation():
+        if not current_user.is_authenticated:
+            return {"available_projects": [], "active_project": None}
+        from .modules.projects.service import get_active_project, list_accessible_projects
+
+        projects = list_accessible_projects(current_user)
+        return {
+            "available_projects": projects,
+            "active_project": get_active_project(current_user, projects=projects),
+        }
 
     @app.route("/")
     @login_required

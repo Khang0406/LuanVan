@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS delivery_migrations (
 
 CREATE TABLE IF NOT EXISTS applications (
     id TEXT PRIMARY KEY,
+    project_id INTEGER NOT NULL DEFAULT 1,
     name TEXT NOT NULL,
     owner TEXT NOT NULL DEFAULT '',
     user_id INTEGER,
@@ -234,6 +235,13 @@ def initialize_schema(path: Path | None = None) -> None:
         return _pg_backend().initialize_schema(path)
     with _connect(path) as connection:
         connection.executescript(SCHEMA)
+        columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(applications)")
+        }
+        if "project_id" not in columns:
+            connection.execute(
+                "ALTER TABLE applications ADD COLUMN project_id INTEGER NOT NULL DEFAULT 1"
+            )
 
 
 def _payload(value: dict[str, Any]) -> str:
@@ -443,7 +451,7 @@ def _upsert_application(
     connection: sqlite3.Connection, application: dict[str, Any], *, insert_only: bool = False
 ) -> int:
     conflict = "DO NOTHING" if insert_only else """DO UPDATE SET
-        name=excluded.name, owner=excluded.owner, user_id=excluded.user_id,
+        project_id=excluded.project_id, name=excluded.name, owner=excluded.owner, user_id=excluded.user_id,
         namespace=excluded.namespace, source_type=excluded.source_type,
         repository_url=excluded.repository_url, default_branch=excluded.default_branch,
         requested_ref=excluded.requested_ref, build_context=excluded.build_context,
@@ -453,13 +461,14 @@ def _upsert_application(
         updated_at=excluded.updated_at, payload=excluded.payload"""
     cursor = connection.execute(
         f"""INSERT INTO applications(
-            id, name, owner, user_id, namespace, source_type, repository_url,
+            id, project_id, name, owner, user_id, namespace, source_type, repository_url,
             default_branch, requested_ref, build_context, dockerfile_path,
             current_deployment_id, status, url, created_at, updated_at, payload
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) {conflict}""",
         (
-            application["id"], application.get("name", application["id"]),
+            application["id"], application.get("project_id", 1),
+            application.get("name", application["id"]),
             application.get("owner", ""), application.get("user_id"),
             application.get("namespace", application["id"]),
             application.get("source_type", "docker"),
