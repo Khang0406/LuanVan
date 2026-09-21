@@ -358,8 +358,9 @@ class SecurityAndRuntimeTests(unittest.TestCase):
                         "/applications/phase4-app/pipeline",
                         data={"csrf_token": "phase4-csrf"},
                     )
-                self.assertEqual(response.status_code, 302)
-                self.assertTrue(response.location.endswith("/dashboard"))
+                # Project RBAC rejects the mutation at the resource boundary;
+                # it no longer redirects based on the legacy global role.
+                self.assertEqual(response.status_code, 403)
                 trigger.assert_not_called()
 
     def test_all_static_internal_post_forms_have_csrf_token(self):

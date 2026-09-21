@@ -1,5 +1,65 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.4.2 — RBAC theo project (2026-09-18)
+
+### Kết quả triển khai
+
+- Thêm mô hình chuẩn hóa `RBACRole`, `RBACPermission` và bảng nối
+  `rbac_role_permissions`; mỗi `ProjectMembership` bắt buộc có một role.
+- Thêm năm role project: Project Admin, Developer, Operator, Viewer, Auditor.
+  Platform Admin tiếp tục là quyền toàn hệ thống và bypass project permission.
+- Authorization service duy nhất cung cấp `has_permission()`,
+  `permission_keys()` và membership lookup cho cả Web, REST API và UI.
+- Backend kiểm tra permission tại resource boundary, không dựa vào việc UI đã
+  ẩn nút. Các nhóm quyền đã áp dụng: application create/read/update/delete,
+  deploy, rollback, scale, monitoring/log, audit và member management.
+- Operator có thể deploy/restart/rollback/scale nhưng không sửa secret, xóa
+  application hoặc quản lý thành viên. Auditor chỉ đọc audit của project đang
+  chọn. Viewer không thể trigger pipeline qua API trực tiếp.
+- Project Admin có thể chọn role lúc thêm member và đổi role sau đó. Owner bắt
+  buộc giữ Project Admin, không thể bị demote, disable hoặc remove.
+- UI hiển thị role theo active project và ẩn action theo permission. Một user có
+  thể mang role khác nhau ở các project khác nhau.
+- `GET /api/v1/projects` trả thêm `my_role` và danh sách `permissions` để client
+  API dùng cùng policy với Web.
+- Audit role change lưu old/new role, project và member; application/pipeline
+  audit tự gắn `project_id` để Auditor không đọc event tenant khác.
+
+### Migration và tương thích
+
+- Thêm revision `0006_project_rbac` sau `0005_projects_memberships`.
+- Migration tạo 12 permission, 5 system role, bảng association và
+  `project_memberships.role_id` có foreign key/index.
+- Backfill giữ quyền cũ: owner/Admin → Project Admin, Developer → Developer,
+  Viewer → Viewer. Sau backfill mới chuyển `role_id` thành `NOT NULL`.
+- Local/test bootstrap đồng bộ catalog idempotent; dữ liệu permission không phụ
+  thuộc ID cố định nên tương thích sequence PostgreSQL.
+- Compatibility cho application test legacy không có `project_id` được giữ;
+  runtime sau migration 0005 vẫn luôn có project rõ ràng.
+
+### Kiểm thử local
+
+```text
+RBAC acceptance:              5 tests OK
+Migration/API/tenant target:  32 tests OK
+Full regression:              174 tests OK, 6 PostgreSQL tests skipped
+Migration head:               0006_project_rbac
+Schema management check:      OK
+alembic check:                No new upgrade operations detected
+Python compileall:            OK
+git diff --check:             OK
+```
+
+### Chờ nghiệm thu trên máy ảo
+
+- Chưa chạy revision 0006 trên PostgreSQL runtime vì các máy ảo đang được cài
+  lại. Chưa smoke test deploy/scale/rollback thật trên K3s.
+- Khi môi trường sẵn sàng phải backup PostgreSQL, chạy upgrade/check, xác nhận
+  mọi membership có role, rồi test ma trận quyền với ít nhất hai project.
+- A.4.2 chưa tạo API token cá nhân/project-scoped; nội dung đó thuộc A.4.3.
+
+Tài liệu chi tiết: `docs/phase-a42-project-rbac.md`.
+
 ## Phase A.4.1 — Project và thành viên (2026-09-18)
 
 ### Đợt rà soát đồng bộ và tối ưu

@@ -29,6 +29,7 @@ class DatabaseMigrationTests(unittest.TestCase):
                 "alembic_version", "users", "applications", "pipeline_runs",
                 "email_verification_tokens", "security_roles", "security_user_roles",
                 "password_reset_tokens", "projects", "project_memberships",
+                "rbac_roles", "rbac_permissions", "rbac_role_permissions",
             } <= tables)
 
     def test_framework_migration_backfills_legacy_identity(self):
@@ -93,13 +94,18 @@ class DatabaseMigrationTests(unittest.TestCase):
                     "SELECT project_id, payload FROM applications WHERE id = 'legacy-app'"
                 )).one()
                 memberships = connection.execute(text(
-                    "SELECT user_id, status FROM project_memberships ORDER BY user_id"
+                    "SELECT m.user_id, m.status, r.key AS role_key "
+                    "FROM project_memberships m JOIN rbac_roles r ON r.id = m.role_id "
+                    "ORDER BY m.user_id"
                 )).all()
             self.assertEqual(project.slug, "default-project")
             self.assertEqual(application.project_id, project.id)
             self.assertIn('"project_id": 1', application.payload)
             self.assertEqual(len(memberships), 2)
             self.assertTrue(all(row.status == "Active" for row in memberships))
+            self.assertEqual(
+                [row.role_key for row in memberships], ["project_admin", "developer"]
+            )
 
 
 if __name__ == "__main__":

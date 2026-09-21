@@ -14,6 +14,22 @@ security_user_roles = db.Table(
     db.Column("role_id", db.Integer, db.ForeignKey("security_roles.id", ondelete="CASCADE"), primary_key=True),
 )
 
+rbac_role_permissions = db.Table(
+    "rbac_role_permissions",
+    db.Column(
+        "role_id",
+        db.Integer,
+        db.ForeignKey("rbac_roles.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "permission_id",
+        db.Integer,
+        db.ForeignKey("rbac_permissions.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
 
 class SecurityRole(db.Model, RoleMixin):
     """Framework compatibility role; project-scoped RBAC is introduced in A.4."""
@@ -222,6 +238,30 @@ class Project(db.Model):
         return status
 
 
+class RBACPermission(db.Model):
+    __tablename__ = "rbac_permissions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    description = db.Column(db.String(255), nullable=False, default="")
+
+
+class RBACRole(db.Model):
+    __tablename__ = "rbac_roles"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(40), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+    description = db.Column(db.String(255), nullable=False, default="")
+    is_system = db.Column(db.Boolean, nullable=False, default=True)
+
+    permissions = db.relationship(
+        "RBACPermission",
+        secondary=rbac_role_permissions,
+        lazy="selectin",
+    )
+
+
 class ProjectMembership(db.Model):
     __tablename__ = "project_memberships"
     __table_args__ = (
@@ -251,6 +291,12 @@ class ProjectMembership(db.Model):
         db.ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
+    role_id = db.Column(
+        db.Integer,
+        db.ForeignKey("rbac_roles.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -268,6 +314,7 @@ class ProjectMembership(db.Model):
         "User", foreign_keys=[user_id], back_populates="project_memberships"
     )
     invited_by = db.relationship("User", foreign_keys=[invited_by_user_id])
+    role = db.relationship("RBACRole", lazy="joined")
 
     @validates("status")
     def validate_status(self, _key: str, status: str) -> str:

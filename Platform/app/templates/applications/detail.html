@@ -6,7 +6,7 @@
   </div>
   <div class="d-flex flex-wrap gap-2">
     <a class="btn btn-outline-secondary" href="{{ url_for('ui.applications') }}">← Applications</a>
-    {% if current_user.role != 'Viewer' %}
+    {% if has_project_permission('deployment:execute') %}
     <form method="post" action="{{ url_for('ui.application_pipeline_trigger', application_id=app.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-success" type="submit">🚀 Trigger Pipeline</button>
@@ -82,7 +82,7 @@
         <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.application_logs', application_id=app.id) }}">Xem logs</a>
           <a class="btn btn-outline-info btn-sm" href="#" onclick="fetchManifest();return false;">Preview manifest</a>
-          {% if current_user.role != 'Viewer' %}<form method="post" action="{{ url_for('ui.application_delete_workloads', application_id=app.id) }}" onsubmit="return confirm('Xoá workloads khỏi Kubernetes?');">
+          {% if has_project_permission('application:delete') %}<form method="post" action="{{ url_for('ui.application_delete_workloads', application_id=app.id) }}" onsubmit="return confirm('Xoá workloads khỏi Kubernetes?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-outline-danger btn-sm" type="submit">Delete workloads</button>
           </form>{% endif %}
@@ -267,7 +267,7 @@
             <span class="text-muted">Chưa có secret.</span>
           {% endif %}
         </div>
-        {% if current_user.role != 'Viewer' %}<form method="post" action="{{ url_for('ui.application_detail', application_id=app.id) }}" class="row g-2">
+        {% if has_project_permission('application:update') %}<form method="post" action="{{ url_for('ui.application_detail', application_id=app.id) }}" class="row g-2">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="add_secret" value="1">
           <div class="col-md-5"><input class="form-control form-control-sm" name="secret_key" placeholder="KEY_NAME" required></div>
@@ -293,7 +293,7 @@
         {% elif registry_status.configured %}
         <div class="alert alert-info">Application dùng registry override riêng.</div>
         {% endif %}
-        {% if registry_status.source != 'platform' and current_user.role != 'Viewer' %}
+        {% if registry_status.source != 'platform' and has_project_permission('application:update') %}
         <form method="post" action="{{ url_for('ui.application_registry_use_platform', application_id=app.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-outline-primary btn-sm" type="submit">Dùng credential chung của Platform</button>
@@ -335,7 +335,7 @@
                 <td>{% if deployment.url %}<a href="{{ deployment.url }}" target="_blank" rel="noopener">{{ deployment.url }}</a>{% else %}-{% endif %}</td>
                 <td>
                   <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('ui.application_deployment_detail', application_id=app.id, deployment_id=deployment.id) }}">Chi tiết</a>
-                  {% if current_user.role != 'Viewer' and deployment.rollback_eligible and deployment.status == 'Ready' and deployment.id != app.current_deployment_id %}
+                  {% if has_project_permission('deployment:rollback') and deployment.rollback_eligible and deployment.status == 'Ready' and deployment.id != app.current_deployment_id %}
                   <form class="d-inline" method="post" action="{{ url_for('ui.application_deployment_rollback', application_id=app.id, deployment_id=deployment.id) }}" onsubmit="return confirm('Rollback về v{{ deployment.version }}?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-outline-warning btn-sm" type="submit">Rollback</button>

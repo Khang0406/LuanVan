@@ -10,6 +10,14 @@ from sqlalchemy.exc import IntegrityError
 
 from app.db import db
 from app.models import Project, ProjectMembership, User
+from app.modules.authorization.service import (
+    MEMBER_MANAGE,
+    ROLE_PROJECT_ADMIN,
+    ROLE_VIEWER,
+    get_role,
+    has_permission,
+    legacy_role_key,
+)
 
 
 DEFAULT_PROJECT_SLUG = "default-project"
@@ -47,6 +55,11 @@ def ensure_default_project() -> Project:
                     user_id=user.id,
                     status=ProjectMembership.STATUS_ACTIVE,
                     invited_by_user_id=admin.id if admin else None,
+                    role=get_role(
+                        legacy_role_key(
+                            user, owner=project.owner_user_id == user.id
+                        )
+                    ),
                 )
             )
     db.session.commit()
@@ -89,10 +102,7 @@ def can_access_project(user: Any, project_id: int) -> bool:
 
 
 def can_manage_project(user: Any, project: Project) -> bool:
-    return bool(
-        getattr(user, "is_admin", False)
-        or project.owner_user_id == getattr(user, "id", None)
-    )
+    return has_permission(user, MEMBER_MANAGE, project.id)
 
 
 def get_accessible_project(user: Any, project_id: int) -> Project | None:
@@ -148,6 +158,7 @@ def create_project(name: str, description: str, creator: User) -> Project:
                 user_id=creator.id,
                 status=ProjectMembership.STATUS_ACTIVE,
                 invited_by_user_id=creator.id,
+                role=get_role(ROLE_PROJECT_ADMIN),
             )
         )
         db.session.commit()
@@ -157,13 +168,19 @@ def create_project(name: str, description: str, creator: User) -> Project:
     return project
 
 
-def add_project_member(project: Project, identity: str, actor: User) -> ProjectMembership:
+def add_project_member(
+    project: Project,
+    identity: str,
+    actor: User,
+    role_key: str = ROLE_VIEWER,
+) -> ProjectMembership:
     normalized = identity.strip().lower()
     user = User.query.filter(
         or_(User.username == identity.strip(), User.email == normalized)
     ).first()
     if not user:
         raise ValueError("Không tìm thấy tài khoản với username/email đã nhập.")
+    role = get_role(role_key)
     membership = ProjectMembership.query.filter_by(
         project_id=project.id, user_id=user.id
     ).first()
@@ -173,6 +190,7 @@ def add_project_member(project: Project, identity: str, actor: User) -> ProjectM
                 raise ValueError("Người dùng đã là thành viên của project.")
             membership.status = ProjectMembership.STATUS_ACTIVE
             membership.invited_by_user_id = actor.id
+            membership.role = role
             membership.updated_at = datetime.now(timezone.utc)
         else:
             membership = ProjectMembership(
@@ -180,6 +198,7 @@ def add_project_member(project: Project, identity: str, actor: User) -> ProjectM
                 user_id=user.id,
                 status=ProjectMembership.STATUS_ACTIVE,
                 invited_by_user_id=actor.id,
+                role=role,
             )
             db.session.add(membership)
         db.session.commit()
@@ -187,6 +206,23 @@ def add_project_member(project: Project, identity: str, actor: User) -> ProjectM
         db.session.rollback()
         raise ValueError("Người dùng đã là thành viên của project.") from exc
     return membership
+
+
+def set_membership_role(
+    project: Project,
+    membership: ProjectMembership,
+    role_key: str,
+) -> tuple[str, str]:
+    if membership.project_id != project.id:
+        raise ValueError("Membership không thuộc project.")
+    if membership.user_id == project.owner_user_id and role_key != ROLE_PROJECT_ADMIN:
+        raise ValueError("Owner phải giữ role Project Admin.")
+    role = get_role(role_key)
+    old_role = membership.role.name
+    membership.role = role
+    membership.updated_at = datetime.now(timezone.utc)
+    db.session.commit()
+    return old_role, role.name
 
 
 def set_membership_status(
@@ -212,8 +248,8 @@ def remove_project_member(project: Project, membership: ProjectMembership) -> No
     db.session.commit()
 
 
-def project_to_dict(project: Project) -> dict[str, Any]:
-    return {
+def project_to_dict(project: Project, user: Any | None = None) -> dict[str, Any]:
+    payload = {
         "id": project.id,
         "name": project.name,
         "slug": project.slug,
@@ -222,3 +258,14 @@ def project_to_dict(project: Project) -> dict[str, Any]:
         "owner_user_id": project.owner_user_id,
         "created_at": project.created_at.isoformat() if project.created_at else None,
     }
+    if user is not None:
+        from app.modules.authorization.service import get_membership, permission_keys
+
+        membership = None if getattr(user, "is_admin", False) else get_membership(user, project.id)
+        payload["my_role"] = (
+            "Platform Admin"
+            if getattr(user, "is_admin", False)
+            else membership.role.name if membership and membership.role else None
+        )
+        payload["permissions"] = sorted(permission_keys(user, project.id))
+    return payload

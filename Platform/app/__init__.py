@@ -126,19 +126,45 @@ def create_app(config_class=Config):
         from .delivery_store import migrate_default_json_state
         migrate_default_json_state()
         _seed_default_users()
+        from .modules.authorization.service import ensure_rbac_catalog
+        ensure_rbac_catalog()
         from .modules.projects.service import ensure_default_project
         ensure_default_project()
 
     @app.context_processor
     def project_navigation():
         if not current_user.is_authenticated:
-            return {"available_projects": [], "active_project": None}
+            return {
+                "available_projects": [],
+                "active_project": None,
+                "active_project_role": "",
+                "project_permissions": set(),
+                "has_project_permission": lambda _permission: False,
+            }
+        from .modules.authorization.service import get_membership, has_permission, permission_keys
         from .modules.projects.service import get_active_project, list_accessible_projects
 
         projects = list_accessible_projects(current_user)
+        active_project = get_active_project(current_user, projects=projects)
+        membership = (
+            get_membership(current_user, active_project.id)
+            if active_project and not current_user.is_admin
+            else None
+        )
         return {
             "available_projects": projects,
-            "active_project": get_active_project(current_user, projects=projects),
+            "active_project": active_project,
+            "project_permissions": permission_keys(
+                current_user, active_project.id if active_project else None
+            ),
+            "active_project_role": (
+                "Platform Admin"
+                if current_user.is_admin
+                else membership.role.name if membership and membership.role else ""
+            ),
+            "has_project_permission": lambda permission: has_permission(
+                current_user, permission, active_project.id if active_project else None
+            ),
         }
 
     @app.route("/")

@@ -105,6 +105,18 @@ def _require_admin():
         abort(403, description="Cần quyền Admin.")
 
 
+def _application_project_id(application: dict, principal) -> int | None:
+    project_id = application.get("project_id")
+    if project_id is not None:
+        return int(project_id)
+    # Compatibility for isolated pre-A.4 test records. Runtime migration 0005
+    # guarantees project_id on every persisted application.
+    from app.modules.projects.service import get_active_project
+
+    project = get_active_project(principal)
+    return project.id if project else None
+
+
 @api_bp.errorhandler(401)
 def _handle_unauthorized(error):
     return _error("UNAUTHORIZED", getattr(error, "description", "Unauthorized"), 401)
@@ -147,7 +159,11 @@ def api_projects():
     _require_auth()
     from app.modules.projects.service import list_accessible_projects, project_to_dict
 
-    return _ok([project_to_dict(project) for project in list_accessible_projects(_principal())])
+    principal = _principal()
+    return _ok([
+        project_to_dict(project, principal)
+        for project in list_accessible_projects(principal)
+    ])
 
 
 # ---------------------------------------------------------------------------
@@ -172,9 +188,15 @@ def api_application(application_id):
     _require_auth()
     from app.modules.applications.service import find_accessible_application
 
-    application = find_accessible_application(application_id, _principal())
+    principal = _principal()
+    application = find_accessible_application(application_id, principal)
     if not application:
         return _error("APPLICATION_NOT_FOUND", "Application không tồn tại.", 404)
+    from app.modules.authorization.service import APPLICATION_READ, has_permission
+    if not has_permission(
+        principal, APPLICATION_READ, _application_project_id(application, principal)
+    ):
+        return _error("FORBIDDEN", "Thiếu permission application:read.", 403)
     return _ok(application)
 
 
@@ -188,8 +210,11 @@ def api_trigger_pipeline(application_id):
     application = find_accessible_application(application_id, principal)
     if not application:
         return _error("APPLICATION_NOT_FOUND", "Application không tồn tại.", 404)
-    if getattr(principal, "role", "") == "Viewer":
-        return _error("FORBIDDEN", "Viewer không thể trigger pipeline.", 403)
+    from app.modules.authorization.service import DEPLOYMENT_EXECUTE, has_permission
+    if not has_permission(
+        principal, DEPLOYMENT_EXECUTE, _application_project_id(application, principal)
+    ):
+        return _error("FORBIDDEN", "Thiếu permission deployment:execute.", 403)
     try:
         run = trigger_pipeline(application_id, actor=principal)
     except ValueError as exc:
@@ -203,8 +228,15 @@ def api_application_pipeline(application_id):
     from app.modules.applications.service import find_accessible_application
     from app.modules.pipeline.engine import load_pipeline_runs
 
-    if not find_accessible_application(application_id, _principal()):
+    principal = _principal()
+    application = find_accessible_application(application_id, principal)
+    if not application:
         return _error("APPLICATION_NOT_FOUND", "Application không tồn tại.", 404)
+    from app.modules.authorization.service import APPLICATION_READ, has_permission
+    if not has_permission(
+        principal, APPLICATION_READ, _application_project_id(application, principal)
+    ):
+        return _error("FORBIDDEN", "Thiếu permission application:read.", 403)
     return _ok(load_pipeline_runs(application_id))
 
 
@@ -227,6 +259,12 @@ def api_pipeline_run(run_id):
     application = find_application(run.get("application_id", ""))
     if not application or not can_access_application(application, _principal()):
         return _error("FORBIDDEN", "Không có quyền truy cập pipeline này.", 403)
+    principal = _principal()
+    from app.modules.authorization.service import APPLICATION_READ, has_permission
+    if not has_permission(
+        principal, APPLICATION_READ, _application_project_id(application, principal)
+    ):
+        return _error("FORBIDDEN", "Thiếu permission application:read.", 403)
     return _ok(run)
 
 
@@ -243,6 +281,12 @@ def api_pipeline_events(run_id):
     application = find_application(run.get("application_id", ""))
     if not application or not can_access_application(application, _principal()):
         return _error("FORBIDDEN", "Không có quyền truy cập pipeline này.", 403)
+    principal = _principal()
+    from app.modules.authorization.service import APPLICATION_READ, has_permission
+    if not has_permission(
+        principal, APPLICATION_READ, _application_project_id(application, principal)
+    ):
+        return _error("FORBIDDEN", "Thiếu permission application:read.", 403)
 
     application_id = run.get("application_id", "")
 
@@ -303,9 +347,15 @@ def api_pipeline_events(run_id):
 @api_bp.get("/monitoring/metrics")
 def api_monitoring_metrics():
     _require_auth()
+    from app.modules.authorization.service import MONITORING_READ, has_permission
+    from app.modules.projects.service import get_active_project
     from app.ui.routes import _get_monitoring_data
 
     try:
-        return _ok(_get_monitoring_data())
+        principal = _principal()
+        project = get_active_project(principal)
+        if not project or not has_permission(principal, MONITORING_READ, project.id):
+            return _error("FORBIDDEN", "Thiếu permission monitoring:read.", 403)
+        return _ok(_get_monitoring_data(principal))
     except Exception as exc:  # pragma: no cover - defensive
         return _error("MONITORING_UNAVAILABLE", str(exc), 502)

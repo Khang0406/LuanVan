@@ -72,6 +72,18 @@ from app.modules.monitoring.grafana import get_grafana_embed_url
 from app.modules.monitoring.k8s_manifests import deploy_monitoring_stack
 from app.modules.monitoring.scaling import load_scale_events, record_scale_events
 from app.modules.auth.routes import role_required
+from app.modules.authorization.service import (
+    APPLICATION_CREATE,
+    APPLICATION_DELETE,
+    APPLICATION_READ,
+    APPLICATION_UPDATE,
+    AUDIT_READ,
+    DEPLOYMENT_EXECUTE,
+    DEPLOYMENT_ROLLBACK,
+    MONITORING_READ,
+    SERVICE_SCALE,
+    has_permission,
+)
 from app.modules.projects.service import get_active_project
 from app.modules.audit.service import load_audit_logs, record_audit
 from app.modules.jobs.service import load_accessible_jobs, pipeline_run_to_job, record_completed_job
@@ -86,7 +98,9 @@ from .mock_data import INSTALL_STEPS
 ui_bp = Blueprint("ui", __name__)
 
 
-def _get_authorized_application(application_id: str) -> dict[str, Any]:
+def _get_authorized_application(
+    application_id: str, permission: str = APPLICATION_READ
+) -> dict[str, Any]:
     project = get_active_project(current_user)
     application = find_accessible_application(
         application_id,
@@ -95,7 +109,33 @@ def _get_authorized_application(application_id: str) -> dict[str, Any]:
     )
     if not application:
         abort(404)
+    permission_project_id = int(application.get("project_id") or project.id)
+    if not has_permission(current_user, permission, permission_project_id):
+        record_audit(
+            "ACCESS_DENIED",
+            application_id,
+            "FAILED",
+            f"Thiếu permission {permission}.",
+            metadata={"project_id": permission_project_id, "permission": permission},
+        )
+        abort(403)
     return application
+
+
+def _require_active_project_permission(permission: str):
+    project = get_active_project(current_user)
+    if not project:
+        abort(404)
+    if not has_permission(current_user, permission, project.id):
+        record_audit(
+            "ACCESS_DENIED",
+            request.path,
+            "FAILED",
+            f"Thiếu permission {permission}.",
+            metadata={"project_id": project.id, "permission": permission},
+        )
+        abort(403)
+    return project
 
 
 def _result_label(success: bool) -> str:
@@ -332,12 +372,13 @@ def applications():
 
 @ui_bp.route("/applications/new", methods=["GET", "POST"])
 @login_required
-@role_required("Admin", "Developer")
 def application_form():
     project = get_active_project(current_user)
     if not project:
         flash("Bạn cần tạo hoặc tham gia một project trước khi tạo application.", "warning")
         return redirect(url_for("projects.project_list"))
+    if not has_permission(current_user, APPLICATION_CREATE, project.id):
+        abort(403)
     if request.method == "POST":
         required_fields = ["name", "owner"]
         missing_fields = [field for field in required_fields if not request.form.get(field, "").strip()]
@@ -379,15 +420,12 @@ def application_form():
 @ui_bp.route("/applications/<application_id>", methods=["GET", "POST"])
 @login_required
 def application_detail(application_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(
+        application_id,
+        APPLICATION_UPDATE if request.method == "POST" else APPLICATION_READ,
+    )
 
     if request.method == "POST":
-        if current_user.role not in {"Admin", "Developer"}:
-            record_audit(
-                "ACCESS_DENIED", application_id, "FAILED",
-                "Viewer attempted to manage application secrets.",
-            )
-            abort(403)
         if request.form.get("add_secret"):
             key = request.form.get("secret_key", "").strip()
             value = request.form.get("secret_value", "").strip()
@@ -452,9 +490,8 @@ def application_detail(application_id):
 
 @ui_bp.post("/applications/<application_id>/deploy")
 @login_required
-@role_required("Admin", "Developer")
 def application_deploy(application_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, DEPLOYMENT_EXECUTE)
     try:
         pipeline_run = trigger_pipeline(application_id, actor=current_user)
         record_audit(
@@ -475,7 +512,7 @@ def application_deploy(application_id):
 @ui_bp.route("/applications/<application_id>/deployments/<deployment_id>")
 @login_required
 def application_deployment_detail(application_id, deployment_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, APPLICATION_READ)
     deployment = get_deployment(deployment_id)
     if not deployment or deployment.get("application_id") != application_id:
         abort(404)
@@ -486,9 +523,8 @@ def application_deployment_detail(application_id, deployment_id):
 
 @ui_bp.post("/applications/<application_id>/deployments/<deployment_id>/rollback")
 @login_required
-@role_required("Admin", "Developer")
 def application_deployment_rollback(application_id, deployment_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, DEPLOYMENT_ROLLBACK)
     success, message, rollback = rollback_application(
         application, deployment_id, actor=current_user
     )
@@ -503,9 +539,8 @@ def application_deployment_rollback(application_id, deployment_id):
 
 @ui_bp.post("/applications/<application_id>/registry-credential")
 @login_required
-@role_required("Admin", "Developer")
 def application_registry_credential(application_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, APPLICATION_UPDATE)
     registry_url = request.form.get("registry_url", "docker.io").strip() or "docker.io"
     username = request.form.get("registry_username", "").strip().lower()
     credential = request.form.get("registry_credential", "")
@@ -539,9 +574,8 @@ def application_registry_credential(application_id):
 
 @ui_bp.post("/applications/<application_id>/registry-use-platform")
 @login_required
-@role_required("Admin", "Developer")
 def application_registry_use_platform(application_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, APPLICATION_UPDATE)
     application["registry"] = {"inherit_platform": True}
     save_application(application)
     record_audit(
@@ -563,9 +597,8 @@ def application_registry_use_platform(application_id):
 
 @ui_bp.post("/applications/<application_id>/restart")
 @login_required
-@role_required("Admin", "Developer")
 def application_restart(application_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, DEPLOYMENT_EXECUTE)
     success, output = restart_application(application)
     record_completed_job("Kubectl", "Restart application", application["name"], success, output, command="kubectl rollout restart")
     record_audit("APPLICATION_RESTART", application["id"], _result_label(success), output[:500])
@@ -575,9 +608,8 @@ def application_restart(application_id):
 
 @ui_bp.post("/applications/<application_id>/scale")
 @login_required
-@role_required("Admin", "Developer")
 def application_scale(application_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, SERVICE_SCALE)
     replicas = int(request.form.get("replicas") or 1)
     success, output = scale_application(application, replicas)
     record_completed_job("Kubectl", f"Scale application lên {replicas}", application["name"], success, output, command=f"kubectl scale --replicas={replicas}")
@@ -588,9 +620,8 @@ def application_scale(application_id):
 
 @ui_bp.post("/applications/<application_id>/delete-workloads")
 @login_required
-@role_required("Admin", "Developer")
 def application_delete_workloads(application_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, APPLICATION_DELETE)
     success, output = delete_application_workloads(application)
     record_completed_job("Kubectl", "Xóa workloads application", application["name"], success, output, command="kubectl delete workloads")
     record_audit("APPLICATION_DELETE_WORKLOADS", application["id"], _result_label(success), output[:500])
@@ -600,13 +631,18 @@ def application_delete_workloads(application_id):
 
 @ui_bp.post("/applications/<application_id>/delete")
 @login_required
-@role_required("Admin", "Developer")
 def application_delete(application_id):
     """Xóa application khỏi hệ thống và dọn dẹp namespace K8s."""
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, APPLICATION_DELETE)
     success = delete_application(application_id)
     if success:
-        record_audit("APPLICATION_DELETE", application_id, "SUCCESS", f"Đã xóa application '{application['name']}'.")
+        record_audit(
+            "APPLICATION_DELETE",
+            application_id,
+            "SUCCESS",
+            f"Đã xóa application '{application['name']}'.",
+            metadata={"project_id": application["project_id"]},
+        )
         flash(f"Đã xóa application '{application['name']}'.", "success")
     else:
         record_audit("APPLICATION_DELETE", application_id, "FAILED", f"Không tìm thấy application '{application_id}'.")
@@ -616,10 +652,9 @@ def application_delete(application_id):
 
 @ui_bp.post("/applications/<application_id>/pipeline")
 @login_required
-@role_required("Admin", "Developer")
 def application_pipeline_trigger(application_id):
     """Trigger CI/CD pipeline for a specific application."""
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, DEPLOYMENT_EXECUTE)
     try:
         pipeline_run = trigger_pipeline(application_id, actor=current_user)
         record_audit(
@@ -660,7 +695,7 @@ def application_manifest_preview(application_id):
 @ui_bp.get("/applications/<application_id>/secrets")
 @login_required
 def application_secrets_list(application_id):
-    _get_authorized_application(application_id)
+    _get_authorized_application(application_id, APPLICATION_UPDATE)
     from app.secret_store import list_secret_keys
     keys = list_secret_keys(application_id)
     return jsonify({"keys": keys})
@@ -668,9 +703,8 @@ def application_secrets_list(application_id):
 
 @ui_bp.post("/applications/<application_id>/pipeline/<pipeline_run_id>/retry")
 @login_required
-@role_required("Admin", "Developer")
 def application_pipeline_retry(application_id, pipeline_run_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, DEPLOYMENT_EXECUTE)
     original = next(
         (run for run in load_pipeline_runs(application_id) if run.get("id") == pipeline_run_id),
         None,
@@ -693,7 +727,7 @@ def application_pipeline_retry(application_id, pipeline_run_id):
 @ui_bp.route("/applications/<application_id>/logs")
 @login_required
 def application_logs(application_id):
-    application = _get_authorized_application(application_id)
+    application = _get_authorized_application(application_id, MONITORING_READ)
     options = get_application_log_options(application)
     service = request.args.get("service", "").strip()
     pod = request.args.get("pod", "").strip()
@@ -846,7 +880,7 @@ def platform_registry_credential():
     return redirect(url_for("ui.cicd") + "#platform-registry")
 
 
-def _get_monitoring_data() -> dict[str, Any]:
+def _get_monitoring_data(user: Any | None = None) -> dict[str, Any]:
     """Return live monitoring data from Prometheus (primary) and kubectl (fallback).
 
     Prometheus queries are fast (<1s) when the cluster is healthy.
@@ -854,18 +888,22 @@ def _get_monitoring_data() -> dict[str, Any]:
     """
     from datetime import datetime
 
+    actor = user or current_user
+    project = get_active_project(actor)
+    if not project or not has_permission(actor, MONITORING_READ, project.id):
+        abort(403)
+
     apps: list[dict[str, Any]] = []
     try:
-        project = get_active_project(current_user)
         apps = load_accessible_applications(
-            current_user, project_id=project.id if project else None
+            actor, project_id=project.id
         ) if project else []
     except Exception:
         pass
 
     # --- node metrics: Prometheus (node_exporter) → kubectl ---
     nodes: list[dict[str, Any]] = []
-    if current_user.is_admin:
+    if actor.is_admin:
         try:
             nodes = get_prometheus_node_metrics()
         except Exception:
@@ -913,7 +951,7 @@ def _get_monitoring_data() -> dict[str, Any]:
     all_alerts = [
         alert for alert in all_alerts
         if alert.get("application_id") in application_ids
-        or (current_user.is_admin and not alert.get("application_id"))
+        or (actor.is_admin and not alert.get("application_id"))
     ]
 
     alert_counts: dict[str, int] = {"total": 0, "active": 0, "critical": 0, "warning": 0}
@@ -1000,6 +1038,7 @@ def monitoring_api_charts():
     import time
 
     empty = {"cpu": [], "memory": [], "network": [], "fetched_at": time.strftime("%H:%M:%S")}
+    _require_active_project_permission(MONITORING_READ)
 
     # These series describe shared cluster nodes, not a project workload.
     # Keep them Platform Admin-only until per-project Prometheus queries are
@@ -1262,9 +1301,15 @@ def monitoring_ack_alert(alert_id):
 
 @ui_bp.route("/audit")
 @login_required
-@role_required("Admin")
 def audit():
-    return render_template("audit.html", logs=load_audit_logs())
+    project = _require_active_project_permission(AUDIT_READ)
+    logs = load_audit_logs()
+    if not current_user.is_admin:
+        logs = [
+            log for log in logs
+            if str(log.get("metadata", {}).get("project_id")) == str(project.id)
+        ]
+    return render_template("audit.html", logs=logs, project=project)
 
 
 # ---------------------------------------------------------------------------

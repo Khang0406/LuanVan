@@ -54,7 +54,7 @@ class ProjectTenancyTests(unittest.TestCase):
         self.environment.start()
         from app import create_app
         from app.db import db
-        from app.models import Project, ProjectMembership, User
+        from app.models import Project, ProjectMembership, RBACRole, User
 
         self.app = create_app(test_config(self.root))
         with self.app.app_context():
@@ -74,9 +74,16 @@ class ProjectTenancyTests(unittest.TestCase):
             beta = Project(name="Beta", slug="beta", owner_user_id=bob.id)
             db.session.add_all([alpha, beta])
             db.session.flush()
+            owner_role = RBACRole.query.filter_by(key="project_admin").one()
             db.session.add_all([
-                ProjectMembership(project_id=alpha.id, user_id=alice.id, invited_by_user_id=alice.id),
-                ProjectMembership(project_id=beta.id, user_id=bob.id, invited_by_user_id=bob.id),
+                ProjectMembership(
+                    project_id=alpha.id, user_id=alice.id,
+                    invited_by_user_id=alice.id, role_id=owner_role.id,
+                ),
+                ProjectMembership(
+                    project_id=beta.id, user_id=bob.id,
+                    invited_by_user_id=bob.id, role_id=owner_role.id,
+                ),
             ])
             db.session.commit()
             self.alice_id, self.alice_session = alice.id, alice.fs_uniquifier

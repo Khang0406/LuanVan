@@ -24,10 +24,12 @@
       <a class="nav-link" href="{{ url_for('ui.applications') }}">Applications</a>
       <a class="nav-link" href="{{ url_for('ui.deployment_detail') }}">Deployments</a>
       <a class="nav-link" href="{{ url_for('ui.cicd') }}">CI/CD</a>
-      <a class="nav-link" href="{{ url_for('ui.monitoring') }}">Monitoring</a>
+      {% if has_project_permission('monitoring:read') %}<a class="nav-link" href="{{ url_for('ui.monitoring') }}">Monitoring</a>{% endif %}
       <a class="nav-link" href="{{ url_for('ui.jobs') }}">Job Logs</a>
-      {% if current_user.is_authenticated and current_user.is_admin %}
+      {% if current_user.is_authenticated and (current_user.is_admin or has_project_permission('audit:read')) %}
       <a class="nav-link" href="{{ url_for('ui.audit') }}">Audit Log</a>
+      {% endif %}
+      {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="nav-link" href="{{ url_for('admin.user_list') }}">User Management</a>
       {% endif %}
     </nav>
@@ -48,7 +50,7 @@
           </form>
           {% endif %}
           {{ current_user.username }}
-          <span class="badge bg-secondary ms-1">{{ current_user.role }}</span>
+          <span class="badge bg-secondary ms-1">{{ active_project_role or current_user.role }}</span>
           <a href="{{ url_for('auth.change_password') }}" class="btn btn-sm btn-outline-secondary ms-1">Đổi MK</a>
           <form method="post" action="{{ url_for('auth.logout') }}" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

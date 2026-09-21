@@ -5,6 +5,7 @@ from app.db import db
 from app.models import ProjectMembership
 from app.modules.audit.service import record_audit
 from app.modules.auth.routes import role_required
+from app.modules.authorization.service import MEMBER_MANAGE, has_permission, role_options
 from app.modules.projects.service import (
     add_project_member,
     can_manage_project,
@@ -13,6 +14,7 @@ from app.modules.projects.service import (
     list_accessible_projects,
     remove_project_member,
     select_active_project,
+    set_membership_role,
     set_membership_status,
 )
 
@@ -87,6 +89,7 @@ def project_detail(project_id: int):
         "projects/detail.html",
         project=project,
         can_manage=can_manage_project(current_user, project),
+        roles=role_options(),
     )
 
 
@@ -100,7 +103,10 @@ def project_member_add(project_id: int):
         abort(403)
     try:
         membership = add_project_member(
-            project, request.form.get("identity", ""), current_user
+            project,
+            request.form.get("identity", ""),
+            current_user,
+            request.form.get("role", "viewer"),
         )
     except ValueError as exc:
         record_audit("PROJECT_MEMBER_ADD", project.slug, "FAILED", str(exc))
@@ -111,9 +117,54 @@ def project_member_add(project_id: int):
             project.slug,
             "SUCCESS",
             f"Đã thêm {membership.user.username} vào project.",
-            metadata={"project_id": project.id, "member_user_id": membership.user_id},
+            metadata={
+                "project_id": project.id,
+                "member_user_id": membership.user_id,
+                "role": membership.role.key,
+            },
         )
         flash(f"Đã thêm {membership.user.username} vào project.", "success")
+    return redirect(url_for("projects.project_detail", project_id=project.id))
+
+
+@projects_bp.post("/<int:project_id>/members/<int:membership_id>/role")
+@login_required
+def project_member_role(project_id: int, membership_id: int):
+    project = get_accessible_project(current_user, project_id)
+    if not project:
+        abort(404)
+    if not has_permission(current_user, MEMBER_MANAGE, project.id):
+        abort(403)
+    membership = db.session.get(ProjectMembership, membership_id)
+    if not membership or membership.project_id != project.id:
+        abort(404)
+    try:
+        old_role, new_role = set_membership_role(
+            project, membership, request.form.get("role", "")
+        )
+    except ValueError as exc:
+        record_audit(
+            "PROJECT_MEMBER_ROLE",
+            project.slug,
+            "FAILED",
+            str(exc),
+            metadata={"project_id": project.id, "member_user_id": membership.user_id},
+        )
+        flash(str(exc), "danger")
+    else:
+        record_audit(
+            "PROJECT_MEMBER_ROLE",
+            project.slug,
+            "SUCCESS",
+            f"Đổi role {membership.user.username}: {old_role} → {new_role}.",
+            metadata={
+                "project_id": project.id,
+                "member_user_id": membership.user_id,
+                "old_role": old_role,
+                "new_role": new_role,
+            },
+        )
+        flash(f"Đã đổi role thành {new_role}.", "success")
     return redirect(url_for("projects.project_detail", project_id=project.id))
 
 

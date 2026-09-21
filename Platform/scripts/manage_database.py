@@ -64,8 +64,11 @@ EXPECTED_COLUMNS = {
     },
     "project_memberships": {
         "id", "project_id", "user_id", "status", "invited_by_user_id",
-        "created_at", "updated_at",
+        "role_id", "created_at", "updated_at",
     },
+    "rbac_roles": {"id", "key", "name", "description", "is_system"},
+    "rbac_permissions": {"id", "key", "description"},
+    "rbac_role_permissions": {"role_id", "permission_id"},
 }
 
 

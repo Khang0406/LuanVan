@@ -68,6 +68,27 @@ def record_audit(
     elif isinstance(actor, str) and actor:
         username = actor
 
+    safe_metadata = dict(metadata or {})
+    project_scoped_action = action.startswith(
+        (
+            "APPLICATION_",
+            "DEPLOYMENT_",
+            "PIPELINE_",
+            "REGISTRY_CREDENTIAL_",
+            "GITHUB_WEBHOOK",
+        )
+    )
+    if "project_id" not in safe_metadata and target and project_scoped_action:
+        try:
+            from app.modules.applications.service import find_application
+
+            application = find_application(target)
+            if application and application.get("project_id") is not None:
+                safe_metadata["project_id"] = int(application["project_id"])
+        except Exception:
+            # Audit must never make the primary operation fail.
+            pass
+
     entry = {
         "id": f"audit-{datetime.now().strftime('%Y%m%d%H%M%S%f')}",
         "created_at": _now(),
@@ -82,7 +103,7 @@ def record_audit(
         "ip": request.headers.get("X-Forwarded-For", request.remote_addr or "") if has_request_context() else "",
         "method": request.method if has_request_context() else "",
         "path": request.path if has_request_context() else "",
-        "metadata": mask_secrets(metadata or {}),
+        "metadata": mask_secrets(safe_metadata),
     }
     logs.append(entry)
     save_audit_logs(logs)
