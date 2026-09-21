@@ -100,6 +100,12 @@ class User(db.Model, UserMixin):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    api_tokens = db.relationship(
+        "ApiToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     roles = db.relationship(
         "SecurityRole",
         secondary=security_user_roles,
@@ -230,6 +236,12 @@ class Project(db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    api_tokens = db.relationship(
+        "ApiToken",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     @validates("status")
     def validate_status(self, _key: str, status: str) -> str:
@@ -321,3 +333,53 @@ class ProjectMembership(db.Model):
         if status not in self.VALID_STATUSES:
             raise ValueError(f"Trạng thái membership không hợp lệ: {status}")
         return status
+
+
+class ApiToken(db.Model):
+    """Hashed, revocable credential constrained to one user and project."""
+
+    __tablename__ = "api_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    token_prefix = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id = db.Column(
+        db.Integer,
+        db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    scopes_json = db.Column(db.Text, nullable=False, default="[]")
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+    revoked_at = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
+    last_used_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    last_used_ip = db.Column(db.String(45), nullable=False, default="")
+    rate_limit_per_minute = db.Column(db.Integer, nullable=False, default=60)
+    rate_window_started_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    rate_window_count = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    user = db.relationship("User", back_populates="api_tokens")
+    project = db.relationship("Project", back_populates="api_tokens")
+
+    @property
+    def is_revoked(self) -> bool:
+        return self.revoked_at is not None
+
+    @property
+    def is_expired(self) -> bool:
+        expires_at = self.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return expires_at <= datetime.now(timezone.utc)

@@ -111,6 +111,9 @@ class Config:
     LOGIN_LOCKOUT_SECONDS = max(
         60, int(os.getenv("LOGIN_LOCKOUT_SECONDS", "900"))
     )
+    API_TOKEN_RATE_LIMIT_PER_MINUTE = max(
+        1, int(os.getenv("API_TOKEN_RATE_LIMIT_PER_MINUTE", "60"))
+    )
 
     # Prometheus & Grafana — monitoring stack URLs
     PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:30900")

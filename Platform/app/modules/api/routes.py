@@ -3,8 +3,9 @@
 Reuses the existing service layer so the API stays a thin, authenticated facade
 over the same code paths the web UI uses. Authentication:
 
-- ``Authorization: Bearer <PLATFORM_API_TOKEN>`` for machine clients (token is
-  treated as an admin principal). Disabled when ``PLATFORM_API_TOKEN`` is unset.
+- Project-scoped API tokens stored as hashes, constrained by RBAC scope.
+- Legacy ``PLATFORM_API_TOKEN`` remains available as a deployment compatibility
+  credential and should be retired after clients migrate.
 - Otherwise the Flask-Login session (used by the browser UI).
 
 Mutating endpoints are exempt from CSRF because the API is not form-driven; all
@@ -51,7 +52,7 @@ def _error(code: str, message: str, status: int, details=None):
 
 
 def _token_principal() -> bool:
-    """Return True when the request carries a valid API bearer token."""
+    """Return True only for the legacy environment bearer token."""
     header = request.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
         return False
@@ -72,6 +73,67 @@ class _ApiPrincipal:
     username = "api-token"
 
 
+class _InvalidApiPrincipal:
+    is_authenticated = False
+    is_admin = False
+
+
+def _request_ip() -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "").split(",", 1)[0].strip()
+    return forwarded or request.remote_addr or ""
+
+
+@api_bp.before_request
+def authenticate_bearer_token():
+    """Resolve a bearer credential once and attach its constrained principal."""
+    header = request.headers.get("Authorization", "")
+    if not header:
+        return None
+    if not header.startswith("Bearer "):
+        g.api_auth_failed = True
+        return None
+    if _token_principal():
+        g.api_principal = _ApiPrincipal()
+        return None
+
+    raw_token = header[len("Bearer "):].strip()
+    from app.modules.api_tokens.service import (
+        ApiTokenRateLimitExceeded,
+        authenticate_api_token,
+    )
+
+    try:
+        principal = authenticate_api_token(raw_token, _request_ip())
+    except ApiTokenRateLimitExceeded as exc:
+        response, status = _error(
+            "RATE_LIMIT_EXCEEDED",
+            str(exc),
+            429,
+            {"retry_after_seconds": exc.retry_after},
+        )
+        response.headers["Retry-After"] = str(exc.retry_after)
+        return response, status
+    if principal is None:
+        g.api_auth_failed = True
+        return None
+    g.api_principal = principal
+    from app.modules.audit.service import record_audit
+
+    record_audit(
+        "API_TOKEN_USE",
+        str(principal.token_id),
+        "SUCCESS",
+        f"API token {principal.token_name} được sử dụng.",
+        user=principal,
+        metadata={
+            "project_id": principal.token_project_id,
+            "token_id": principal.token_id,
+            "endpoint": request.endpoint,
+        },
+    )
+    return None
+
+
 def _principal():
     """Return the effective principal for scope checks.
 
@@ -79,19 +141,21 @@ def _principal():
     anonymous; substituting an admin principal lets token clients pass the
     ownership/role checks that the web UI relies on.
     """
-    if _token_principal():
-        return _ApiPrincipal()
-    return current_user
+    if getattr(g, "api_auth_failed", False):
+        return _InvalidApiPrincipal()
+    return getattr(g, "api_principal", current_user)
 
 
 def _is_authenticated() -> bool:
-    return _token_principal() or current_user.is_authenticated
+    return bool(getattr(_principal(), "is_authenticated", False))
 
 
 def _is_admin() -> bool:
-    if _token_principal():
-        return True
-    return current_user.is_authenticated and getattr(current_user, "role", "") == "Admin"
+    principal = _principal()
+    return bool(
+        getattr(principal, "is_authenticated", False)
+        and getattr(principal, "is_admin", False)
+    )
 
 
 def _require_auth():
@@ -175,12 +239,22 @@ def api_applications():
     _require_auth()
     from app.modules.applications.service import load_accessible_applications
     from app.modules.projects.service import can_access_project
+    from app.modules.authorization.service import APPLICATION_READ, has_permission
 
     principal = _principal()
     project_id = request.args.get("project_id", type=int)
     if project_id is not None and not can_access_project(principal, project_id):
         return _error("FORBIDDEN", "Không có quyền truy cập project này.", 403)
-    return _ok(load_accessible_applications(principal, project_id=project_id))
+    applications = load_accessible_applications(principal, project_id=project_id)
+    return _ok([
+        application
+        for application in applications
+        if has_permission(
+            principal,
+            APPLICATION_READ,
+            _application_project_id(application, principal),
+        )
+    ])
 
 
 @api_bp.get("/applications/<application_id>")

@@ -69,6 +69,12 @@ EXPECTED_COLUMNS = {
     "rbac_roles": {"id", "key", "name", "description", "is_system"},
     "rbac_permissions": {"id", "key", "description"},
     "rbac_role_permissions": {"role_id", "permission_id"},
+    "api_tokens": {
+        "id", "name", "token_prefix", "token_hash", "user_id", "project_id",
+        "scopes_json", "expires_at", "revoked_at", "last_used_at", "last_used_ip",
+        "rate_limit_per_minute", "rate_window_started_at", "rate_window_count",
+        "created_at",
+    },
 }
 
 

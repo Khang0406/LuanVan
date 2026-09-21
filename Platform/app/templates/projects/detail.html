@@ -11,6 +11,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="project_id" value="{{ project.id }}">
     <button class="btn btn-outline-primary" type="submit">Chọn project này</button>
+    <a class="btn btn-outline-dark" href="{{ url_for('projects.project_tokens', project_id=project.id) }}">API Tokens</a>
   </form>
 </div>
 

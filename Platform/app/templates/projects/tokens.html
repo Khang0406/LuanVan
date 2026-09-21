@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}API Tokens - {{ project.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1>API Tokens</h1>
+    <p class="text-muted mb-0">Token cá nhân cho project <strong>{{ project.name }}</strong>.</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('projects.project_detail', project_id=project.id) }}">Quay lại project</a>
+</div>
+
+{% if new_token %}
+<div class="alert alert-warning">
+  <strong>Token mới — chỉ hiển thị lần này</strong>
+  <div class="input-group mt-2">
+    <input id="new-api-token" class="form-control font-monospace" value="{{ new_token }}" readonly autocomplete="off">
+    <button class="btn btn-outline-dark" type="button" onclick="navigator.clipboard.writeText(document.getElementById('new-api-token').value)">Sao chép</button>
+  </div>
+  <div class="small mt-2">Không thể khôi phục token gốc từ database. Nếu làm mất, hãy thu hồi và tạo token mới.</div>
+</div>
+{% endif %}
+
+<div class="card soft-card mb-4">
+  <div class="card-body p-4">
+    <h5>Tạo token</h5>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label" for="token-name">Tên token</label>
+          <input id="token-name" class="form-control" name="name" maxlength="100" placeholder="Ví dụ: GitHub Actions" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="token-expiry">Thời hạn</label>
+          <select id="token-expiry" class="form-select" name="expires_in_days">
+            <option value="7">7 ngày</option><option value="30">30 ngày</option>
+            <option value="90" selected>90 ngày</option><option value="180">180 ngày</option>
+            <option value="365">365 ngày</option>
+          </select>
+        </div>
+      </div>
+      <div class="mt-3">
+        <label class="form-label">Scopes (không thể vượt quyền RBAC hiện tại)</label>
+        <div class="row">
+          {% for key, description in scope_options %}
+          <div class="col-md-6 mb-2">
+            <label class="border rounded p-2 w-100">
+              <input class="form-check-input me-2" type="checkbox" name="scopes" value="{{ key }}">
+              <code>{{ key }}</code><span class="d-block small text-muted ms-4">{{ description }}</span>
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <button class="btn btn-primary mt-2" type="submit">Tạo API token</button>
+    </form>
+  </div>
+</div>
+
+<div class="card soft-card">
+  <div class="card-body p-0">
+    <div class="p-4 pb-2"><h5>Token của tôi</h5></div>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Tên / Prefix</th><th>Scopes</th><th>Hết hạn</th><th>Dùng gần nhất</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>
+          {% for token in tokens %}
+          <tr>
+            <td><strong>{{ token.name }}</strong><br><code>cict_{{ token.token_prefix }}_…</code></td>
+            <td>{% for scope in token_scopes(token)|sort %}<span class="badge bg-light text-dark border me-1">{{ scope }}</span>{% endfor %}</td>
+            <td>{{ token.expires_at.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>{{ token.last_used_at.strftime('%d/%m/%Y %H:%M') if token.last_used_at else 'Chưa sử dụng' }}</td>
+            <td><span class="badge bg-{{ 'secondary' if token.revoked_at or token.is_expired else 'success' }}">{{ 'Đã thu hồi' if token.revoked_at else 'Hết hạn' if token.is_expired else 'Hoạt động' }}</span></td>
+            <td class="text-end">
+              {% if not token.revoked_at and not token.is_expired %}
+              <form method="post" action="{{ url_for('projects.project_token_revoke', project_id=project.id, token_id=token.id) }}" onsubmit="return confirm('Thu hồi token này?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Thu hồi</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}<tr><td colspan="6" class="text-center text-muted py-4">Chưa có API token.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

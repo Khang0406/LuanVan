@@ -70,6 +70,14 @@ def list_accessible_projects(user: Any, *, include_archived: bool = False) -> li
     query = Project.query
     if not include_archived:
         query = query.filter(Project.status == Project.STATUS_ACTIVE)
+    token_project_id = getattr(user, "token_project_id", None)
+    if token_project_id is not None:
+        if not getattr(user, "platform_admin", False):
+            query = query.join(ProjectMembership).filter(
+                ProjectMembership.user_id == getattr(user, "id", None),
+                ProjectMembership.status == ProjectMembership.STATUS_ACTIVE,
+            )
+        return query.filter(Project.id == token_project_id).all()
     if getattr(user, "is_admin", False):
         return query.order_by(Project.name, Project.id).all()
     return (
@@ -84,6 +92,14 @@ def list_accessible_projects(user: Any, *, include_archived: bool = False) -> li
 
 
 def can_access_project(user: Any, project_id: int) -> bool:
+    token_project_id = getattr(user, "token_project_id", None)
+    if token_project_id is not None:
+        if project_id != token_project_id:
+            return False
+        if getattr(user, "platform_admin", False):
+            return Project.query.filter_by(
+                id=project_id, status=Project.STATUS_ACTIVE
+            ).first() is not None
     if getattr(user, "is_admin", False):
         return Project.query.filter_by(
             id=project_id, status=Project.STATUS_ACTIVE
@@ -120,6 +136,14 @@ def get_active_project(
         if has_request_context():
             session.pop("active_project_id", None)
         return None
+    # Bearer tokens carry their own immutable project context and must not read
+    # or mutate the browser session project selector.
+    token_project_id = getattr(user, "token_project_id", None)
+    if token_project_id is not None:
+        return next(
+            (project for project in projects if project.id == token_project_id),
+            None,
+        )
     selected_id = session.get("active_project_id") if has_request_context() else None
     selected = next((project for project in projects if project.id == selected_id), None)
     project = selected or projects[0]
@@ -261,10 +285,14 @@ def project_to_dict(project: Project, user: Any | None = None) -> dict[str, Any]
     if user is not None:
         from app.modules.authorization.service import get_membership, permission_keys
 
-        membership = None if getattr(user, "is_admin", False) else get_membership(user, project.id)
+        is_platform_admin = bool(
+            getattr(user, "is_admin", False)
+            or getattr(user, "platform_admin", False)
+        )
+        membership = None if is_platform_admin else get_membership(user, project.id)
         payload["my_role"] = (
             "Platform Admin"
-            if getattr(user, "is_admin", False)
+            if is_platform_admin
             else membership.role.name if membership and membership.role else None
         )
         payload["permissions"] = sorted(permission_keys(user, project.id))

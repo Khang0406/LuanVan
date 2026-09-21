@@ -163,6 +163,19 @@ def get_membership(user: Any, project_id: int) -> ProjectMembership | None:
 def has_permission(user: Any, permission: str, project_id: int | None) -> bool:
     if permission not in PERMISSIONS:
         return False
+    token_project_id = getattr(user, "token_project_id", None)
+    token_scopes = getattr(user, "api_token_scopes", None)
+    if token_project_id is not None:
+        if project_id != token_project_id or permission not in (token_scopes or set()):
+            return False
+        if getattr(user, "platform_admin", False):
+            return True
+        membership = get_membership(user, project_id)
+        return bool(
+            membership
+            and membership.role
+            and any(item.key == permission for item in membership.role.permissions)
+        )
     if getattr(user, "is_admin", False):
         return True
     if project_id is None:
@@ -174,6 +187,20 @@ def has_permission(user: Any, permission: str, project_id: int | None) -> bool:
 
 
 def permission_keys(user: Any, project_id: int | None) -> set[str]:
+    token_project_id = getattr(user, "token_project_id", None)
+    token_scopes = set(getattr(user, "api_token_scopes", set()))
+    if token_project_id is not None:
+        if project_id != token_project_id:
+            return set()
+        if getattr(user, "platform_admin", False):
+            return token_scopes & set(PERMISSIONS)
+        membership = get_membership(user, project_id)
+        role_permissions = (
+            {item.key for item in membership.role.permissions}
+            if membership and membership.role
+            else set()
+        )
+        return token_scopes & role_permissions
     if getattr(user, "is_admin", False):
         return set(PERMISSIONS)
     if project_id is None:

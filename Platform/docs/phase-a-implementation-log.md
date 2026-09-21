@@ -1,5 +1,53 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.4.3 — API token theo project (2026-09-21)
+
+### Kết quả triển khai
+
+- Thêm API token thuộc một user và đúng một project; token gốc chỉ hiển thị
+  một lần, database chỉ lưu prefix và SHA-256 hash.
+- Scope token không thể vượt permission RBAC lúc tạo. Khi gọi API, hệ thống lấy
+  giao giữa scope và role hiện tại nên hạ role/disable membership có hiệu lực
+  ngay với token cũ.
+- Bearer principal bị khóa vào project của token. Token project A không thể
+  liệt kê hoặc truy cập application/pipeline của project B.
+- Hỗ trợ expiry, revoke, last-used time/IP và rate limit riêng từng token.
+  Response phân biệt 401 credential sai, 403 thiếu quyền và 429 quá giới hạn.
+- UI cho phép tạo/list/revoke token cá nhân, chọn scope và hạn sử dụng; không
+  đưa raw token vào URL, flash, database hay audit.
+- Audit đầy đủ `API_TOKEN_CREATE`, `API_TOKEN_USE`, `API_TOKEN_REVOKE` với
+  token ID/project ID nhưng không chứa secret.
+- Giữ `PLATFORM_API_TOKEN` cũ để tương thích tạm thời; token mới không có quyền
+  Platform Admin toàn cục kể cả khi chủ token là Platform Admin.
+
+### Migration và cấu hình
+
+- Revision mới: `0007_project_api_tokens`.
+- Bảng `api_tokens` có foreign key cascade tới user/project và index cho lookup,
+  expiry, revocation.
+- `scripts/manage_database.py check` kiểm tra toàn bộ cột mới.
+- Cấu hình `API_TOKEN_RATE_LIMIT_PER_MINUTE`, mặc định 60 request/phút/token.
+
+### Kiểm thử local
+
+```text
+API token + RBAC/API/migration target: 30 tests OK
+Full regression:                       180 tests OK, 6 PostgreSQL tests skipped
+Migration head:                        0007_project_api_tokens
+Schema management check:               OK
+alembic check:                         No new upgrade operations detected
+Python compileall:                     OK
+git diff --check:                      OK
+```
+
+### Chờ nghiệm thu trên máy ảo
+
+- Chưa upgrade PostgreSQL runtime hoặc smoke test K3s vì máy ảo đang cài lại.
+- Khi hạ tầng sẵn sàng cần backup, upgrade tới revision 0007, kiểm tra schema,
+  test token thật và chuyển automation khỏi token môi trường legacy.
+
+Tài liệu chi tiết: `docs/phase-a43-project-api-tokens.md`.
+
 ## Phase A.4.2 — RBAC theo project (2026-09-18)
 
 ### Kết quả triển khai

@@ -30,6 +30,7 @@ class DatabaseMigrationTests(unittest.TestCase):
                 "email_verification_tokens", "security_roles", "security_user_roles",
                 "password_reset_tokens", "projects", "project_memberships",
                 "rbac_roles", "rbac_permissions", "rbac_role_permissions",
+                "api_tokens",
             } <= tables)
 
     def test_framework_migration_backfills_legacy_identity(self):

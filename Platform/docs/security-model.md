@@ -2,19 +2,31 @@
 
 ## Ma trận quyền
 
-| Chức năng | Admin | Developer | Viewer |
-|---|---:|---:|---:|
-| Xem application, monitoring, log | Có | Có (application sở hữu) | Có |
-| Tạo/deploy application | Có | Có | Không |
-| Quản lý application secret | Có | Có (application sở hữu) | Không |
-| Registry/SMTP toàn hệ thống | Có | Không | Không |
-| Quản lý server/cluster | Có | Không | Không |
-| Rollback | Có | Có (application sở hữu) | Không |
+| Chức năng | Platform Admin | Project Admin | Developer | Operator | Viewer | Auditor |
+|---|---:|---:|---:|---:|---:|---:|
+| Quản lý server/cluster | Có | Không | Không | Không | Không | Không |
+| Quản lý member/role | Có | Có | Không | Không | Không | Không |
+| Tạo/sửa/xóa application | Có | Có | Có | Không | Không | Không |
+| Deploy/rollback/scale | Có | Có | Có | Có | Không | Không |
+| Xem application/monitoring | Có | Có | Có | Có | Có | Có |
+| Xem audit project | Có | Có | Không | Không | Không | Có |
 
-Developer được kiểm tra `application.user_id`; URL của application/deployment
-khác trả 404. Rollback còn kiểm tra `deployment.application_id`. Viewer đọc mọi
-application để phục vụ quan sát nhưng endpoint POST mutate bị chặn server-side,
-không chỉ ẩn button.
+Role được gắn trên `ProjectMembership`, vì vậy cùng một user có thể là Operator
+ở project A và Viewer ở project B. Web và REST API gọi chung authorization
+service; kiểm tra backend vẫn bắt buộc dù UI đã ẩn action. Mọi application,
+deployment, pipeline, monitoring và audit đều được lọc theo project.
+
+## API token
+
+- Token thuộc một user và một project; raw token chỉ hiển thị một lần.
+- Database chỉ lưu prefix và SHA-256 hash, token có expiry và có thể revoke.
+- Quyền hiệu lực là giao giữa scope token và RBAC hiện tại của user.
+- Disable user/membership, archive project hoặc hạ role có hiệu lực ngay.
+- Mỗi token có rate limit, last-used time/IP và audit create/use/revoke.
+- Token project A không thể dùng cho project B; token thiếu scope trả 403.
+
+`PLATFORM_API_TOKEN` là compatibility credential toàn cục cho client cũ. Nên
+chuyển automation sang project token rồi xóa biến này khỏi runtime.
 
 ## CSRF và webhook
 
@@ -55,7 +67,7 @@ Review từng finding; không đưa giá trị thật vào ticket hoặc báo c�
 
 ## Giới hạn và hướng phát triển
 
-RBAC hiện là role + ownership trong application layer, chưa phải policy engine
-đa tenant. Secret store là file permission-restricted, chưa mã hóa at rest ở
-application layer. Hướng phát triển: OIDC, policy engine, Vault/KMS, PostgreSQL,
-key rotation và security scanning CI.
+RBAC hiện được cưỡng chế trong application layer, chưa phải policy engine độc
+lập. Secret store là file permission-restricted, chưa mã hóa at rest ở
+application layer. Hướng phát triển: OIDC, OPA/Kyverno, Vault/KMS, token
+rotation tự động và security scanning CI.

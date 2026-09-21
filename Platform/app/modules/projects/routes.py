@@ -5,7 +5,13 @@ from app.db import db
 from app.models import ProjectMembership
 from app.modules.audit.service import record_audit
 from app.modules.auth.routes import role_required
-from app.modules.authorization.service import MEMBER_MANAGE, has_permission, role_options
+from app.modules.authorization.service import (
+    MEMBER_MANAGE,
+    PERMISSIONS,
+    has_permission,
+    permission_keys,
+    role_options,
+)
 from app.modules.projects.service import (
     add_project_member,
     can_manage_project,
@@ -91,6 +97,89 @@ def project_detail(project_id: int):
         can_manage=can_manage_project(current_user, project),
         roles=role_options(),
     )
+
+
+@projects_bp.route("/<int:project_id>/tokens", methods=["GET", "POST"])
+@login_required
+def project_tokens(project_id: int):
+    project = get_accessible_project(current_user, project_id)
+    if not project:
+        abort(404)
+    from app.modules.api_tokens.service import (
+        ApiTokenError,
+        create_api_token,
+        list_user_api_tokens,
+        token_scopes,
+    )
+
+    new_token = None
+    if request.method == "POST":
+        try:
+            token, new_token = create_api_token(
+                current_user,
+                project,
+                request.form.get("name", ""),
+                request.form.getlist("scopes"),
+                expires_in_days=int(request.form.get("expires_in_days", "90")),
+            )
+        except (ApiTokenError, ValueError) as exc:
+            record_audit(
+                "API_TOKEN_CREATE",
+                project.slug,
+                "FAILED",
+                str(exc),
+                metadata={"project_id": project.id},
+            )
+            flash(str(exc), "danger")
+        else:
+            record_audit(
+                "API_TOKEN_CREATE",
+                str(token.id),
+                "SUCCESS",
+                f"Đã tạo API token {token.name}.",
+                metadata={
+                    "project_id": project.id,
+                    "token_id": token.id,
+                    "scopes": sorted(token_scopes(token)),
+                    "expires_at": token.expires_at.isoformat(),
+                },
+            )
+            flash("Đã tạo API token. Hãy sao chép ngay vì token chỉ hiển thị một lần.", "success")
+
+    granted = permission_keys(current_user, project.id)
+    return render_template(
+        "projects/tokens.html",
+        project=project,
+        tokens=list_user_api_tokens(current_user, project.id),
+        token_scopes=token_scopes,
+        scope_options=[
+            (key, description) for key, description in PERMISSIONS.items() if key in granted
+        ],
+        new_token=new_token,
+    )
+
+
+@projects_bp.post("/<int:project_id>/tokens/<int:token_id>/revoke")
+@login_required
+def project_token_revoke(project_id: int, token_id: int):
+    project = get_accessible_project(current_user, project_id)
+    if not project:
+        abort(404)
+    from app.modules.api_tokens.service import ApiTokenError, revoke_api_token
+
+    try:
+        token = revoke_api_token(current_user, project.id, token_id)
+    except ApiTokenError:
+        abort(404)
+    record_audit(
+        "API_TOKEN_REVOKE",
+        str(token.id),
+        "SUCCESS",
+        f"Đã thu hồi API token {token.name}.",
+        metadata={"project_id": project.id, "token_id": token.id},
+    )
+    flash(f"Đã thu hồi API token {token.name}.", "success")
+    return redirect(url_for("projects.project_tokens", project_id=project.id))
 
 
 @projects_bp.post("/<int:project_id>/members")
