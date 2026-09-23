@@ -33,10 +33,13 @@ def validate_csrf() -> None:
         return
     if request.endpoint in CSRF_EXEMPT_ENDPOINTS:
         return
-    # The REST API is token/session authenticated and not form-driven; it
-    # performs its own authorization/scope checks on every endpoint.
+    # Bearer credentials aren't ambient browser credentials, so they are not
+    # vulnerable to CSRF. API requests falling back to a Flask session must
+    # still prove intent with the same CSRF token as Web forms.
     if request.blueprint == "api":
-        return
+        authorization = request.headers.get("Authorization", "")
+        if authorization.startswith("Bearer ") and authorization[7:].strip():
+            return
 
     expected = session.get("_csrf_token", "")
     supplied = request.form.get("csrf_token", "") or request.headers.get("X-CSRF-Token", "")

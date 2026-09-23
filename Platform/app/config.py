@@ -114,6 +114,11 @@ class Config:
     API_TOKEN_RATE_LIMIT_PER_MINUTE = max(
         1, int(os.getenv("API_TOKEN_RATE_LIMIT_PER_MINUTE", "60"))
     )
+    ALLOW_LEGACY_API_TOKEN = os.getenv(
+        "ALLOW_LEGACY_API_TOKEN",
+        "false" if PLATFORM_ENV == "production" else "true",
+    ).lower() in {"1", "true", "yes"}
+    SCALE_MAX_REPLICAS = max(1, int(os.getenv("SCALE_MAX_REPLICAS", "100")))
 
     # Prometheus & Grafana — monitoring stack URLs
     PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:30900")

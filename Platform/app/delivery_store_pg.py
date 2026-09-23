@@ -865,6 +865,13 @@ def replace_audit_logs(logs: list[dict[str, Any]], path: Path | None = None) -> 
             _upsert_audit(conn, audit)
 
 
+def append_audit_log(audit: dict[str, Any], path: Path | None = None) -> None:
+    """Insert one immutable audit event in a single transaction."""
+    initialize_schema(path)
+    with _engine().begin() as conn:
+        _upsert_audit(conn, audit, insert_only=True)
+
+
 def list_audit_logs(path: Path | None = None) -> list[dict[str, Any]]:
     initialize_schema(path)
     with _engine().begin() as conn:

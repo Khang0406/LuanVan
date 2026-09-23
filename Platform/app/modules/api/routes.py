@@ -4,12 +4,12 @@ Reuses the existing service layer so the API stays a thin, authenticated facade
 over the same code paths the web UI uses. Authentication:
 
 - Project-scoped API tokens stored as hashes, constrained by RBAC scope.
-- Legacy ``PLATFORM_API_TOKEN`` remains available as a deployment compatibility
-  credential and should be retired after clients migrate.
+- Legacy ``PLATFORM_API_TOKEN`` is available only when explicitly enabled
+  (disabled by default in production) and should be retired after migration.
 - Otherwise the Flask-Login session (used by the browser UI).
 
-Mutating endpoints are exempt from CSRF because the API is not form-driven; all
-endpoints still perform server-side authorization/scope checks.
+Bearer-authenticated mutations are exempt from CSRF. Session-authenticated API
+mutations require ``X-CSRF-Token`` like Web forms.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import secrets
 import time
 from datetime import datetime, timezone
 
-from flask import Blueprint, Response, abort, g, jsonify, request
+from flask import Blueprint, Response, abort, current_app, g, jsonify, request
 from flask_login import current_user
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
@@ -53,6 +53,8 @@ def _error(code: str, message: str, status: int, details=None):
 
 def _token_principal() -> bool:
     """Return True only for the legacy environment bearer token."""
+    if not current_app.config.get("ALLOW_LEGACY_API_TOKEN", True):
+        return False
     header = request.headers.get("Authorization", "")
     if not header.startswith("Bearer "):
         return False
@@ -79,8 +81,8 @@ class _InvalidApiPrincipal:
 
 
 def _request_ip() -> str:
-    forwarded = request.headers.get("X-Forwarded-For", "").split(",", 1)[0].strip()
-    return forwarded or request.remote_addr or ""
+    # ProxyFix normalizes this only when TRUST_PROXY_COUNT is configured.
+    return request.remote_addr or ""
 
 
 @api_bp.before_request
@@ -93,7 +95,18 @@ def authenticate_bearer_token():
         g.api_auth_failed = True
         return None
     if _token_principal():
-        g.api_principal = _ApiPrincipal()
+        principal = _ApiPrincipal()
+        g.api_principal = principal
+        from app.modules.audit.service import record_audit
+
+        record_audit(
+            "API_TOKEN_LEGACY_USE",
+            "PLATFORM_API_TOKEN",
+            "SUCCESS",
+            "Legacy platform API token được sử dụng.",
+            user=principal,
+            metadata={"endpoint": request.endpoint},
+        )
         return None
 
     raw_token = header[len("Bearer "):].strip()

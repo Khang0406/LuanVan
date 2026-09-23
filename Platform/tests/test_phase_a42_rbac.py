@@ -164,6 +164,20 @@ class ProjectRBACTests(unittest.TestCase):
         )
         self.assertEqual(denied_member.status_code, 403)
 
+    def test_scale_rejects_invalid_or_excessive_replica_values(self):
+        client = self.client_for("operator")
+        csrf = self.csrf(client)
+        for value in ("invalid", "-1", "101"):
+            with self.subTest(value=value), patch(
+                "app.ui.routes.scale_application"
+            ) as scale:
+                response = client.post(
+                    "/applications/alpha-app/scale",
+                    data={"csrf_token": csrf, "replicas": value},
+                )
+                self.assertEqual(response.status_code, 302)
+                scale.assert_not_called()
+
     def test_viewer_cannot_bypass_permission_through_api(self):
         client = self.client_for("viewer")
         projects = client.get("/api/v1/projects").get_json()["data"]
@@ -173,7 +187,10 @@ class ProjectRBACTests(unittest.TestCase):
         self.assertNotIn("deployment:execute", alpha["permissions"])
         readable = client.get("/api/v1/applications/alpha-app")
         self.assertEqual(readable.status_code, 200)
-        denied = client.post("/api/v1/applications/alpha-app/pipeline")
+        denied = client.post(
+            "/api/v1/applications/alpha-app/pipeline",
+            headers={"X-CSRF-Token": self.csrf(client)},
+        )
         self.assertEqual(denied.status_code, 403)
         self.assertEqual(denied.get_json()["error"]["code"], "FORBIDDEN")
 

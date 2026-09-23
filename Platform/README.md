@@ -59,6 +59,7 @@ kubectl kustomize k8s/platform | kubectl create --dry-run=client --validate=fals
 - [Phase A.4.1 — Project và thành viên](docs/phase-a41-project-membership.md)
 - [Phase A.4.2 — RBAC theo project](docs/phase-a42-project-rbac.md)
 - [Phase A.4.3 — API token theo project](docs/phase-a43-project-api-tokens.md)
+- [Hardening sau A.4](docs/phase-a4-hardening-review.md)
 - [Deployment runbook](docs/deployment-runbook.md)
 - [Backup/restore](docs/backup-restore.md)
 - [Security/RBAC](docs/security-model.md)

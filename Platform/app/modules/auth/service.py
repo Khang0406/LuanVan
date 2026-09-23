@@ -74,6 +74,10 @@ def create_verification_token(user: User, request_ip: str = "") -> str:
     if not user.email:
         raise ValueError("Tài khoản chưa có email.")
 
+    # Serialize resend requests for one account. Without this lock, concurrent
+    # PostgreSQL requests can both pass cooldown checks and leave two live
+    # verification tokens.
+    user = User.query.filter_by(id=user.id).with_for_update().one()
     now = utcnow()
     cooldown = int(current_app.config.get("EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS", 60))
     one_hour_ago = now - timedelta(hours=1)

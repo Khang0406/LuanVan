@@ -60,6 +60,12 @@ def _login(client, user_id: int) -> None:
         session["_fresh"] = True
 
 
+def _csrf(client) -> str:
+    client.get("/applications")
+    with client.session_transaction() as session:
+        return session["_csrf_token"]
+
+
 class ApiAuthTests(unittest.TestCase):
     def test_health_endpoint_needs_no_auth(self):
         with TemporaryDirectory() as directory:
@@ -71,6 +77,28 @@ class ApiAuthTests(unittest.TestCase):
                 response = client.get("/api/v1/health")
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.get_json()["data"]["status"], "ok")
+
+    def test_legacy_bearer_can_be_disabled(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            from app import create_app
+
+            config = _test_config(root)
+            config.ALLOW_LEGACY_API_TOKEN = False
+            environment = {
+                **_environment(root),
+                "PLATFORM_API_TOKEN": "legacy-token-that-must-not-authenticate",
+            }
+            with patch.dict(os.environ, environment):
+                client = create_app(config).test_client()
+                response = client.get(
+                    "/api/v1/servers",
+                    headers={
+                        "Authorization":
+                            "Bearer legacy-token-that-must-not-authenticate"
+                    },
+                )
+        self.assertEqual(response.status_code, 401)
 
     def test_servers_requires_admin(self):
         with TemporaryDirectory() as directory:
@@ -178,7 +206,12 @@ class PipelineApiTests(unittest.TestCase):
                 client = application.test_client()
                 _login(client, dev_id)
 
-                response = client.post("/api/v1/applications/phase5-app/pipeline")
+                rejected = client.post("/api/v1/applications/phase5-app/pipeline")
+                self.assertEqual(rejected.status_code, 400)
+                response = client.post(
+                    "/api/v1/applications/phase5-app/pipeline",
+                    headers={"X-CSRF-Token": _csrf(client)},
+                )
                 self.assertEqual(response.status_code, 202)
                 run_id = response.get_json()["data"]["id"]
 
@@ -202,7 +235,10 @@ class PipelineApiTests(unittest.TestCase):
                 client = application.test_client()
                 _login(client, viewer_id)
 
-                response = client.post("/api/v1/applications/phase5-app/pipeline")
+                response = client.post(
+                    "/api/v1/applications/phase5-app/pipeline",
+                    headers={"X-CSRF-Token": _csrf(client)},
+                )
             self.assertEqual(response.status_code, 403)
 
     def test_pipeline_events_sse_streams_terminal_status(self):

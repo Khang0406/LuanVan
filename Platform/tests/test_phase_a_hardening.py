@@ -101,5 +101,40 @@ class WorkerSafetyConfigurationTests(unittest.TestCase):
         self.assertGreater(celery_app.conf.result_expires, 0)
 
 
+class DeploymentStateSafetyTests(unittest.TestCase):
+    def test_partial_scale_failure_only_persists_successful_service(self):
+        from app.modules.deployments.kubectl import scale_application
+
+        application = {
+            "id": "scale-app",
+            "name": "Scale app",
+            "namespace": "scale-app",
+            "services": [
+                {"name": "web", "replicas": 1},
+                {"name": "worker", "replicas": 1},
+            ],
+        }
+        with patch(
+            "app.modules.deployments.kubectl.run_kubectl",
+            side_effect=[(True, "web scaled"), (False, "worker failed")],
+        ), patch("app.modules.deployments.kubectl.save_application"), patch(
+            "app.modules.deployments.kubectl.add_activity"
+        ):
+            success, _output = scale_application(application, 3)
+
+        self.assertFalse(success)
+        self.assertEqual(application["services"][0]["replicas"], 3)
+        self.assertEqual(application["services"][1]["replicas"], 1)
+
+    def test_scale_service_rejects_negative_replica(self):
+        from app.modules.deployments.kubectl import scale_application
+
+        success, message = scale_application(
+            {"id": "scale-app", "namespace": "scale-app", "services": []}, -1
+        )
+        self.assertFalse(success)
+        self.assertIn("không âm", message)
+
+
 if __name__ == "__main__":
     unittest.main()

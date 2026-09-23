@@ -25,8 +25,9 @@ deployment, pipeline, monitoring và audit đều được lọc theo project.
 - Mỗi token có rate limit, last-used time/IP và audit create/use/revoke.
 - Token project A không thể dùng cho project B; token thiếu scope trả 403.
 
-`PLATFORM_API_TOKEN` là compatibility credential toàn cục cho client cũ. Nên
-chuyển automation sang project token rồi xóa biến này khỏi runtime.
+`PLATFORM_API_TOKEN` là compatibility credential toàn cục cho client cũ và chỉ
+hoạt động khi `ALLOW_LEGACY_API_TOKEN=true`; production mặc định tắt. Nên chuyển
+automation sang project token rồi xóa biến này khỏi runtime.
 
 ## CSRF và webhook
 

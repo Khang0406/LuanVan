@@ -1,5 +1,25 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Hardening sau A.4 (2026-09-23)
+
+- API mutation dùng session bắt buộc CSRF; chỉ Bearer request được miễn.
+- Email verification resend khóa hàng user để chống concurrent token race.
+- Scale kiểm tra replica `0..SCALE_MAX_REPLICAS`, không gọi Kubernetes với dữ
+  liệu sai và không ghi sai desired state khi lỗi một phần.
+- Token môi trường legacy mặc định bị tắt trong production, phải opt-in rõ ràng
+  và mọi lần dùng đều có audit.
+- Audit chuyển từ đọc/upsert toàn bộ lịch sử sang insert một event/transaction;
+  event ID dùng UUID để an toàn giữa nhiều worker.
+- IP audit/token lấy từ `remote_addr` đã qua trusted `ProxyFix`, không tin trực
+  tiếp `X-Forwarded-For` từ client.
+
+```text
+Hardening target: 44 tests OK
+Full regression:  184 tests OK, 6 PostgreSQL tests skipped
+```
+
+Chi tiết: `docs/phase-a4-hardening-review.md`.
+
 ## Phase A.4.3 — API token theo project (2026-09-21)
 
 ### Kết quả triển khai

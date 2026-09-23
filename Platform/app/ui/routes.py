@@ -610,7 +610,23 @@ def application_restart(application_id):
 @login_required
 def application_scale(application_id):
     application = _get_authorized_application(application_id, SERVICE_SCALE)
-    replicas = int(request.form.get("replicas") or 1)
+    raw_replicas = request.form.get("replicas", "").strip()
+    try:
+        replicas = int(raw_replicas)
+    except (TypeError, ValueError):
+        replicas = -1
+    max_replicas = int(current_app.config.get("SCALE_MAX_REPLICAS", 100))
+    if replicas < 0 or replicas > max_replicas:
+        message = f"Replica phải là số nguyên từ 0 đến {max_replicas}."
+        record_audit(
+            "APPLICATION_SCALE",
+            application["id"],
+            "FAILED",
+            message,
+            metadata={"requested_replicas": raw_replicas},
+        )
+        flash(message, "danger")
+        return redirect(url_for("ui.application_detail", application_id=application_id))
     success, output = scale_application(application, replicas)
     record_completed_job("Kubectl", f"Scale application lên {replicas}", application["name"], success, output, command=f"kubectl scale --replicas={replicas}")
     record_audit("APPLICATION_SCALE", application["id"], _result_label(success), output[:500], metadata={"replicas": replicas})

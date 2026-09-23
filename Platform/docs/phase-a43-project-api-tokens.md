@@ -54,9 +54,9 @@ REST API nhận `Authorization: Bearer <token>`. Token sai/hết hạn/thu hồi
 `401`; đúng danh tính nhưng thiếu scope/quyền trả `403`; vượt rate limit trả
 `429 RATE_LIMIT_EXCEEDED` cùng `Retry-After`.
 
-`PLATFORM_API_TOKEN` cũ vẫn hoạt động như Platform Admin để các client hiện hữu
-không bị ngắt. Đây là compatibility credential; sau khi chuyển client sang token
-mới nên xóa biến môi trường này.
+`PLATFORM_API_TOKEN` cũ chỉ hoạt động khi `ALLOW_LEGACY_API_TOKEN=true`.
+Development giữ tương thích, còn production mặc định tắt. Sau khi chuyển client
+sang token mới nên xóa hoàn toàn credential môi trường này.
 
 ## 5. Audit và dữ liệu nhạy cảm
 

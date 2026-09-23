@@ -526,6 +526,8 @@ def restart_application(application: dict[str, Any]) -> tuple[bool, str]:
 
 
 def scale_application(application: dict[str, Any], replicas: int) -> tuple[bool, str]:
+    if not isinstance(replicas, int) or replicas < 0:
+        return False, "Replica phải là số nguyên không âm."
     namespace = application["namespace"]
     outputs: list[str] = []
     all_success = True
@@ -535,7 +537,10 @@ def scale_application(application: dict[str, Any], replicas: int) -> tuple[bool,
         success, output = run_kubectl(["scale", f"deployment/{deployment_name}", f"--replicas={replicas}", "-n", namespace])
         all_success = all_success and success
         outputs.append(output)
-        service["replicas"] = replicas
+        # Persist only the deployments that Kubernetes actually accepted. A
+        # partial failure must not claim every service reached the new size.
+        if success:
+            service["replicas"] = replicas
 
     if all_success:
         add_activity(application, "SCALE", f"Scale application lên {replicas} replicas/service thành công.", "Done")

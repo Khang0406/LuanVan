@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -6,6 +7,7 @@ from flask_login import current_user
 
 from app.config import BASE_DIR
 
+from app.delivery_store import append_audit_log
 from app.delivery_store import list_audit_logs as list_audit_logs_from_db
 from app.delivery_store import migrate_default_json_state, replace_audit_logs
 from app.json_store import is_list_of_dicts, mask_secrets, normalize_status, read_json, write_json
@@ -54,9 +56,6 @@ def record_audit(
     user: Any | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    _ensure_audit_file()
-    logs = load_audit_logs(limit=None)
-
     actor = user if user is not None else (current_user if has_request_context() else None)
     username = "anonymous"
     user_id = None
@@ -90,7 +89,7 @@ def record_audit(
             pass
 
     entry = {
-        "id": f"audit-{datetime.now().strftime('%Y%m%d%H%M%S%f')}",
+        "id": f"audit-{uuid.uuid4().hex}",
         "created_at": _now(),
         "time": _now(),
         "user": username,
@@ -100,11 +99,20 @@ def record_audit(
         "target": target,
         "result": normalize_status(result, result.upper()).upper(),
         "message": mask_secrets(message),
-        "ip": request.headers.get("X-Forwarded-For", request.remote_addr or "") if has_request_context() else "",
+        # ProxyFix has already normalized remote_addr when a trusted proxy is
+        # configured; never trust a client-supplied forwarding header here.
+        "ip": (request.remote_addr or "") if has_request_context() else "",
         "method": request.method if has_request_context() else "",
         "path": request.path if has_request_context() else "",
         "metadata": mask_secrets(safe_metadata),
     }
-    logs.append(entry)
-    save_audit_logs(logs)
-    return entry
+    safe_entry = mask_secrets(entry)
+    if AUDIT_FILE == DEFAULT_AUDIT_FILE:
+        migrate_default_json_state()
+        append_audit_log(safe_entry)
+    else:
+        _ensure_audit_file()
+        logs = load_audit_logs(limit=None)
+        logs.append(safe_entry)
+        save_audit_logs(logs)
+    return safe_entry

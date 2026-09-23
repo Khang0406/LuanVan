@@ -927,6 +927,15 @@ def replace_audit_logs(logs: list[dict[str, Any]], path: Path | None = None) -> 
             _upsert_audit(connection, audit)
 
 
+def append_audit_log(audit: dict[str, Any], path: Path | None = None) -> None:
+    """Persist one audit event without re-reading/upserting the full history."""
+    if _use_postgres(path):
+        return _pg_backend().append_audit_log(audit, path)
+    initialize_schema(path)
+    with _connect(path) as connection:
+        _upsert_audit(connection, audit, insert_only=True)
+
+
 def list_audit_logs(path: Path | None = None) -> list[dict[str, Any]]:
     if _use_postgres(path):
         return _pg_backend().list_audit_logs(path)
