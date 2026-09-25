@@ -185,6 +185,9 @@ def create_project(name: str, description: str, creator: User) -> Project:
                 role=get_role(ROLE_PROJECT_ADMIN),
             )
         )
+        from app.modules.subscriptions.service import assign_initial_subscription
+
+        assign_initial_subscription(project, creator, commit=False)
         db.session.commit()
     except IntegrityError as exc:
         db.session.rollback()

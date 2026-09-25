@@ -31,6 +31,8 @@ class DatabaseMigrationTests(unittest.TestCase):
                 "password_reset_tokens", "projects", "project_memberships",
                 "rbac_roles", "rbac_permissions", "rbac_role_permissions",
                 "api_tokens",
+                "subscription_plans", "project_subscriptions",
+                "subscription_upgrade_requests", "subscription_history",
             } <= tables)
 
     def test_framework_migration_backfills_legacy_identity(self):
@@ -107,6 +109,50 @@ class DatabaseMigrationTests(unittest.TestCase):
             self.assertEqual(
                 [row.role_key for row in memberships], ["project_admin", "developer"]
             )
+
+    def test_subscription_migration_backfills_basic_plan_and_history(self):
+        with TemporaryDirectory() as directory:
+            url = f"sqlite:///{Path(directory) / 'legacy-subscription.db'}"
+            config = self._config(url)
+            with patch.dict(os.environ, {"DATABASE_URL": url}):
+                command.upgrade(config, "0007_project_api_tokens")
+                engine = create_engine(url)
+                with engine.begin() as connection:
+                    connection.execute(text(
+                        "INSERT INTO users "
+                        "(username, password_hash, fs_uniquifier, active, role, status, "
+                        "failed_login_count, status_changed_at) VALUES "
+                        "('plan-owner', 'hash', 'plan-owner-id', 1, 'Developer', "
+                        "'Active', 0, CURRENT_TIMESTAMP)"
+                    ))
+                    owner_id = connection.execute(text(
+                        "SELECT id FROM users WHERE username='plan-owner'"
+                    )).scalar_one()
+                    connection.execute(text(
+                        "INSERT INTO projects (name, slug, description, status, owner_user_id) "
+                        "VALUES ('Plan Project', 'plan-project', '', 'Active', :owner_id)"
+                    ), {"owner_id": owner_id})
+                command.upgrade(config, "head")
+            with create_engine(url).connect() as connection:
+                plans = connection.execute(text(
+                    "SELECT key FROM subscription_plans ORDER BY key"
+                )).scalars().all()
+                subscription = connection.execute(text(
+                    "SELECT p.key, s.effective_limits_json "
+                    "FROM project_subscriptions s "
+                    "JOIN subscription_plans p ON p.id=s.plan_id "
+                    "JOIN projects project ON project.id=s.project_id "
+                    "WHERE project.slug='plan-project'"
+                )).one()
+                history_count = connection.execute(text(
+                    "SELECT COUNT(*) FROM subscription_history h "
+                    "JOIN projects project ON project.id=h.project_id "
+                    "WHERE project.slug='plan-project'"
+                )).scalar_one()
+            self.assertEqual(plans, ["basic", "custom", "pro"])
+            self.assertEqual(subscription.key, "basic")
+            self.assertIn('"max_applications":3', subscription.effective_limits_json)
+            self.assertEqual(history_count, 1)
 
 
 if __name__ == "__main__":

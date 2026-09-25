@@ -75,6 +75,23 @@ EXPECTED_COLUMNS = {
         "rate_limit_per_minute", "rate_window_started_at", "rate_window_count",
         "created_at",
     },
+    "subscription_plans": {
+        "id", "key", "name", "description", "limits_json", "is_system",
+        "is_custom", "active", "created_at", "updated_at",
+    },
+    "project_subscriptions": {
+        "id", "project_id", "plan_id", "effective_limits_json",
+        "assigned_by_user_id", "created_at", "updated_at",
+    },
+    "subscription_upgrade_requests": {
+        "id", "project_id", "requested_plan_id", "requested_limits_json",
+        "reason", "status", "requested_by_user_id", "reviewed_by_user_id",
+        "admin_note", "created_at", "reviewed_at",
+    },
+    "subscription_history": {
+        "id", "project_id", "from_plan_id", "to_plan_id", "from_limits_json",
+        "to_limits_json", "action", "actor_user_id", "request_id", "created_at",
+    },
 }
 
 

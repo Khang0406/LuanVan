@@ -31,6 +31,7 @@
       {% endif %}
       {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="nav-link" href="{{ url_for('admin.user_list') }}">User Management</a>
+      <a class="nav-link" href="{{ url_for('admin.subscription_requests') }}">Subscriptions</a>
       {% endif %}
     </nav>
   </aside>

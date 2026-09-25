@@ -1,5 +1,44 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.5.1 — Subscription Plan (2026-09-25)
+
+### Kết quả triển khai
+
+- Thêm catalog Basic, Pro/VIP, Custom với limits application, service, replica,
+  CPU request/limit, memory request/limit, Ingress, PVC và storage.
+- Mỗi project có đúng một subscription và một snapshot effective limits; project
+  hiện hữu/mới tự nhận Basic.
+- Project Admin gửi yêu cầu Pro/Custom với lý do; member thường chỉ xem. Chặn
+  nhiều request Pending cho cùng project và cô lập request giữa các tenant.
+- Platform Admin approve/reject hoặc gán trực tiếp. Reject bắt buộc ghi lý do;
+  gán trực tiếp hủy request Pending để không còn trạng thái mâu thuẫn.
+- Mọi thay đổi plan/quota tạo history snapshot cũ/mới và audit có project ID.
+- REST API đọc plan/limits theo cùng tenant boundary với Web và API token.
+
+### Migration
+
+- Revision `0008_subscription_plans` tạo bốn bảng subscription, seed ba plan,
+  backfill Basic và `INITIAL_ASSIGNMENT` cho project hiện hữu.
+- Schema checker và migration test đã được mở rộng cho revision mới.
+
+### Kiểm thử local
+
+- Test trọng tâm subscription, migration, REST API và API token: **33/33 OK**.
+- Full regression: **191 tests OK**, 6 PostgreSQL integration tests được skip
+  đúng thiết kế khi chưa cấu hình database có hậu tố `_test`.
+- Migration đã qua chu trình upgrade → downgrade → upgrade.
+- Database SQLite mới dựng được đến revision `0008_subscription_plans`;
+  `manage_database.py check` và `alembic check` đều xác nhận schema đồng bộ.
+- `compileall`, `pip check` và `git diff --check` đều đạt.
+
+### Chưa thuộc A.5.1
+
+- Chưa tính usage hiện tại.
+- Chưa chặn create/deploy/scale bằng `QUOTA_EXCEEDED`.
+- Chưa sinh Kubernetes `ResourceQuota`/`LimitRange`.
+
+Tài liệu chi tiết: `docs/phase-a51-subscription-plans.md`.
+
 ## Hardening sau A.4 (2026-09-23)
 
 - API mutation dùng session bắt buộc CSRF; chỉ Bearer request được miễn.

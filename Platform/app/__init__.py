@@ -130,6 +130,8 @@ def create_app(config_class=Config):
         ensure_rbac_catalog()
         from .modules.projects.service import ensure_default_project
         ensure_default_project()
+        from .modules.subscriptions.service import ensure_subscription_catalog
+        ensure_subscription_catalog()
 
     @app.context_processor
     def project_navigation():

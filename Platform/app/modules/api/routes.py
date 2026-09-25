@@ -243,6 +243,36 @@ def api_projects():
     ])
 
 
+@api_bp.get("/projects/<int:project_id>/subscription")
+def api_project_subscription(project_id: int):
+    _require_auth()
+    from app.models import Project
+    from app.modules.projects.service import can_access_project
+    from app.modules.subscriptions.service import (
+        get_project_subscription,
+        subscription_limits,
+    )
+
+    principal = _principal()
+    if not can_access_project(principal, project_id):
+        return _error("NOT_FOUND", "Project không tồn tại.", 404)
+    project = Project.query.filter_by(id=project_id, status=Project.STATUS_ACTIVE).first()
+    if project is None:
+        return _error("NOT_FOUND", "Project không tồn tại.", 404)
+    subscription = get_project_subscription(project)
+    return _ok({
+        "project_id": project.id,
+        "plan": {
+            "key": subscription.plan.key,
+            "name": subscription.plan.name,
+        },
+        "limits": subscription_limits(subscription),
+        "updated_at": (
+            subscription.updated_at.isoformat() if subscription.updated_at else None
+        ),
+    })
+
+
 # ---------------------------------------------------------------------------
 # applications
 # ---------------------------------------------------------------------------

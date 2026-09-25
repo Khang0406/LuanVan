@@ -8,6 +8,7 @@ from app.modules.auth.routes import role_required
 from app.modules.authorization.service import (
     MEMBER_MANAGE,
     PERMISSIONS,
+    PROJECT_MANAGE,
     has_permission,
     permission_keys,
     role_options,
@@ -96,6 +97,77 @@ def project_detail(project_id: int):
         project=project,
         can_manage=can_manage_project(current_user, project),
         roles=role_options(),
+    )
+
+
+@projects_bp.route("/<int:project_id>/subscription", methods=["GET", "POST"])
+@login_required
+def project_subscription(project_id: int):
+    project = get_accessible_project(current_user, project_id)
+    if not project:
+        abort(404)
+    from app.modules.subscriptions.service import (
+        LIMIT_FIELDS,
+        SubscriptionError,
+        decode_limits,
+        get_project_subscription,
+        list_plans,
+        list_project_requests,
+        list_subscription_history,
+        plan_limits,
+        submit_upgrade_request,
+        subscription_limits,
+    )
+
+    can_request = has_permission(current_user, PROJECT_MANAGE, project.id)
+    if request.method == "POST":
+        if not can_request:
+            abort(403)
+        try:
+            item = submit_upgrade_request(
+                project,
+                current_user,
+                request.form.get("plan", ""),
+                request.form.get("reason", ""),
+                request.form,
+            )
+        except SubscriptionError as exc:
+            record_audit(
+                "SUBSCRIPTION_REQUEST_CREATE",
+                project.slug,
+                "FAILED",
+                str(exc),
+                metadata={"project_id": project.id},
+            )
+            flash(str(exc), "danger")
+        else:
+            record_audit(
+                "SUBSCRIPTION_REQUEST_CREATE",
+                str(item.id),
+                "SUCCESS",
+                f"Đã gửi yêu cầu gói {item.requested_plan.name}.",
+                metadata={
+                    "project_id": project.id,
+                    "request_id": item.id,
+                    "requested_plan": item.requested_plan.key,
+                },
+            )
+            flash("Đã gửi yêu cầu thay đổi gói để Platform Admin xem xét.", "success")
+            return redirect(url_for("projects.project_subscription", project_id=project.id))
+
+    subscription = get_project_subscription(project)
+    return render_template(
+        "projects/subscription.html",
+        project=project,
+        subscription=subscription,
+        current_limits=subscription_limits(subscription),
+        plans=list_plans(),
+        plan_limits=plan_limits,
+        decode_limits=decode_limits,
+        limit_fields=LIMIT_FIELDS,
+        requests=list_project_requests(project.id),
+        history=list_subscription_history(project.id),
+        can_request=can_request,
     )
 
 

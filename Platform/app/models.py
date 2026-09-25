@@ -242,6 +242,25 @@ class Project(db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    subscription = db.relationship(
+        "ProjectSubscription",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        uselist=False,
+    )
+    subscription_requests = db.relationship(
+        "SubscriptionUpgradeRequest",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    subscription_history = db.relationship(
+        "SubscriptionHistory",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     @validates("status")
     def validate_status(self, _key: str, status: str) -> str:
@@ -383,3 +402,143 @@ class ApiToken(db.Model):
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         return expires_at <= datetime.now(timezone.utc)
+
+
+class SubscriptionPlan(db.Model):
+    __tablename__ = "subscription_plans"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(40), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+    description = db.Column(db.String(255), nullable=False, default="")
+    limits_json = db.Column(db.Text, nullable=False, default="{}")
+    is_system = db.Column(db.Boolean, nullable=False, default=True)
+    is_custom = db.Column(db.Boolean, nullable=False, default=False)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class ProjectSubscription(db.Model):
+    __tablename__ = "project_subscriptions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(
+        db.Integer, db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False, unique=True, index=True,
+    )
+    plan_id = db.Column(
+        db.Integer, db.ForeignKey("subscription_plans.id", ondelete="RESTRICT"),
+        nullable=False, index=True,
+    )
+    effective_limits_json = db.Column(db.Text, nullable=False, default="{}")
+    assigned_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    project = db.relationship("Project", back_populates="subscription")
+    plan = db.relationship("SubscriptionPlan", lazy="joined")
+    assigned_by = db.relationship("User", foreign_keys=[assigned_by_user_id])
+
+
+class SubscriptionUpgradeRequest(db.Model):
+    __tablename__ = "subscription_upgrade_requests"
+
+    STATUS_PENDING = "Pending"
+    STATUS_APPROVED = "Approved"
+    STATUS_REJECTED = "Rejected"
+    STATUS_CANCELLED = "Cancelled"
+    VALID_STATUSES = {
+        STATUS_PENDING, STATUS_APPROVED, STATUS_REJECTED, STATUS_CANCELLED,
+    }
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(
+        db.Integer, db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    requested_plan_id = db.Column(
+        db.Integer, db.ForeignKey("subscription_plans.id", ondelete="RESTRICT"),
+        nullable=False, index=True,
+    )
+    requested_limits_json = db.Column(db.Text, nullable=False, default="{}")
+    reason = db.Column(db.String(1000), nullable=False, default="")
+    status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING, index=True)
+    requested_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
+    )
+    reviewed_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
+    )
+    admin_note = db.Column(db.String(1000), nullable=False, default="")
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc), index=True,
+    )
+    reviewed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    project = db.relationship("Project", back_populates="subscription_requests")
+    requested_plan = db.relationship("SubscriptionPlan", lazy="joined")
+    requested_by = db.relationship("User", foreign_keys=[requested_by_user_id])
+    reviewed_by = db.relationship("User", foreign_keys=[reviewed_by_user_id])
+
+    @validates("status")
+    def validate_status(self, _key: str, status: str) -> str:
+        if status not in self.VALID_STATUSES:
+            raise ValueError(f"Trạng thái yêu cầu gói không hợp lệ: {status}")
+        return status
+
+
+class SubscriptionHistory(db.Model):
+    __tablename__ = "subscription_history"
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(
+        db.Integer, db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    from_plan_id = db.Column(
+        db.Integer, db.ForeignKey("subscription_plans.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    to_plan_id = db.Column(
+        db.Integer, db.ForeignKey("subscription_plans.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    from_limits_json = db.Column(db.Text, nullable=False, default="{}")
+    to_limits_json = db.Column(db.Text, nullable=False, default="{}")
+    action = db.Column(db.String(40), nullable=False)
+    actor_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True,
+    )
+    request_id = db.Column(
+        db.Integer,
+        db.ForeignKey("subscription_upgrade_requests.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc), index=True,
+    )
+
+    project = db.relationship("Project", back_populates="subscription_history")
+    from_plan = db.relationship("SubscriptionPlan", foreign_keys=[from_plan_id])
+    to_plan = db.relationship("SubscriptionPlan", foreign_keys=[to_plan_id])
+    actor = db.relationship("User", foreign_keys=[actor_user_id])
+    request = db.relationship("SubscriptionUpgradeRequest", foreign_keys=[request_id])
