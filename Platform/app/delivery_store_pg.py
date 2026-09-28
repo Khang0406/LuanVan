@@ -266,7 +266,7 @@ def check_database(path: Path | None = None) -> None:
 # ---------------------------------------------------------------------------
 
 def _upsert_application(conn, application: dict[str, Any], *, insert_only: bool = False) -> int:
-    conflict = "DO NOTHING" if insert_only else """DO UPDATE SET
+    conflict = "ON CONFLICT DO NOTHING" if insert_only else """ON CONFLICT (id) DO UPDATE SET
         project_id=EXCLUDED.project_id, name=EXCLUDED.name, owner=EXCLUDED.owner, user_id=EXCLUDED.user_id,
         namespace=EXCLUDED.namespace, source_type=EXCLUDED.source_type,
         repository_url=EXCLUDED.repository_url, default_branch=EXCLUDED.default_branch,
@@ -284,7 +284,7 @@ def _upsert_application(conn, application: dict[str, Any], *, insert_only: bool 
             :default_branch, :requested_ref, :build_context, :dockerfile_path,
             :current_deployment_id, :status, :url, :created_at, :updated_at,
             CAST(:payload AS JSONB))
-        ON CONFLICT (id) {conflict}"""),
+        {conflict}"""),
         {
             "id": application["id"],
             "project_id": application.get("project_id", 1),
@@ -623,6 +623,27 @@ def replace_applications(applications: list[dict[str, Any]], path: Path | None =
             )
             for service in application.get("services", []):
                 _upsert_service(conn, application["id"], service)
+
+
+def upsert_application_record(
+    application: dict[str, Any],
+    path: Path | None = None,
+    *,
+    insert_only: bool = False,
+) -> bool:
+    """Persist one application atomically without touching other tenants."""
+    initialize_schema(path)
+    with _engine().begin() as conn:
+        changed = _upsert_application(conn, application, insert_only=insert_only)
+        if insert_only and not changed:
+            return False
+        conn.execute(
+            text("DELETE FROM application_services WHERE application_id = :id"),
+            {"id": application["id"]},
+        )
+        for service in application.get("services", []):
+            _upsert_service(conn, application["id"], service)
+    return True
 
 
 def list_applications(path: Path | None = None) -> list[dict[str, Any]]:

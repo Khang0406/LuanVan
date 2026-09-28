@@ -450,7 +450,7 @@ def migrate_default_json_state(path: Path | None = None) -> dict[str, int]:
 def _upsert_application(
     connection: sqlite3.Connection, application: dict[str, Any], *, insert_only: bool = False
 ) -> int:
-    conflict = "DO NOTHING" if insert_only else """DO UPDATE SET
+    conflict = "ON CONFLICT DO NOTHING" if insert_only else """ON CONFLICT(id) DO UPDATE SET
         project_id=excluded.project_id, name=excluded.name, owner=excluded.owner, user_id=excluded.user_id,
         namespace=excluded.namespace, source_type=excluded.source_type,
         repository_url=excluded.repository_url, default_branch=excluded.default_branch,
@@ -465,7 +465,7 @@ def _upsert_application(
             default_branch, requested_ref, build_context, dockerfile_path,
             current_deployment_id, status, url, created_at, updated_at, payload
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) {conflict}""",
+        {conflict}""",
         (
             application["id"], application.get("project_id", 1),
             application.get("name", application["id"]),
@@ -522,6 +522,33 @@ def replace_applications(applications: list[dict[str, Any]], path: Path | None =
             )
             for service in application.get("services", []):
                 _upsert_service(connection, application["id"], service)
+
+
+def upsert_application_record(
+    application: dict[str, Any],
+    path: Path | None = None,
+    *,
+    insert_only: bool = False,
+) -> bool:
+    """Persist one application without replacing unrelated application rows."""
+    if _use_postgres(path):
+        return _pg_backend().upsert_application_record(
+            application, path, insert_only=insert_only
+        )
+    initialize_schema(path)
+    with _connect(path) as connection:
+        changed = _upsert_application(
+            connection, application, insert_only=insert_only
+        )
+        if insert_only and not changed:
+            return False
+        connection.execute(
+            "DELETE FROM application_services WHERE application_id = ?",
+            (application["id"],),
+        )
+        for service in application.get("services", []):
+            _upsert_service(connection, application["id"], service)
+    return True
 
 
 def list_applications(path: Path | None = None) -> list[dict[str, Any]]:

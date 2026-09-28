@@ -85,6 +85,11 @@ from app.modules.authorization.service import (
     has_permission,
 )
 from app.modules.projects.service import get_active_project
+from app.modules.quotas.service import (
+    QuotaConfigurationError,
+    QuotaExceeded,
+    validate_scale,
+)
 from app.modules.audit.service import load_audit_logs, record_audit
 from app.modules.jobs.service import load_accessible_jobs, pipeline_run_to_job, record_completed_job
 from app.registry_credentials import (
@@ -406,6 +411,16 @@ def application_form():
 
         try:
             application = create_application(request.form, current_user, project.id)
+        except QuotaExceeded as exc:
+            record_audit(
+                "APPLICATION_CREATE",
+                request.form.get("name", ""),
+                "FAILED",
+                str(exc),
+                metadata=exc.details,
+            )
+            flash(str(exc), "danger")
+            return render_template("applications/form.html", form=request.form), 409
         except ValueError as exc:
             record_audit("APPLICATION_CREATE", request.form.get("name", ""), "FAILED", str(exc))
             flash(str(exc), "danger")
@@ -503,6 +518,15 @@ def application_deploy(application_id):
             "deployment chỉ được cập nhật sau VERIFY.",
             "info",
         )
+    except QuotaExceeded as exc:
+        record_audit(
+            "APPLICATION_DEPLOY",
+            application["id"],
+            "FAILED",
+            str(exc),
+            metadata=exc.details,
+        )
+        flash(str(exc), "danger")
     except Exception as exc:
         record_audit("APPLICATION_DEPLOY", application["id"], "FAILED", str(exc))
         flash(f"Không thể khởi động deploy pipeline: {exc}", "danger")
@@ -627,7 +651,43 @@ def application_scale(application_id):
         )
         flash(message, "danger")
         return redirect(url_for("ui.application_detail", application_id=application_id))
-    success, output = scale_application(application, replicas)
+    try:
+        validate_scale(application, replicas)
+        success, output = scale_application(application, replicas)
+        from app.db import db
+
+        db.session.commit()
+    except QuotaExceeded as exc:
+        from app.db import db
+
+        db.session.rollback()
+        record_audit(
+            "APPLICATION_SCALE",
+            application["id"],
+            "FAILED",
+            str(exc),
+            metadata={**exc.details, "requested_replicas": replicas},
+        )
+        flash(str(exc), "danger")
+        return redirect(url_for("ui.application_detail", application_id=application_id))
+    except QuotaConfigurationError as exc:
+        from app.db import db
+
+        db.session.rollback()
+        record_audit(
+            "APPLICATION_SCALE",
+            application["id"],
+            "FAILED",
+            str(exc),
+            metadata={"requested_replicas": replicas},
+        )
+        flash(str(exc), "danger")
+        return redirect(url_for("ui.application_detail", application_id=application_id))
+    except Exception:
+        from app.db import db
+
+        db.session.rollback()
+        raise
     record_completed_job("Kubectl", f"Scale application lên {replicas}", application["name"], success, output, command=f"kubectl scale --replicas={replicas}")
     record_audit("APPLICATION_SCALE", application["id"], _result_label(success), output[:500], metadata={"replicas": replicas})
     flash(("Scale thành công. " if success else "Scale thất bại. ") + output, "success" if success else "danger")
@@ -682,6 +742,15 @@ def application_pipeline_trigger(application_id):
             "Worker sẽ tự nhận task.",
             "info",
         )
+    except QuotaExceeded as exc:
+        record_audit(
+            "PIPELINE_TRIGGER",
+            application["id"],
+            "FAILED",
+            str(exc),
+            metadata=exc.details,
+        )
+        flash(str(exc), "danger")
     except Exception as exc:
         record_audit("PIPELINE_TRIGGER", application["id"], "FAILED", str(exc))
         flash(f"Không thể khởi động pipeline: {exc}", "danger")
@@ -734,6 +803,15 @@ def application_pipeline_retry(application_id, pipeline_run_id):
             f"Retry {pipeline_run_id} as {run['id']}.",
         )
         flash(f"Đã retry pipeline dưới run mới {run['id']}.", "info")
+    except QuotaExceeded as exc:
+        record_audit(
+            "PIPELINE_RETRY",
+            application["id"],
+            "FAILED",
+            str(exc),
+            metadata=exc.details,
+        )
+        flash(str(exc), "danger")
     except ValueError as exc:
         record_audit("PIPELINE_RETRY", application["id"], "FAILED", str(exc))
         flash(str(exc), "danger")

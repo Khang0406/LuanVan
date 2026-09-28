@@ -1,5 +1,44 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.5.2 — Usage Calculator và Quota Validation (2026-09-25)
+
+### Kết quả triển khai
+
+- Tính usage theo project cho application, service/database, replica, CPU,
+  memory, Ingress, PVC và storage.
+- Chuẩn hóa Kubernetes CPU về millicore, memory/storage về MiB và từ chối
+  quantity sai hoặc request lớn hơn limit.
+- Chặn create trước khi lưu application/credential/secret nếu projected usage
+  vượt plan.
+- Chặn pipeline từ Web, REST API và GitHub webhook; worker kiểm tra lại ngay
+  trước khi xóa workload cũ và deploy.
+- Scale-up kiểm tra tổng quota và max replica của từng service. Scale-down luôn
+  được phép khi giải phóng tài nguyên.
+- Mutation cùng project dùng project row lock để tránh hai request đồng thời
+  cùng tiêu thụ phần quota còn lại trên PostgreSQL.
+- Persistence application chuyển sang atomic single-record upsert; update/scale
+  một tenant không còn replace toàn bộ danh sách application của tenant khác.
+- Lỗi `QUOTA_EXCEEDED` trả `used`, `requested`, `projected`, `limit`, plan và
+  project; Web/audit dùng cùng details.
+- Trang subscription và API hiển thị usage hiện tại bên cạnh limit.
+
+### Kiểm thử local
+
+- Acceptance A.5.2: **10/10 OK**.
+- Regression liên quan quota, storage, pipeline, webhook, REST API và RBAC:
+  **56/56 OK** ở lượt kiểm tra trọng tâm.
+- Full regression: **201 tests OK**, 6 PostgreSQL integration tests được skip
+  đúng thiết kế khi chưa cấu hình database có hậu tố `_test`.
+- `compileall`, `pip check` và `git diff --check` đều đạt.
+
+### Chưa thuộc A.5.2
+
+- Chưa sinh Kubernetes `ResourceQuota` và `LimitRange`.
+- Chưa có drift reconciliation giữa database và Kubernetes.
+- Chưa có dashboard phần trăm/cảnh báo 70%, 85%, 100%.
+
+Tài liệu chi tiết: `docs/phase-a52-quota-validation.md`.
+
 ## Phase A.5.1 — Subscription Plan (2026-09-25)
 
 ### Kết quả triển khai

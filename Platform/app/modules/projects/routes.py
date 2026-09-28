@@ -156,11 +156,14 @@ def project_subscription(project_id: int):
             return redirect(url_for("projects.project_subscription", project_id=project.id))
 
     subscription = get_project_subscription(project)
+    from app.modules.quotas.service import calculate_project_usage
+
     return render_template(
         "projects/subscription.html",
         project=project,
         subscription=subscription,
         current_limits=subscription_limits(subscription),
+        current_usage=calculate_project_usage(project.id),
         plans=list_plans(),
         plan_limits=plan_limits,
         decode_limits=decode_limits,

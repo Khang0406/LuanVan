@@ -486,6 +486,35 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
             add_activity(application, "PIPELINE", f"Sử dụng image public {public_image} (development fallback)", "Done")
 
     # === STAGE 5: DEPLOY ======================================================
+    # Re-check immediately before the destructive delete/apply sequence. The
+    # plan or another application's desired usage may have changed while this
+    # run was waiting/building in the queue.
+    try:
+        from app.db import db
+        from app.modules.quotas.service import validate_deployment
+
+        validate_deployment(application)
+        db.session.commit()
+    except Exception as exc:
+        from app.db import db
+        from app.modules.quotas.service import QuotaExceeded
+
+        db.session.rollback()
+        if isinstance(exc, QuotaExceeded):
+            message = f"{exc.code}: {exc}"
+            record_audit(
+                "QUOTA_DEPLOY_DENIED",
+                application["id"],
+                "FAILED",
+                str(exc),
+                metadata=exc.details,
+            )
+        else:
+            message = f"Không thể xác minh quota trước deploy: {exc}"
+        _update_stage(pipeline_run, "DEPLOY", "Failed", message)
+        _stop_failed_pipeline(pipeline_run, "DEPLOY", application)
+        return
+
     # Xoá workloads cũ trước khi deploy mới để tránh conflict resource
     _update_stage(pipeline_run, "DEPLOY", "Running", "Deleting old workloads before redeploy...")
     delete_success, delete_output = delete_application_workloads(application)
@@ -604,7 +633,7 @@ def _run_pipeline_safely(pipeline_run: dict[str, Any]) -> None:
             _finish_pipeline_job(pipeline_run)
 
 
-def trigger_pipeline(
+def _trigger_pipeline_after_quota(
     application_id: str,
     actor: Any | None = None,
     *,
@@ -681,6 +710,49 @@ def trigger_pipeline(
     save_application(application)
 
     return pipeline_run
+
+
+def trigger_pipeline(
+    application_id: str,
+    actor: Any | None = None,
+    *,
+    trigger_type: str = "Manual",
+    requested_ref: str = "",
+    commit_author: str = "",
+    commit_message: str = "",
+) -> dict[str, Any]:
+    """Validate project quota and atomically reserve a pipeline run.
+
+    The project row lock serializes this check with application creation,
+    scaling and subscription changes. The worker performs the same validation
+    again immediately before touching Kubernetes.
+    """
+    application = find_application(application_id)
+    has_project = bool(application and application.get("project_id") is not None)
+    try:
+        if application:
+            from app.modules.quotas.service import validate_deployment
+
+            validate_deployment(application)
+        pipeline_run = _trigger_pipeline_after_quota(
+            application_id,
+            actor=actor,
+            trigger_type=trigger_type,
+            requested_ref=requested_ref,
+            commit_author=commit_author,
+            commit_message=commit_message,
+        )
+        if has_project:
+            from app.db import db
+
+            db.session.commit()
+        return pipeline_run
+    except Exception:
+        if has_project:
+            from app.db import db
+
+            db.session.rollback()
+        raise
 
 
 def get_latest_pipeline_run(application_id: str) -> dict[str, Any] | None:

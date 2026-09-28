@@ -10,7 +10,7 @@
   <div class="d-flex justify-content-between"><div><h4>{{ subscription.plan.name }}</h4><p class="text-muted">{{ subscription.plan.description }}</p></div><span class="badge bg-success align-self-start">Đang sử dụng</span></div>
   <div class="row g-3">
     {% for key, label in limit_fields.items() %}
-    <div class="col-md-4"><div class="border rounded p-3"><div class="small text-muted">{{ label }}</div><strong>{{ current_limits.get(key, 0) }}</strong></div></div>
+    <div class="col-md-4"><div class="border rounded p-3"><div class="small text-muted">{{ label }}</div><strong>{{ current_usage.get(key, 0) }} / {{ current_limits.get(key, 0) }}</strong><div class="small text-muted">Đang dùng / giới hạn</div></div></div>
     {% endfor %}
   </div>
 </div></div>

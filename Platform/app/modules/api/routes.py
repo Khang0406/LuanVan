@@ -260,6 +260,8 @@ def api_project_subscription(project_id: int):
     if project is None:
         return _error("NOT_FOUND", "Project không tồn tại.", 404)
     subscription = get_project_subscription(project)
+    from app.modules.quotas.service import calculate_project_usage
+
     return _ok({
         "project_id": project.id,
         "plan": {
@@ -267,6 +269,7 @@ def api_project_subscription(project_id: int):
             "name": subscription.plan.name,
         },
         "limits": subscription_limits(subscription),
+        "usage": calculate_project_usage(project.id),
         "updated_at": (
             subscription.updated_at.isoformat() if subscription.updated_at else None
         ),
@@ -334,8 +337,14 @@ def api_trigger_pipeline(application_id):
         return _error("FORBIDDEN", "Thiếu permission deployment:execute.", 403)
     try:
         run = trigger_pipeline(application_id, actor=principal)
-    except ValueError as exc:
-        return _error("PIPELINE_CONFLICT", str(exc), 409)
+    except Exception as exc:
+        from app.modules.quotas.service import QuotaExceeded
+
+        if isinstance(exc, QuotaExceeded):
+            return _error(exc.code, str(exc), 409, exc.details)
+        if isinstance(exc, ValueError):
+            return _error("PIPELINE_CONFLICT", str(exc), 409)
+        raise
     return _ok(run, 202)
 
 

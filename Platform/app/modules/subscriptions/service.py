@@ -257,6 +257,9 @@ def _apply_plan(
     action: str,
     request_id: int | None = None,
 ) -> ProjectSubscription:
+    # Use the same project row lock as quota validation so a plan change cannot
+    # race a create/deploy/scale decision for the same tenant.
+    Project.query.filter_by(id=project.id).with_for_update().one()
     subscription = (
         ProjectSubscription.query.filter_by(project_id=project.id)
         .with_for_update()

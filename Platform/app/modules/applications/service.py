@@ -6,7 +6,11 @@ from typing import Any
 
 from app.config import BASE_DIR
 from app.delivery_store import list_applications as list_applications_from_db
-from app.delivery_store import migrate_default_json_state, replace_applications
+from app.delivery_store import (
+    migrate_default_json_state,
+    replace_applications,
+    upsert_application_record,
+)
 from app.json_store import is_list_of_dicts, mask_secrets, read_json, write_json
 from app.registry_credentials import save_registry_credential
 from app.webhook_secrets import save_webhook_secret
@@ -163,15 +167,9 @@ def find_accessible_application(
 
 
 def save_application(updated_application: dict[str, Any]) -> None:
-    applications = load_applications()
-    for index, application in enumerate(applications):
-        if application["id"] == updated_application["id"]:
-            updated_application["updated_at"] = _now()
-            applications[index] = updated_application
-            break
-    else:
-        applications.append(updated_application)
-    save_applications(applications)
+    updated_application["updated_at"] = _now()
+    migrate_default_json_state()
+    upsert_application_record(updated_application)
 
 
 def parse_env_map(raw_data: str) -> dict[str, str]:
@@ -359,10 +357,6 @@ def create_application(
             "username": registry_username,
             "inherit_platform": False,
         }
-        if registry_password:
-            registry["credential_ref"] = save_registry_credential(
-                f"user:{user.id}", registry_username, registry_password, registry_url or "docker.io"
-            )
 
     applications = load_applications()
     if any(app.get("id") == application_id for app in applications):
@@ -399,32 +393,95 @@ def create_application(
         "activity_logs": [],
     }
 
-    secret_keys_raw = form.get("secret_keys", "").strip()
-    secret_values_raw = form.get("secret_values", "").strip()
-    if secret_keys_raw and secret_values_raw:
-        from app.secret_store import save_secret
-        keys_list = [k.strip() for k in secret_keys_raw.split(",") if k.strip()]
-        vals_list = [v.strip() for v in secret_values_raw.split(",") if v.strip()]
-        for i, key in enumerate(keys_list):
-            val = vals_list[i] if i < len(vals_list) else ""
-            if key and val:
-                save_secret(application_id, key, val)
-                application["secrets"].append(key)
-    webhook_secret = form.get("webhook_secret", "").strip()
-    if source_type == "github" and webhook_secret:
-        application["webhook_secret_ref"] = save_webhook_secret(application_id, webhook_secret)
+    # Quota validation deliberately runs before writing credentials/secrets.
+    # The locked project row remains locked until the application is persisted,
+    # preventing two concurrent creates from both observing the same free quota
+    # on PostgreSQL.
+    try:
+        if project_id is not None:
+            from app.modules.quotas.service import validate_application_creation
 
-    if source_type == "github":
-        add_activity(application, "CREATE", f"Tạo application từ GitHub repository {github_url}.", "Ready")
-        if registry:
-            add_activity(application, "CONFIG", f"Đã cấu hình Docker registry {registry.get('url', 'docker.io')} cho build/push.", "Done")
-        add_activity(application, "PIPELINE", "Chờ build Docker image từ GitHub source.", "Pending")
-    else:
-        add_activity(application, "CREATE", f"Tạo application từ Docker image {image}.", "Ready")
+            validate_application_creation(int(project_id), application)
 
-    applications.append(application)
-    save_applications(applications)
-    return application
+        # The first lookup happened before the project lock. Reload after the
+        # lock so a request that waited for another create cannot overwrite the
+        # application list using a stale snapshot.
+        applications = load_applications()
+        if any(app.get("id") == application_id for app in applications):
+            raise ValueError(f"Application '{application_id}' đã tồn tại.")
+        if any(app.get("namespace") == namespace for app in applications):
+            raise ValueError(
+                f"Namespace '{namespace}' đã được application khác sử dụng."
+            )
+
+        if registry_password:
+            registry["credential_ref"] = save_registry_credential(
+                f"user:{user.id}",
+                registry_username,
+                registry_password,
+                registry_url or "docker.io",
+            )
+
+        secret_keys_raw = form.get("secret_keys", "").strip()
+        secret_values_raw = form.get("secret_values", "").strip()
+        if secret_keys_raw and secret_values_raw:
+            from app.secret_store import save_secret
+            keys_list = [k.strip() for k in secret_keys_raw.split(",") if k.strip()]
+            vals_list = [v.strip() for v in secret_values_raw.split(",") if v.strip()]
+            for i, key in enumerate(keys_list):
+                val = vals_list[i] if i < len(vals_list) else ""
+                if key and val:
+                    save_secret(application_id, key, val)
+                    application["secrets"].append(key)
+        webhook_secret = form.get("webhook_secret", "").strip()
+        if source_type == "github" and webhook_secret:
+            application["webhook_secret_ref"] = save_webhook_secret(
+                application_id, webhook_secret
+            )
+
+        if source_type == "github":
+            add_activity(
+                application,
+                "CREATE",
+                f"Tạo application từ GitHub repository {github_url}.",
+                "Ready",
+            )
+            if registry:
+                add_activity(
+                    application,
+                    "CONFIG",
+                    f"Đã cấu hình Docker registry {registry.get('url', 'docker.io')} cho build/push.",
+                    "Done",
+                )
+            add_activity(
+                application,
+                "PIPELINE",
+                "Chờ build Docker image từ GitHub source.",
+                "Pending",
+            )
+        else:
+            add_activity(
+                application,
+                "CREATE",
+                f"Tạo application từ Docker image {image}.",
+                "Ready",
+            )
+
+        if not upsert_application_record(application, insert_only=True):
+            raise ValueError(
+                f"Application '{application_id}' hoặc namespace '{namespace}' đã tồn tại."
+            )
+        if project_id is not None:
+            from app.db import db
+
+            db.session.commit()
+        return application
+    except Exception:
+        if project_id is not None:
+            from app.db import db
+
+            db.session.rollback()
+        raise
 
 
 def build_pipeline_steps(application: dict[str, Any]) -> list[dict[str, str]]:

@@ -80,10 +80,25 @@ def receive(application_id: str):
             commit_message=message,
         )
     except ValueError as exc:
+        from app.modules.quotas.service import QuotaExceeded
+
         record_audit(
             "GITHUB_WEBHOOK", application_id, "FAILED", str(exc), user="github",
-            metadata={"delivery_id": delivery_id, "commit_sha": commit_sha},
+            metadata={
+                "delivery_id": delivery_id,
+                "commit_sha": commit_sha,
+                **(exc.details if isinstance(exc, QuotaExceeded) else {}),
+            },
         )
+        if isinstance(exc, QuotaExceeded):
+            return jsonify({
+                "data": None,
+                "error": {
+                    "code": exc.code,
+                    "message": str(exc),
+                    "details": exc.details,
+                },
+            }), 409
         return jsonify({"error": str(exc), "delivery_id": delivery_id}), 409
 
     add_activity(
