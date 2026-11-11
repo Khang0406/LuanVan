@@ -12,6 +12,25 @@ from app.modules.auth.service import clear_login_failures, revoke_user_sessions
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
+def _sync_project_quota_after_plan_change(project):
+    from app.modules.quotas.kubernetes import (
+        quota_sync_enabled,
+        sync_project_quota,
+    )
+
+    if not quota_sync_enabled():
+        return None
+    result = sync_project_quota(project)
+    record_audit(
+        "KUBERNETES_QUOTA_SYNC",
+        project.slug,
+        "SUCCESS" if result["status"] == "Synced" else "FAILED",
+        result["message"],
+        metadata={"project_id": project.id, "status": result["status"]},
+    )
+    return result
+
+
 @admin_bp.route("/users")
 @login_required
 @role_required("Admin")
@@ -111,6 +130,10 @@ def subscription_request_review(request_id: int):
             },
         )
         flash(f"Đã cập nhật yêu cầu thành {item.status}.", "success")
+        if item.status == SubscriptionUpgradeRequest.STATUS_APPROVED:
+            sync_result = _sync_project_quota_after_plan_change(item.project)
+            if sync_result and sync_result["status"] != "Synced":
+                flash(sync_result["message"], "warning")
     return redirect(url_for("admin.subscription_requests"))
 
 
@@ -161,4 +184,7 @@ def subscription_assign():
             },
         )
         flash(f"Đã gán gói {subscription.plan.name} cho {project.name}.", "success")
+        sync_result = _sync_project_quota_after_plan_change(project)
+        if sync_result and sync_result["status"] != "Synced":
+            flash(sync_result["message"], "warning")
     return redirect(url_for("admin.subscription_requests"))

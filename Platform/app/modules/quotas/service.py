@@ -206,10 +206,20 @@ def calculate_application_usage(
         replicas = _non_negative_int(
             database.get("replicas"), f"Replicas database {index + 1}", 1
         )
-        usage["max_services"] += 1
-        usage["max_replicas"] += replicas
-        # Current database manifests do not declare CPU/RAM resources yet. A.5.3
-        # will make those requests/limits mandatory at Kubernetes level.
+        _add_usage(usage, _service_usage(database, replicas))
+        init_job = database.get("init_job")
+        if isinstance(init_job, Mapping):
+            init_usage = _service_usage({
+                "cpu_request": init_job.get("cpu_request", "50m"),
+                "cpu_limit": init_job.get("cpu_limit", "100m"),
+                "memory_request": init_job.get("memory_request", "64Mi"),
+                "memory_limit": init_job.get("memory_limit", "128Mi"),
+                "public": False,
+            }, 1)
+            # An init Job consumes a pod/resources temporarily but does not
+            # create a Kubernetes Service.
+            init_usage["max_services"] = 0
+            _add_usage(usage, init_usage)
         pvc_count = replicas if database.get("kind") == "StatefulSet" else 1
         usage["max_pvcs"] += pvc_count
         usage["storage_mib"] += memory_to_mib(

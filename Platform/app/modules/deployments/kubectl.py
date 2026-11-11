@@ -454,8 +454,21 @@ def delete_application_workloads(application: dict[str, Any]) -> tuple[bool, str
         timeout=30,
     )
     logs.append(f"pvc: {out_pvc[:100]}")
+    app_selector = f"app.kubernetes.io/part-of={application['id']}"
+    # Managed databases and auxiliary resources are also app-scoped. Label
+    # deletion is safe in the shared project namespace and leaves quota/policy
+    # objects (which carry only platform/project-id) untouched.
+    for resource in (
+        "statefulset", "job", "configmap", "secret", "ingress"
+    ):
+        _run_kubectl_with_retry(
+            ["delete", resource, "-n", namespace, "-l", app_selector,
+             "--ignore-not-found=true"],
+            timeout=30,
+        )
     ok_pod, out_pod = _run_kubectl_with_retry(
-        ["delete", "pod", "--all", "-n", namespace, "--ignore-not-found=true", "--force", "--grace-period=0"],
+        ["delete", "pod", "-n", namespace, "-l", app_selector,
+         "--ignore-not-found=true", "--force", "--grace-period=0"],
         timeout=30,
     )
     logs.append(f"pod: {out_pod[:100]}")
@@ -473,7 +486,7 @@ def delete_application_workloads(application: dict[str, Any]) -> tuple[bool, str
             time.sleep(5)
         else:
             break  # no pods left, good
-    # If pods still exist after 60s, hard-delete again with --all
+    # If app pods still exist after 60s, hard-delete only those labeled for this app.
     for retry_pass in range(2):
         ok_pods, pod_json = run_kubectl(
             ["get", "pods", "-n", namespace, "-l", f"app.kubernetes.io/part-of={application['id']}",
@@ -483,7 +496,8 @@ def delete_application_workloads(application: dict[str, Any]) -> tuple[bool, str
         if not ok_pods or not pod_json.strip():
             break
         _run_kubectl_with_retry(
-            ["delete", "pod", "--all", "-n", namespace, "--ignore-not-found=true", "--force", "--grace-period=0"],
+            ["delete", "pod", "-n", namespace, "-l", app_selector,
+             "--ignore-not-found=true", "--force", "--grace-period=0"],
             timeout=30, max_retries=2,
         )
         time.sleep(5)

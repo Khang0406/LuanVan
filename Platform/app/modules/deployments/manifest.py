@@ -177,13 +177,18 @@ metadata:
   name: {namespace}
   labels:
     managed-by: luanvan-platform
-    platform/application: {application["id"]}
+    platform/project-id: "{application.get('project_id', '')}"
 """
     ]
 
-    # ResourceQuota
+    # Legacy application-scoped quota is retained only for projectless records.
+    # Project applications receive one shared ResourceQuota/LimitRange from A.5.3.
     resource_quota = application.get("resource_quota")
-    if resource_quota and isinstance(resource_quota, dict):
+    if (
+        not application.get("project_id")
+        and resource_quota
+        and isinstance(resource_quota, dict)
+    ):
         rq_lines: list[str] = []
         if resource_quota.get("cpu"):
             rq_lines.append(f"    requests.cpu: \"{resource_quota['cpu']}\"")
@@ -212,7 +217,11 @@ spec:
 
     # LimitRange
     limit_range = application.get("limit_range")
-    if limit_range and isinstance(limit_range, dict):
+    if (
+        not application.get("project_id")
+        and limit_range
+        and isinstance(limit_range, dict)
+    ):
         lr_parts: list[str] = []
         if limit_range.get("default_cpu") or limit_range.get("default_memory"):
             lr_parts.append("      default:")
@@ -327,6 +336,18 @@ spec:
         db_image = db.get("image", "mysql:8.0")
         db_port = int(db.get("port", 3306))
         db_storage_size = db.get("storage_size", "1Gi")
+        db_cpu_request = _validate_resource_quantity(
+            db.get("cpu_request", "100m"), "database.cpu_request"
+        )
+        db_cpu_limit = _validate_resource_quantity(
+            db.get("cpu_limit", "500m"), "database.cpu_limit"
+        )
+        db_memory_request = _validate_resource_quantity(
+            db.get("memory_request", "128Mi"), "database.memory_request"
+        )
+        db_memory_limit = _validate_resource_quantity(
+            db.get("memory_limit", "512Mi"), "database.memory_limit"
+        )
         db_storage_class = db.get("storage_class", "")
         db_sc_yaml = f"  storageClassName: {db_storage_class}\n" if db_storage_class else ""
         db_password = db.get("password_key", "MYSQL_ROOT_PASSWORD")
@@ -365,6 +386,18 @@ data:
             job_image = init_job.get("image", db_image)
             job_command = init_job.get("command", ["echo", "init complete"])
             job_name = f"{db_app_name}-init"
+            job_cpu_request = _validate_resource_quantity(
+                init_job.get("cpu_request", "50m"), "init_job.cpu_request"
+            )
+            job_cpu_limit = _validate_resource_quantity(
+                init_job.get("cpu_limit", "100m"), "init_job.cpu_limit"
+            )
+            job_memory_request = _validate_resource_quantity(
+                init_job.get("memory_request", "64Mi"), "init_job.memory_request"
+            )
+            job_memory_limit = _validate_resource_quantity(
+                init_job.get("memory_limit", "128Mi"), "init_job.memory_limit"
+            )
             documents.append(
                 f"""apiVersion: batch/v1
 kind: Job
@@ -382,6 +415,13 @@ spec:
       containers:
         - name: init
           image: {job_image}
+          resources:
+            requests:
+              cpu: {job_cpu_request}
+              memory: {job_memory_request}
+            limits:
+              cpu: {job_cpu_limit}
+              memory: {job_memory_limit}
           command:
 """ + "\n".join(f"            - {_yaml_value(str(c))}" for c in job_command) + f"""
           env:
@@ -434,6 +474,13 @@ spec:
           ports:
             - containerPort: {db_port}
 {chr(10).join(db_env_lines)}
+          resources:
+            requests:
+              cpu: {db_cpu_request}
+              memory: {db_memory_request}
+            limits:
+              cpu: {db_cpu_limit}
+              memory: {db_memory_limit}
           volumeMounts:
             - name: {db_name}-data
               mountPath: /var/lib/mysql

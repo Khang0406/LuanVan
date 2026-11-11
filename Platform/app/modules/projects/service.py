@@ -28,6 +28,19 @@ def slugify_project(value: str) -> str:
     return re.sub(r"-+", "-", slug).strip("-") or "project"
 
 
+def project_namespace(project: Project) -> str:
+    """Return and persist the stable DNS-label namespace for one project."""
+    if project.kubernetes_namespace:
+        return project.kubernetes_namespace
+    if project.id is None:
+        db.session.flush()
+    prefix = f"project-{project.id}-"
+    available = max(1, 63 - len(prefix))
+    suffix = slugify_project(project.slug)[:available].rstrip("-") or "tenant"
+    project.kubernetes_namespace = f"{prefix}{suffix}"
+    return project.kubernetes_namespace
+
+
 def ensure_default_project() -> Project:
     """Finish bootstrap after Alembic runs before the first user is seeded."""
     project = Project.query.filter_by(slug=DEFAULT_PROJECT_SLUG).first()
@@ -43,6 +56,7 @@ def ensure_default_project() -> Project:
         db.session.flush()
     elif project.owner_user_id is None and admin:
         project.owner_user_id = admin.id
+    project_namespace(project)
 
     # A fresh database is migrated before bootstrap users exist. If the default
     # project has no members, attach every bootstrap user to preserve the legacy
@@ -176,6 +190,7 @@ def create_project(name: str, description: str, creator: User) -> Project:
     try:
         db.session.add(project)
         db.session.flush()
+        project_namespace(project)
         db.session.add(
             ProjectMembership(
                 project_id=project.id,

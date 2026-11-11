@@ -154,6 +154,51 @@ class DatabaseMigrationTests(unittest.TestCase):
             self.assertIn('"max_applications":3', subscription.effective_limits_json)
             self.assertEqual(history_count, 1)
 
+    def test_kubernetes_quota_migration_groups_apps_by_project_namespace(self):
+        with TemporaryDirectory() as directory:
+            url = f"sqlite:///{Path(directory) / 'legacy-namespace.db'}"
+            config = self._config(url)
+            with patch.dict(os.environ, {"DATABASE_URL": url}):
+                command.upgrade(config, "0008_subscription_plans")
+                engine = create_engine(url)
+                with engine.begin() as connection:
+                    project_id = connection.execute(text(
+                        "SELECT id FROM projects WHERE slug='default-project'"
+                    )).scalar_one()
+                    connection.execute(text(
+                        "INSERT INTO applications "
+                        "(id, project_id, name, namespace, source_type, payload) VALUES "
+                        "('legacy-one', :project_id, 'Legacy One', 'legacy-one', "
+                        "'docker', :payload_one), "
+                        "('legacy-two', :project_id, 'Legacy Two', 'legacy-two', "
+                        "'docker', :payload_two)"
+                    ), {
+                        "project_id": project_id,
+                        "payload_one": '{"id":"legacy-one","namespace":"legacy-one"}',
+                        "payload_two": '{"id":"legacy-two","namespace":"legacy-two"}',
+                    })
+                command.upgrade(config, "head")
+            with create_engine(url).connect() as connection:
+                project = connection.execute(text(
+                    "SELECT id, kubernetes_namespace, quota_sync_status FROM projects "
+                    "WHERE slug='default-project'"
+                )).one()
+                applications = connection.execute(text(
+                    "SELECT namespace, payload FROM applications "
+                    "WHERE id IN ('legacy-one', 'legacy-two') ORDER BY id"
+                )).all()
+            self.assertEqual(
+                project.kubernetes_namespace,
+                f"project-{project.id}-default-project",
+            )
+            self.assertEqual(project.quota_sync_status, "Pending")
+            self.assertEqual(
+                [row.namespace for row in applications],
+                [project.kubernetes_namespace, project.kubernetes_namespace],
+            )
+            self.assertIn('"legacy_namespace": "legacy-one"', applications[0].payload)
+            self.assertIn('"legacy_namespace": "legacy-two"', applications[1].payload)
+
 
 if __name__ == "__main__":
     unittest.main()

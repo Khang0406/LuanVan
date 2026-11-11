@@ -205,6 +205,16 @@ class Project(db.Model):
     STATUS_ACTIVE = "Active"
     STATUS_ARCHIVED = "Archived"
     VALID_STATUSES = {STATUS_ACTIVE, STATUS_ARCHIVED}
+    QUOTA_SYNC_PENDING = "Pending"
+    QUOTA_SYNC_SYNCED = "Synced"
+    QUOTA_SYNC_DRIFTED = "Drifted"
+    QUOTA_SYNC_ERROR = "Error"
+    VALID_QUOTA_SYNC_STATUSES = {
+        QUOTA_SYNC_PENDING,
+        QUOTA_SYNC_SYNCED,
+        QUOTA_SYNC_DRIFTED,
+        QUOTA_SYNC_ERROR,
+    }
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -217,6 +227,16 @@ class Project(db.Model):
         nullable=True,
         index=True,
     )
+    kubernetes_namespace = db.Column(
+        db.String(63), unique=True, nullable=True, index=True
+    )
+    quota_sync_status = db.Column(
+        db.String(20), nullable=False, default=QUOTA_SYNC_PENDING, index=True
+    )
+    quota_sync_message = db.Column(db.String(500), nullable=False, default="")
+    quota_desired_hash = db.Column(db.String(64), nullable=False, default="")
+    quota_observed_hash = db.Column(db.String(64), nullable=False, default="")
+    quota_synced_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

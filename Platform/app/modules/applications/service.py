@@ -1,5 +1,4 @@
 import re
-import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -308,7 +307,16 @@ def create_application(
     name = form.get("name", "").strip()
     application_id = slugify(name)
     requested_namespace = form.get("namespace", "").strip()
-    if getattr(user, "is_admin", False):
+    if project_id is not None:
+        from app.db import db
+        from app.models import Project
+        from app.modules.projects.service import project_namespace
+
+        project = db.session.get(Project, int(project_id))
+        if project is None:
+            raise ValueError("Project không tồn tại.")
+        namespace = project_namespace(project)
+    elif getattr(user, "is_admin", False):
         namespace = requested_namespace or application_id
     else:
         namespace = f"user-{user.id}-{application_id}"
@@ -361,8 +369,6 @@ def create_application(
     applications = load_applications()
     if any(app.get("id") == application_id for app in applications):
         raise ValueError(f"Application '{application_id}' đã tồn tại.")
-    if any(app.get("namespace") == namespace for app in applications):
-        raise ValueError(f"Namespace '{namespace}' đã được application khác sử dụng.")
 
     application = {
         "id": application_id,
@@ -409,10 +415,6 @@ def create_application(
         applications = load_applications()
         if any(app.get("id") == application_id for app in applications):
             raise ValueError(f"Application '{application_id}' đã tồn tại.")
-        if any(app.get("namespace") == namespace for app in applications):
-            raise ValueError(
-                f"Namespace '{namespace}' đã được application khác sử dụng."
-            )
 
         if registry_password:
             registry["credential_ref"] = save_registry_credential(
@@ -468,9 +470,7 @@ def create_application(
             )
 
         if not upsert_application_record(application, insert_only=True):
-            raise ValueError(
-                f"Application '{application_id}' hoặc namespace '{namespace}' đã tồn tại."
-            )
+            raise ValueError(f"Application '{application_id}' đã tồn tại.")
         if project_id is not None:
             from app.db import db
 
@@ -548,17 +548,18 @@ def build_github_image(application: dict[str, Any]) -> tuple[bool, str]:
 
 
 def delete_application(application_id: str) -> bool:
-    """Xóa application khỏi ứng dụng và dọn dẹp namespace Kubernetes nếu có cluster."""
+    """Xóa application và workload có label của app, không xóa namespace project."""
     applications = load_applications()
     application = next((a for a in applications if a["id"] == application_id), None)
     if not application:
         return False
 
-    # Dọn dẹp namespace trên K3s nếu application đã deploy
-    namespace = application.get("namespace") or application["id"]
+    # Namespace được dùng chung ở A.5.3. Chỉ xóa workload mang label/tên của
+    # application; tuyệt đối không xóa namespace vì sẽ ảnh hưởng app cùng project.
     try:
-        # Kiểm tra kubectl có sẵn không
-        subprocess.run(["kubectl", "delete", "namespace", namespace], capture_output=True, text=True, timeout=10)
+        from app.modules.deployments.kubectl import delete_application_workloads
+
+        delete_application_workloads(application)
     except Exception:
         pass  # Cluster có thể không chạy
 

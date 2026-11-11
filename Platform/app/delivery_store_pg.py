@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS applications (
     name TEXT NOT NULL,
     owner TEXT NOT NULL DEFAULT '',
     user_id INTEGER,
-    namespace TEXT NOT NULL UNIQUE,
+    namespace TEXT NOT NULL,
     source_type TEXT NOT NULL,
     repository_url TEXT NOT NULL DEFAULT '',
     default_branch TEXT NOT NULL DEFAULT 'main',

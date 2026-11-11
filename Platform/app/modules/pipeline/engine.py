@@ -491,8 +491,16 @@ def _run_pipeline(pipeline_run: dict[str, Any]) -> None:
     # run was waiting/building in the queue.
     try:
         from app.db import db
+        from app.models import Project
+        from app.modules.quotas.kubernetes import ensure_project_quota_synced
         from app.modules.quotas.service import validate_deployment
 
+        project_id = application.get("project_id")
+        if project_id is not None:
+            project = db.session.get(Project, int(project_id))
+            if project is None:
+                raise ValueError("Project của application không tồn tại.")
+            ensure_project_quota_synced(project)
         validate_deployment(application)
         db.session.commit()
     except Exception as exc:

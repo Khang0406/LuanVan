@@ -1,5 +1,46 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.5.3 — Kubernetes ResourceQuota và LimitRange (2026-09-28)
+
+### Kết quả triển khai
+
+- Mỗi project có namespace DNS-label ổn định; application cùng tenant dùng chung
+  namespace và application cũ lưu `legacy_namespace` khi migration.
+- Sinh một ResourceQuota và một LimitRange theo effective subscription limits.
+- Service, managed database và init Job đều có CPU/RAM request/limit.
+- Plan change đánh dấu `Pending`; tự apply/verify khi Kubernetes sync được bật.
+- Lưu status `Pending/Synced/Drifted/Error`, semantic desired/observed hash, thông
+  báo lỗi và thời điểm sync.
+- Worker bắt buộc đồng bộ quota trước khi xóa workload/deploy.
+- Platform Admin có thể inspect drift hoặc sync lại từ Web; mọi thao tác có audit.
+- Xóa application/workload chuyển sang label-scoped cleanup, không xóa namespace
+  và không còn `delete pod --all`.
+- API subscription trả namespace và trạng thái Kubernetes quota.
+
+### Migration
+
+- Revision `0009_project_kubernetes_quotas` thêm sync state, backfill namespace,
+  bỏ unique application namespace và hỗ trợ downgrade khôi phục namespace cũ.
+- Database trắng dựng được đến revision mới; schema checker và `alembic check`
+  đều đạt.
+
+### Kiểm thử local
+
+- Acceptance A.5.3: `8/8` test đạt.
+- Migration + A.5.1 + A.5.2: `22/22` test đạt.
+- Regression Project/RBAC/Pipeline/Quota: `84/84` test đạt.
+- Toàn bộ test suite: `210/210` test đạt, `6` test PostgreSQL được
+  skip đúng thiết kế khi chưa cấu hình database `_test`.
+- Database trắng migrate thành công đến `0009`; schema checker và
+  `alembic check` đều đạt.
+
+### Chờ runtime
+
+- Chưa nghiệm thu server-side rejection trên K3s thật do máy ảo chưa sẵn sàng.
+- Chưa kiểm tra cleanup các legacy namespace trên cluster cũ.
+
+Tài liệu chi tiết: `docs/phase-a53-kubernetes-quotas.md`.
+
 ## Phase A.5.2 — Usage Calculator và Quota Validation (2026-09-25)
 
 ### Kết quả triển khai

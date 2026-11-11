@@ -275,6 +275,9 @@ def _apply_plan(
     subscription.effective_limits_json = new_limits_json
     subscription.assigned_by_user_id = actor.id
     subscription.updated_at = _utcnow()
+    project.quota_sync_status = Project.QUOTA_SYNC_PENDING
+    project.quota_sync_message = "Gói đã thay đổi; chờ đồng bộ quota Kubernetes."
+    project.quota_observed_hash = ""
     db.session.add(SubscriptionHistory(
         project_id=project.id,
         from_plan_id=old_plan_id,

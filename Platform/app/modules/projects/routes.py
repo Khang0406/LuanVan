@@ -9,6 +9,7 @@ from app.modules.authorization.service import (
     MEMBER_MANAGE,
     PERMISSIONS,
     PROJECT_MANAGE,
+    QUOTA_MANAGE,
     has_permission,
     permission_keys,
     role_options,
@@ -60,6 +61,20 @@ def project_create():
             f"Đã tạo project {project.name}.",
             metadata={"project_id": project.id},
         )
+        from app.modules.quotas.kubernetes import (
+            quota_sync_enabled,
+            sync_project_quota,
+        )
+
+        if quota_sync_enabled():
+            sync_result = sync_project_quota(project)
+            record_audit(
+                "KUBERNETES_QUOTA_SYNC",
+                project.slug,
+                "SUCCESS" if sync_result["status"] == "Synced" else "FAILED",
+                sync_result["message"],
+                metadata={"project_id": project.id, "status": sync_result["status"]},
+            )
         flash(f"Đã tạo project {project.name}.", "success")
         return redirect(url_for("projects.project_detail", project_id=project.id))
     return render_template("projects/form.html", form={})
@@ -171,6 +186,48 @@ def project_subscription(project_id: int):
         requests=list_project_requests(project.id),
         history=list_subscription_history(project.id),
         can_request=can_request,
+        can_sync=has_permission(current_user, QUOTA_MANAGE, project.id),
+    )
+
+
+@projects_bp.post("/<int:project_id>/subscription/quota-sync")
+@login_required
+def project_quota_sync(project_id: int):
+    project = get_accessible_project(current_user, project_id)
+    if not project:
+        abort(404)
+    if not has_permission(current_user, QUOTA_MANAGE, project.id):
+        abort(403)
+    from app.modules.quotas.kubernetes import (
+        inspect_project_quota,
+        sync_project_quota,
+    )
+
+    action = request.form.get("action", "sync")
+    result = (
+        inspect_project_quota(project)
+        if action == "inspect"
+        else sync_project_quota(project)
+    )
+    record_audit(
+        "KUBERNETES_QUOTA_INSPECT" if action == "inspect" else "KUBERNETES_QUOTA_SYNC",
+        project.slug,
+        "SUCCESS" if result["status"] == "Synced" else "FAILED",
+        result["message"],
+        metadata={
+            "project_id": project.id,
+            "namespace": project.kubernetes_namespace,
+            "status": result["status"],
+            "desired_hash": result.get("desired_hash", ""),
+            "observed_hash": result.get("observed_hash", ""),
+        },
+    )
+    flash(
+        result["message"],
+        "success" if result["status"] == "Synced" else "warning",
+    )
+    return redirect(
+        url_for("projects.project_subscription", project_id=project.id)
     )
 
 

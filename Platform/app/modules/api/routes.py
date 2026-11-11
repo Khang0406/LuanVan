@@ -270,6 +270,15 @@ def api_project_subscription(project_id: int):
         },
         "limits": subscription_limits(subscription),
         "usage": calculate_project_usage(project.id),
+        "kubernetes": {
+            "namespace": project.kubernetes_namespace,
+            "quota_sync_status": project.quota_sync_status,
+            "quota_sync_message": project.quota_sync_message,
+            "quota_synced_at": (
+                project.quota_synced_at.isoformat()
+                if project.quota_synced_at else None
+            ),
+        },
         "updated_at": (
             subscription.updated_at.isoformat() if subscription.updated_at else None
         ),

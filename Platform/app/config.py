@@ -78,6 +78,9 @@ class Config:
     SECURITY_JOIN_USER_ROLES = False
     RATELIMIT_STORAGE_URI = os.getenv("REDIS_URL", "memory://").strip() or "memory://"
     RATELIMIT_HEADERS_ENABLED = True
+    KUBERNETES_QUOTA_SYNC_ENABLED = os.getenv(
+        "KUBERNETES_QUOTA_SYNC_ENABLED", "true"
+    ).lower() in {"1", "true", "yes"}
     EMAIL_VERIFICATION_TOKEN_TTL_SECONDS = max(
         300, int(os.getenv("EMAIL_VERIFICATION_TOKEN_TTL_SECONDS", "3600"))
     )

@@ -60,6 +60,8 @@ EXPECTED_COLUMNS = {
     "security_user_roles": {"user_id", "role_id"},
     "projects": {
         "id", "name", "slug", "description", "status", "owner_user_id",
+        "kubernetes_namespace", "quota_sync_status", "quota_sync_message",
+        "quota_desired_hash", "quota_observed_hash", "quota_synced_at",
         "created_at", "updated_at",
     },
     "project_memberships": {
