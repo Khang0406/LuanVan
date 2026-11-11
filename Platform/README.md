@@ -63,6 +63,7 @@ kubectl kustomize k8s/platform | kubectl create --dry-run=client --validate=fals
 - [Phase A.5.1 — Subscription Plan](docs/phase-a51-subscription-plans.md)
 - [Phase A.5.2 — Usage Calculator và Quota Validation](docs/phase-a52-quota-validation.md)
 - [Phase A.5.3 — Kubernetes ResourceQuota và LimitRange](docs/phase-a53-kubernetes-quotas.md)
+- [Phase A.5.4 — Dashboard quota và cảnh báo](docs/phase-a54-quota-dashboard.md)
 - [Deployment runbook](docs/deployment-runbook.md)
 - [Backup/restore](docs/backup-restore.md)
 - [Security/RBAC](docs/security-model.md)

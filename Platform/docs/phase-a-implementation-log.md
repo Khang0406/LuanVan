@@ -1,5 +1,41 @@
 # Phase A — Nhật ký triển khai (Implementation Log)
 
+## Phase A.5.4 — Dashboard quota và cảnh báo (2026-11-11)
+
+### Kết quả triển khai
+
+- Chuẩn hóa summary cho mười resource với used, limit, remaining, percentage,
+  status, unit và giá trị hiển thị.
+- Dùng chung ngưỡng `normal < 70%`, `warning >= 70%`, `critical >= 85%`,
+  `exhausted >= 100%` cho Web và API; xử lý an toàn limit bằng 0.
+- Nâng trang project thành dashboard progress bar, banner cảnh báo, quota còn
+  lại, Kubernetes sync status và CTA nâng cấp.
+- Ẩn form mới khi đã có request Pending; hiển thị trạng thái và phản
+  hồi Admin.
+- Lịch sử gói có chi tiết quota trước/sau.
+- Platform Admin có bảng tổng quan, ưu tiên project exhausted/critical và
+  không lặp thao tác load application cho từng project.
+- API giữ `limits`/`usage` cũ và thêm `quota_summary`, `resources`,
+  `upgrade_request`, không phá client hiện tại.
+- `QUOTA_EXCEEDED` bổ sung remaining/exceeded_by và message đủ used, delta,
+  projected, plan, limit; audit tiếp tục lưu structured details.
+
+### Database và phạm vi
+
+- Không cần migration mới; tái sử dụng subscription history và usage hiện có.
+- Chưa lưu usage snapshot theo thời gian, gửi email alert hay tích hợp
+  Prometheus; các phần này thuộc Phase C.
+
+### Kiểm thử local
+
+- Acceptance A.5.4: `7/7` test đạt.
+- Regression A.5.1–A.5.4: `31/31` test đạt.
+- Full regression: `217/217` test đạt; `6` test PostgreSQL integration được
+  skip đúng thiết kế khi chưa cấu hình database `_test`.
+- `compileall`, `pip check` và `git diff --check` đều đạt.
+
+Tài liệu chi tiết: `docs/phase-a54-quota-dashboard.md`.
+
 ## Phase A.5.3 — Kubernetes ResourceQuota và LimitRange (2026-09-28)
 
 ### Kết quả triển khai

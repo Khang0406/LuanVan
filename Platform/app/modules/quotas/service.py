@@ -16,6 +16,24 @@ from app.modules.subscriptions.service import (
 
 USAGE_FIELDS = tuple(LIMIT_FIELDS)
 
+QUOTA_STATUS_NORMAL = "normal"
+QUOTA_STATUS_WARNING = "warning"
+QUOTA_STATUS_CRITICAL = "critical"
+QUOTA_STATUS_EXHAUSTED = "exhausted"
+
+RESOURCE_UNITS = {
+    "max_applications": "application",
+    "max_services": "service",
+    "max_replicas": "pod",
+    "cpu_request_millicores": "millicore",
+    "cpu_limit_millicores": "millicore",
+    "memory_request_mib": "MiB",
+    "memory_limit_mib": "MiB",
+    "max_ingresses": "Ingress",
+    "max_pvcs": "PVC",
+    "storage_mib": "MiB",
+}
+
 
 class QuotaConfigurationError(ValueError):
     """Raised when an application contains an invalid resource quantity."""
@@ -45,13 +63,16 @@ class QuotaExceeded(ValueError):
             "requested": requested,
             "projected": projected,
             "limit": limit,
+            "remaining": max(limit - used, 0),
+            "exceeded_by": max(projected - limit, 0),
         }
         if service:
             self.details["service"] = service
         label = self.details["label"]
         super().__init__(
             f"Yêu cầu vượt quota {label}: đang dùng {used}, "
-            f"sau thay đổi {projected}, giới hạn {limit}."
+            f"yêu cầu thay đổi {requested:+d}, sau thay đổi {projected}, "
+            f"giới hạn gói {plan} là {limit}."
         )
 
 
@@ -246,6 +267,88 @@ def calculate_project_usage(
         if application_project_id == int(project_id):
             _add_usage(usage, calculate_application_usage(application))
     return usage
+
+
+def quota_percentage(used: int, limit: int) -> float:
+    """Return a stable percentage without hiding over-quota usage."""
+    used = max(int(used), 0)
+    limit = max(int(limit), 0)
+    if limit == 0:
+        return 100.0 if used else 0.0
+    return round((used / limit) * 100, 1)
+
+
+def quota_status(used: int, limit: int) -> str:
+    percentage = quota_percentage(used, limit)
+    if used > 0 and used >= limit:
+        return QUOTA_STATUS_EXHAUSTED
+    if percentage >= 85:
+        return QUOTA_STATUS_CRITICAL
+    if percentage >= 70:
+        return QUOTA_STATUS_WARNING
+    return QUOTA_STATUS_NORMAL
+
+
+def format_quota_value(resource: str, value: int) -> str:
+    value = int(value)
+    if resource in {"cpu_request_millicores", "cpu_limit_millicores"}:
+        return f"{value / 1000:g} core" if value >= 1000 else f"{value}m"
+    if resource in {"memory_request_mib", "memory_limit_mib", "storage_mib"}:
+        return f"{value / 1024:g} GiB" if value >= 1024 else f"{value} MiB"
+    return str(value)
+
+
+def build_quota_dashboard(
+    project: Project,
+    *,
+    applications: Iterable[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Build the canonical Web/API quota view for one project."""
+    if project.subscription is None:
+        subscription = assign_initial_subscription(project, project.owner)
+        project.subscription = subscription
+    limits = subscription_limits(project.subscription)
+    usage = calculate_project_usage(project.id, applications=applications)
+    resources: list[dict[str, Any]] = []
+    counts = {
+        QUOTA_STATUS_NORMAL: 0,
+        QUOTA_STATUS_WARNING: 0,
+        QUOTA_STATUS_CRITICAL: 0,
+        QUOTA_STATUS_EXHAUSTED: 0,
+    }
+    for key, label in LIMIT_FIELDS.items():
+        used = int(usage.get(key, 0))
+        limit = int(limits.get(key, 0))
+        status = quota_status(used, limit)
+        counts[status] += 1
+        resources.append({
+            "key": key,
+            "label": label,
+            "unit": RESOURCE_UNITS[key],
+            "used": used,
+            "limit": limit,
+            "remaining": max(limit - used, 0),
+            "percentage": quota_percentage(used, limit),
+            "status": status,
+            "used_display": format_quota_value(key, used),
+            "limit_display": format_quota_value(key, limit),
+            "remaining_display": format_quota_value(key, max(limit - used, 0)),
+        })
+    highest = max(resources, key=lambda item: item["percentage"], default=None)
+    return {
+        "limits": limits,
+        "usage": usage,
+        "resources": resources,
+        "summary": {
+            "highest_resource": highest,
+            "warning_count": counts[QUOTA_STATUS_WARNING],
+            "critical_count": counts[QUOTA_STATUS_CRITICAL],
+            "exhausted_count": counts[QUOTA_STATUS_EXHAUSTED],
+            "needs_upgrade": bool(
+                counts[QUOTA_STATUS_CRITICAL] or counts[QUOTA_STATUS_EXHAUSTED]
+            ),
+        },
+    }
 
 
 def _locked_project(project_id: int) -> Project:

@@ -75,22 +75,37 @@ def user_reset(user_id):
 def subscription_requests():
     from app.modules.subscriptions.service import (
         LIMIT_FIELDS,
-        decode_limits,
         list_plans,
         list_upgrade_requests,
-        plan_limits,
-        subscription_limits,
+    )
+
+    from app.modules.applications.service import load_applications
+    from app.modules.quotas.service import build_quota_dashboard
+
+    projects = Project.query.order_by(Project.name).all()
+    applications = load_applications()
+    project_dashboards = [
+        {
+            "project": project,
+            "dashboard": build_quota_dashboard(project, applications=applications),
+        }
+        for project in projects
+    ]
+    project_dashboards.sort(
+        key=lambda item: (
+            item["dashboard"]["summary"]["exhausted_count"] == 0,
+            item["dashboard"]["summary"]["critical_count"] == 0,
+            item["project"].name.lower(),
+        )
     )
 
     return render_template(
         "admin/subscriptions.html",
         requests=list_upgrade_requests(),
-        projects=Project.query.order_by(Project.name).all(),
+        projects=projects,
+        project_dashboards=project_dashboards,
         plans=list_plans(),
         limit_fields=LIMIT_FIELDS,
-        decode_limits=decode_limits,
-        plan_limits=plan_limits,
-        subscription_limits=subscription_limits,
     )
 
 

@@ -250,7 +250,7 @@ def api_project_subscription(project_id: int):
     from app.modules.projects.service import can_access_project
     from app.modules.subscriptions.service import (
         get_project_subscription,
-        subscription_limits,
+        list_project_requests,
     )
 
     principal = _principal()
@@ -260,7 +260,16 @@ def api_project_subscription(project_id: int):
     if project is None:
         return _error("NOT_FOUND", "Project không tồn tại.", 404)
     subscription = get_project_subscription(project)
-    from app.modules.quotas.service import calculate_project_usage
+    from app.modules.quotas.service import build_quota_dashboard
+
+    dashboard = build_quota_dashboard(project)
+    pending_request = next(
+        (
+            item for item in list_project_requests(project.id)
+            if item.status == item.STATUS_PENDING
+        ),
+        None,
+    )
 
     return _ok({
         "project_id": project.id,
@@ -268,8 +277,17 @@ def api_project_subscription(project_id: int):
             "key": subscription.plan.key,
             "name": subscription.plan.name,
         },
-        "limits": subscription_limits(subscription),
-        "usage": calculate_project_usage(project.id),
+        # Keep the original fields for existing API clients.
+        "limits": dashboard["limits"],
+        "usage": dashboard["usage"],
+        "quota_summary": dashboard["summary"],
+        "resources": dashboard["resources"],
+        "upgrade_request": ({
+            "id": pending_request.id,
+            "status": pending_request.status,
+            "requested_plan": pending_request.requested_plan.key,
+            "created_at": pending_request.created_at.isoformat(),
+        } if pending_request else None),
         "kubernetes": {
             "namespace": project.kubernetes_namespace,
             "quota_sync_status": project.quota_sync_status,

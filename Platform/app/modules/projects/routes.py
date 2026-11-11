@@ -129,9 +129,7 @@ def project_subscription(project_id: int):
         list_plans,
         list_project_requests,
         list_subscription_history,
-        plan_limits,
         submit_upgrade_request,
-        subscription_limits,
     )
 
     can_request = has_permission(current_user, PROJECT_MANAGE, project.id)
@@ -171,19 +169,27 @@ def project_subscription(project_id: int):
             return redirect(url_for("projects.project_subscription", project_id=project.id))
 
     subscription = get_project_subscription(project)
-    from app.modules.quotas.service import calculate_project_usage
+    from app.modules.quotas.service import build_quota_dashboard
+
+    dashboard = build_quota_dashboard(project)
+    project_requests = list_project_requests(project.id)
+    pending_request = next(
+        (item for item in project_requests if item.status == item.STATUS_PENDING),
+        None,
+    )
 
     return render_template(
         "projects/subscription.html",
         project=project,
         subscription=subscription,
-        current_limits=subscription_limits(subscription),
-        current_usage=calculate_project_usage(project.id),
+        current_limits=dashboard["limits"],
+        quota_resources=dashboard["resources"],
+        quota_summary=dashboard["summary"],
         plans=list_plans(),
-        plan_limits=plan_limits,
         decode_limits=decode_limits,
         limit_fields=LIMIT_FIELDS,
-        requests=list_project_requests(project.id),
+        requests=project_requests,
+        pending_request=pending_request,
         history=list_subscription_history(project.id),
         can_request=can_request,
         can_sync=has_permission(current_user, QUOTA_MANAGE, project.id),
